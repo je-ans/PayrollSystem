@@ -1,0 +1,193 @@
+@model PayrollSummaryViewModel
+
+@{
+    ViewData["Title"] = "View Payroll";
+    ViewBag.ActiveMenu = "Payroll";
+    ViewData["PreviewTitle"] = "Payroll Document Preview";
+    Layout = "_Layout";
+}
+
+<style>
+    @@media print {
+        .content-header, .btn-group, .card-header, .breadcrumb {
+            display: none !important;
+        }
+        .card {
+            border: none !important;
+        }
+        .card-body {
+            padding: 0 !important;
+        }
+    }
+</style>
+
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>@ViewData["Title"] - @Model.PayrollRunName</h1>
+                <p class="mb-0 text-muted">@Model.PayrollPeriodName (@Model.PeriodStartDate.ToString("MMM dd, yyyy") - @Model.PeriodEndDate.ToString("MMM dd, yyyy"))</p>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                    <li class="breadcrumb-item"><a asp-controller="Payroll" asp-action="Index">Payroll Processing</a></li>
+                    <li class="breadcrumb-item active">View Payroll</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+            <div class="card-header">
+                <h3 class="card-title m-0"><i class="fas fa-file-invoice-dollar mr-2"></i> Payroll Summary</h3>
+                <div class="card-tools d-flex align-items-center gap-2">
+                    @if (Model.AllEmployees != null && Model.AllEmployees.Any())
+                    {
+                        <label class="mb-0 small text-muted">Show:</label>
+                        <select id="employeeFilter" class="form-control form-control-sm" style="width: auto; min-width: 180px;">
+                            <option value="">All Employees (@Model.AllEmployees.Count)</option>
+                            @foreach (var emp in Model.AllEmployees)
+                            {
+                                if (Model.FilterEmployeeId == emp.Id)
+                                {
+                                    <option value="@emp.Id" selected>@emp.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@emp.Id">@emp.Name</option>
+                                }
+                            }
+                        </select>
+                    }
+                    <a asp-controller="Payroll" asp-action="Index" class="btn btn-tool btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Payroll Runs
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Payroll Document Preview Container -->
+                <div id="payrollPreviewContainer" class="container-fluid mt-2">
+                    @{
+                        ViewData["ShowZoomControls"] = true;
+                        ViewData["ShowPrintButton"] = true;
+                        ViewData["ShowExportButton"] = true;
+                        ViewData["DocumentOrientation"] = "landscape";
+                        ViewData["DocumentFormat"] = "A4";
+                    }
+                    <partial name="~/Views/Shared/_DocumentPreview.cshtml" />
+                </div>
+
+                <!-- No Data / Error (hidden by default; shown if load fails) -->
+                <div id="noDataFoundMessage" class="text-center py-5" style="display: none;">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h5 class="text-muted">Unable to load payroll document</h5>
+                    <p class="text-muted">Please try again or return to <a asp-controller="Payroll" asp-action="Index">Payroll Runs</a>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner">
+        <div class="spinner-grow text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <h5 class="mt-3 mb-2" style="color: #2c3e50;">Loading Payroll Document</h5>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">Please wait...</p>
+    </div>
+</div>
+
+<style>
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .loading-spinner {
+        text-align: center;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var payrollRunId = @Model.PayrollRunId;
+            var currentFilterEmployeeId = '@(Model.FilterEmployeeId?.ToString() ?? "")';
+
+            function loadPayrollDocument(employeeId) {
+                if (!payrollRunId) {
+                    $('#noDataFoundMessage').show();
+                    return;
+                }
+                $('#loadingOverlay').show();
+                $('#noDataFoundMessage').hide();
+
+                var data = { id: payrollRunId };
+                if (employeeId) data.employeeId = employeeId;
+
+                $.ajax({
+                    url: '@Url.Action("GetPayrollDocument", "Payroll")',
+                    type: 'GET',
+                    data: data,
+                    success: function (data) {
+                        $('#loadingOverlay').hide();
+                        if (data && data.trim() !== '') {
+                            $('#payrollPreviewContainer').show();
+                            $('#document-content').html(data);
+                            $(document).trigger('documentContentLoaded');
+                        } else {
+                            $('#noDataFoundMessage').show();
+                        }
+                    },
+                    error: function () {
+                        $('#loadingOverlay').hide();
+                        $('#noDataFoundMessage').show();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error loading payroll document. Please try again.'
+                        });
+                    }
+                });
+            }
+
+            loadPayrollDocument(currentFilterEmployeeId || undefined);
+
+            $('#employeeFilter').on('change', function () {
+                var val = $(this).val();
+                if (val) {
+                    loadPayrollDocument(val);
+                    if (window.history && window.history.replaceState) {
+                        var url = new URL(window.location.href);
+                        url.searchParams.set('employeeId', val);
+                        window.history.replaceState({}, '', url);
+                    }
+                } else {
+                    loadPayrollDocument();
+                    if (window.history && window.history.replaceState) {
+                        var url = new URL(window.location.href);
+                        url.searchParams.delete('employeeId');
+                        window.history.replaceState({}, '', url);
+                    }
+                }
+            });
+        });
+    </script>
+}

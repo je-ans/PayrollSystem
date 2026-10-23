@@ -1,0 +1,27 @@
+﻿@model SystemTask
+
+@{
+    ViewData["Title"] = "View";
+}
+
+<div class="container">
+    <table class="table table-bordered table-hover">
+        <tr>
+            <th class="bg-light">Code</th>
+            <td>@Model.Code</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Task Name</th>
+            <td>@Model.TaskName</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Parent</th>
+            <td>@Model.Parent?.TaskName</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Order Number</th>
+            <td>@Model.OrderNumber</td>
+        </tr>
+    </table>
+</div>
+

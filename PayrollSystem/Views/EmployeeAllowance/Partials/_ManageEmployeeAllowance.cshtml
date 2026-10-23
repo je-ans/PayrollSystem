@@ -1,0 +1,214 @@
+@using System.Text.Json
+@model AllowanceEditViewModel
+
+<style>
+    .section-header-container { position: relative; }
+    .section-header { color: #2c3e50; font-weight: 600; position: relative; display: inline-block; padding-right: 1rem; background: white; z-index: 1; }
+    .section-divider { position: absolute; top: 50%; width: 100%; height: 1px; background-color: #e0e0e0; z-index: 0; }
+    .section-divider-wide { height: 1px; background: linear-gradient(to right, transparent, #e0e0e0, transparent); }
+</style>
+
+<form asp-action="Manage" method="post" id="manageEmployeeAllowanceForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <span asp-validation-summary="All" class="text-danger"></span>
+
+            <div class="section-header-container mb-1">
+                <h6 class="section-header">Allowance</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            @if (Model.Id > 0)
+            {
+                <p class="text-muted small mb-3">Update this allowance and who receives it. Saving replaces the current employee list.</p>
+            }
+            else
+            {
+                <p class="text-muted small mb-3">Define the allowance and assign employees in one step.</p>
+            }
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <select asp-for="AllowanceTypeId" class="form-control floating-input general-select"
+                            asp-items="ViewBag.AllowanceTypes">
+                        <option value="" selected disabled hidden>-- Select Allowance Type --</option>
+                    </select>
+                    <label asp-for="AllowanceTypeId" class="floating-label">Allowance Type <span class="text-danger">*</span></label>
+                </div>
+                <span asp-validation-for="AllowanceTypeId" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <input asp-for="AllowanceName" class="form-control floating-input" placeholder=" " />
+                    <label asp-for="AllowanceName" class="floating-label">Allowance Name <span class="text-danger">*</span></label>
+                </div>
+                <span asp-validation-for="AllowanceName" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <input asp-for="Code" class="form-control floating-input" placeholder=" " />
+                    <label asp-for="Code" class="floating-label">Code</label>
+                </div>
+                <span asp-validation-for="Code" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="section-header-container mb-1 mt-3">
+                <h6 class="section-header">Amount & Schedule</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mt-3">
+                        <div class="input-container">
+                            <input asp-for="Amount" type="number" step="0.01" class="form-control floating-input" placeholder=" " />
+                            <label asp-for="Amount" class="floating-label">Amount <span class="text-danger">*</span></label>
+                        </div>
+                        <span asp-validation-for="Amount" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mt-3">
+                        <div class="input-container">
+                            <select asp-for="Frequency" class="form-control floating-input general-select"
+                                    asp-items="Html.GetEnumSelectList<AllowanceFrequency>()"></select>
+                            <label asp-for="Frequency" class="floating-label">Frequency <span class="text-danger">*</span></label>
+                        </div>
+                        <span asp-validation-for="Frequency" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input asp-for="EffectiveDate" type="date" class="form-control floating-input" />
+                            <label asp-for="EffectiveDate" class="floating-label">Effective Date <span class="text-danger">*</span></label>
+                        </div>
+                        <span asp-validation-for="EffectiveDate" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input asp-for="EndDate" type="date" class="form-control floating-input" />
+                            <label asp-for="EndDate" class="floating-label">End Date</label>
+                        </div>
+                        <span asp-validation-for="EndDate" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header-container mb-1 mt-3">
+                <h6 class="section-header">Assign Employees</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" asp-for="ApplyAllActiveEmployees" id="manageAllowanceApplyAllActive" />
+                    <label class="custom-control-label font-weight-semibold" for="manageAllowanceApplyAllActive">
+                        Apply to all active employees
+                        @if (ViewBag.ActiveEmployeeCount != null)
+                        {
+                            <span class="text-muted font-weight-normal">(<span>@ViewBag.ActiveEmployeeCount</span> active)</span>
+                        }
+                    </label>
+                </div>
+                <small class="form-text text-muted d-block mb-2">Turn on to include every active employee. Turn off to pick specific people below.</small>
+            </div>
+
+            <div class="form-group mt-3" id="manageAllowanceManualEmployeePick">
+                <div class="input-container">
+                    <select asp-for="EmployeeIds" class="form-control floating-input select2 general-select" multiple="multiple" data-placeholder="-- Select employee(s) --" data-val="false">
+                        @foreach (var e in ViewBag.Employees ?? new List<dynamic>())
+                        {
+                            <option value="@e.Id">@e.Name (@e.EmployeeIdNumber)</option>
+                        }
+                    </select>
+                    <label asp-for="EmployeeIds" class="floating-label">Employees <span class="text-muted font-weight-normal">(manual)</span></label>
+                </div>
+                <span asp-validation-for="EmployeeIds" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="form-group mt-4">
+                <div class="input-container">
+                    <textarea asp-for="Description" class="form-control floating-input" rows="2" placeholder=" "></textarea>
+                    <label asp-for="Description" class="floating-label">Description</label>
+                </div>
+                <span asp-validation-for="Description" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="section-header-container mb-1 mt-3">
+                <h6 class="section-header">Settings</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <div class="custom-control custom-switch">
+                        <input class="custom-control-input" asp-for="IsTaxable" id="manageIsTaxable" />
+                        <label class="custom-control-label" for="manageIsTaxable">Taxable</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="custom-control custom-switch">
+                        <input class="custom-control-input" asp-for="IsMandatory" id="manageIsMandatory" />
+                        <label class="custom-control-label" for="manageIsMandatory">Mandatory</label>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="custom-control custom-switch">
+                        <input class="custom-control-input" asp-for="IsActive" id="manageIsActive" />
+                        <label class="custom-control-label" for="manageIsActive">Active</label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</form>
+
+<script>
+    (function () {
+        var assignedEmployeeIds = @Html.Raw(JsonSerializer.Serialize(Model.EmployeeIds ?? new List<Guid>()));
+
+        function syncManageAllowanceTargets() {
+            var allActive = $('#manageAllowanceApplyAllActive').is(':checked');
+            var $wrap = $('#manageAllowanceManualEmployeePick');
+            var $sel = $wrap.find('select');
+            $sel.prop('disabled', allActive);
+            try {
+                if ($sel.hasClass('select2-hidden-accessible'))
+                    $sel.trigger('select2:close');
+            } catch (e) { /* ignore */ }
+            if (allActive) {
+                $sel.val(null).trigger('change');
+                $wrap.css('opacity', '0.55');
+            } else {
+                $wrap.css('opacity', '');
+            }
+        }
+
+        function applyAssignedEmployees() {
+            var $sel = $('#manageAllowanceManualEmployeePick select');
+            if (!$sel.length || !assignedEmployeeIds.length) return;
+            $sel.val(assignedEmployeeIds).trigger('change');
+        }
+
+        $('#manageAllowanceApplyAllActive').off('change.manageAllowance').on('change.manageAllowance', syncManageAllowanceTargets);
+
+        syncManageAllowanceTargets();
+        applyAssignedEmployees();
+        setTimeout(function () {
+            syncManageAllowanceTargets();
+            applyAssignedEmployees();
+        }, 400);
+    })();
+</script>

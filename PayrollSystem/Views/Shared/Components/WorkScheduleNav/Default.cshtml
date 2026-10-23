@@ -1,0 +1,36 @@
+@model PayrollSystem.Utility.WorkScheduleAccess
+@{
+    var scheduleMenuActive = ViewBag.ActiveMenu as string == "EmployeeSchedule";
+}
+
+@if (Model.CanManageSchedule)
+{
+    <li class="nav-item">
+        <a class="nav-link @(scheduleMenuActive ? "active" : "")"
+           asp-controller="WorkSchedule" asp-action="Index">
+            <i class="nav-icon fas fa-calendar-week"></i>
+            <p>Monthly Schedule</p>
+        </a>
+    </li>
+}
+else
+{
+    <li class="nav-item">
+        <a class="nav-link @(scheduleMenuActive ? "active" : "")"
+           asp-controller="MySchedule" asp-action="Index">
+            <i class="nav-icon fas fa-calendar-week"></i>
+            <p>Office Schedule</p>
+        </a>
+    </li>
+}
+
+@if (Model.CanViewChangeRequestQueue && !Model.CanManageSchedule)
+{
+    <li class="nav-item">
+        <a class="nav-link @(ViewBag.ActiveLink == "ScheduleChangeRequest" ? "active" : "")"
+           asp-controller="ScheduleChangeRequest" asp-action="Index">
+            <i class="nav-icon fas fa-inbox"></i>
+            <p>Schedule Changes</p>
+        </a>
+    </li>
+}

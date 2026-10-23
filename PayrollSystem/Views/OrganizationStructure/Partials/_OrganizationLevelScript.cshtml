@@ -1,0 +1,27 @@
+<script>
+    (function () {
+        function refreshLevelOptions() {
+            var parentId = $('#orgParentId').val();
+            var previousLevel = $('#orgLevel').val();
+            $.get('/OrganizationStructure/GetLevelsForParent', { parentId: parentId || '' }, function (data) {
+                if (data.success === false) {
+                    return;
+                }
+                var $level = $('#orgLevel');
+                $level.empty();
+                (data.levels || []).forEach(function (item) {
+                    $level.append($('<option></option>').val(item.value).text(item.text));
+                });
+                if (previousLevel && $level.find('option[value="' + previousLevel + '"]').length) {
+                    $level.val(previousLevel);
+                } else if (data.levels && data.levels.length) {
+                    $level.val(data.levels[0].value);
+                }
+                if ($level.hasClass('select2-hidden-accessible')) {
+                    $level.trigger('change.select2');
+                }
+            });
+        }
+        $('#orgParentId').on('change', refreshLevelOptions);
+    })();
+</script>

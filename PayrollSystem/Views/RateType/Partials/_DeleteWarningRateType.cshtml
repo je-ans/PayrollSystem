@@ -1,0 +1,10 @@
+@model RateTypeViewModel
+
+<div class="text-center my-3">
+    <i class="fa fa-ban text-danger fa-3x"></i>
+</div>
+<h5 class="text-center mb-3">Cannot Delete Rate Type</h5>
+<h5 class="font-weight-bold text-danger text-center">
+    <strong>@Model.Name</strong>
+</h5>
+<p class="text-muted text-center">This rate type cannot be deleted because there are employees currently assigned to it. Please reassign the employees first.</p>

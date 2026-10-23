@@ -1,0 +1,135 @@
+@model TaxTableViewModel
+
+@{
+    ViewData["Title"] = "Tax Tables";
+    ViewBag.ActiveMenu = "TaxTable";
+    ViewBag.ActiveLink = "TaxTable";
+    ViewBag.ActiveMainMenu = "";
+}
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+                    <div class="card-header d-flex align-items-center">
+                        <div class="flex-grow-1 d-flex justify-content-start">
+                            <h3 class="card-title m-0">Tax Withholding Management</h3>
+                        </div>
+                        <div class="card-tools d-flex align-items-center">
+                            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+                               data-title="Add Tax Table Entry"
+                               data-url="/TaxTable/Create"
+                               data-modal-type="create"
+                               data-toogle="tooltip"
+                               title="Add Tax Table Entry">
+                                <i class="fas fa-plus"></i>
+                                <span class="d-none d-lg-inline">Add Tax Entry</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table id="taxTablesTable" class="table table-hover table-striped table-bordered" width="100%">
+                            <thead>
+                                <tr class="text-center">
+                                    <th>No.</th>
+                                    <th>Name</th>
+                                    <th>Income Basis</th>
+                                    <th>Bracket Type</th>
+                                    <th>Income Range</th>
+                                    <th>Tax Rate/Amount</th>
+                                    <th>Bracket Order</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be loaded via AJAX -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            // Initialize DataTable
+            var table = $('#taxTablesTable').DataTable({
+                ajax: {
+                    url: '@Url.Action("GetTaxTables", "TaxTable")',
+                    type: 'GET'
+                },
+                columns: [
+                    {
+                        data: null,
+                        render: function (data, type, row, meta) {
+                            return meta.row + 1;
+                        },
+                        className: 'text-center',
+                        orderable: false
+                    },
+                    { data: 'name' },
+                    { data: 'incomeBasis' },
+                    { data: 'bracketType' },
+                    { data: 'incomeRange' },
+                    { data: 'rateDisplay' },
+                    {
+                        data: 'bracketOrder',
+                        className: 'text-center'
+                    },
+                    {
+                        data: 'isActive',
+                        render: function (data) {
+                            return data ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>';
+                        },
+                        className: 'text-center'
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        render: function (data, type, row) {
+                            return `
+                                <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                    Action
+                                    <span class="sr-only">Toggle Dropdown</span>
+                                </button>
+                                <div class="dropdown-menu" role="menu">
+                                    <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                       data-title="View Tax Table Entry"
+                                       data-url="/TaxTable/Details/${data}"
+                                       data-modal-type="view">
+                                        <i class="fa fa-eye mr-2 text-dark"></i>
+                                        <span>View Details</span>
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                       data-title="Edit Tax Table Entry"
+                                       data-url="/TaxTable/Edit/${data}"
+                                       data-modal-type="edit">
+                                        <i class="fa fa-edit mr-2 text-primary"></i>
+                                        <span>Edit Entry</span>
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                       data-title="Delete Tax Table Entry"
+                                       data-url="/TaxTable/Delete/${data}"
+                                       data-modal-type="delete_data">
+                                        <i class="fa fa-trash mr-2 text-danger"></i>
+                                        <span>Delete Entry</span>
+                                    </a>
+                                </div>
+                            `;
+                        },
+                        className: 'text-center'
+                    }
+                ],
+                responsive: true,
+                lengthChange: true,
+                autoWidth: false
+            });
+        });
+    </script>
+}

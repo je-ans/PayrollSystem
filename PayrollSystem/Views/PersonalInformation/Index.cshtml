@@ -1,0 +1,83 @@
+@model IEnumerable<PersonalInformation>
+
+@{
+    ViewData["Title"] = "Personal Information";
+    ViewBag.ActiveMenu = "EmployeeManagement";
+    ViewBag.ActiveLink = "PersonalInformation";
+    ViewBag.ActiveMainMenu = "EmployeeManagement";
+}
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center">
+        <div class="flex-grow-1 d-flex justify-content-start">
+            <h3 class="card-title m-0">Personal Information List</h3>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+            <table class="table table-hover table-striped table-bordered" id="myTable" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>No.</th>
+                        <th>Employee Name</th>
+                        <th>Date of Birth</th>
+                        <th>Sex</th>
+                        <th>Civil Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        var index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@index</td>
+                                <td>@item.Employee.FullName</td>
+                                <td>@item.DateOfBirth.ToString("yyyy-MM-dd")</td>
+                                <td>@item.Sex</td>
+                                <td>@item.CivilStatus</td>
+                                <td align="center">
+                                    <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                        Action
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu" role="menu">
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Personal Information Details"
+                                           data-url="/PersonalInformation/ViewPersonalInformation/@item.Id"
+                                           data-modal-type="view">
+                                            <i class="fa fa-eye mr-2 text-dark"></i>
+                                            <span>View Details</span>
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Edit Personal Information"
+                                           data-url="/PersonalInformation/EditPersonalInformation/@item.Id"
+                                           data-modal-type="edit">
+                                            <i class="fa fa-edit mr-2 text-primary"></i>
+                                            <span>Edit Details</span>
+                                        </a>
+
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Delete Personal Information"
+                                           data-url="/PersonalInformation/DeletePersonalInformation/@item.Id"
+                                           data-modal-type="delete_data">
+                                            <i class="fa fa-trash mr-2 text-danger"></i>
+                                            <span>Delete Details</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    }
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

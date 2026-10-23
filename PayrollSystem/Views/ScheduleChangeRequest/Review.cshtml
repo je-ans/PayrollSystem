@@ -1,0 +1,128 @@
+@using PayrollSystem.Utility
+@model ScheduleChangeProcessViewModel
+@{
+    string StatusClass(JustificationStatus status) => status switch
+    {
+        JustificationStatus.Pending => "dm-status--pending",
+        JustificationStatus.Approved => "dm-status--approved",
+        JustificationStatus.Rejected => "dm-status--rejected",
+        _ => "dm-status--neutral"
+    };
+}
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<div class="dm-modal">
+    <div class="dm-modal-hero">
+        <div class="dm-modal-hero-icon dm-accent-purple">
+            <i class="fas fa-history"></i>
+        </div>
+        <div class="dm-modal-hero-body">
+            <h5 class="dm-modal-title">Schedule Change Logs</h5>
+            <p class="dm-modal-subtitle">
+                @Model.EmployeeName
+                @if (!string.IsNullOrWhiteSpace(Model.EmployeeIdNumber))
+                {
+                    <span>· @Model.EmployeeIdNumber</span>
+                }
+                · @Model.DateDisplay
+            </p>
+        </div>
+        <div class="dm-modal-hero-aside">
+            <span class="dm-status @StatusClass(Model.CurrentStatus)">
+                @EnumHelper.GetDisplayName(Model.CurrentStatus)
+            </span>
+        </div>
+    </div>
+
+    <div class="dm-review-layout">
+        <div class="dm-review-main">
+            <div class="dm-section">
+                <div class="dm-section-header">
+                    <i class="fas fa-info-circle"></i>
+                    Request details
+                </div>
+                <div class="dm-section-body">
+                    <div class="dm-detail-grid mb-3">
+                        @if (!string.IsNullOrWhiteSpace(Model.OrganizationUnitDisplay))
+                        {
+                            <div class="dm-detail-item dm-detail-item--full">
+                                <span class="dm-detail-label">Organization</span>
+                                <span class="dm-detail-value">@Model.OrganizationUnitDisplay</span>
+                            </div>
+                        }
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Schedule date</span>
+                            <span class="dm-detail-value">@Model.DateDisplay</span>
+                        </div>
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Submitted by</span>
+                            <span class="dm-detail-value dm-detail-value--muted">@Model.SubmittedBy</span>
+                        </div>
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Submitted on</span>
+                            <span class="dm-detail-value dm-detail-value--muted">@Model.SubmittedOn.ToString("MMM dd, yyyy h:mm tt")</span>
+                        </div>
+                        @if (Model.ReviewedOn.HasValue)
+                        {
+                            <div class="dm-detail-item">
+                                <span class="dm-detail-label">Last reviewed</span>
+                                <span class="dm-detail-value dm-detail-value--muted">@Model.ReviewedOn.Value.ToString("MMM dd, yyyy h:mm tt")</span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="dm-shift-compare">
+                        <div class="dm-shift-card dm-shift-card--current">
+                            <span class="dm-shift-card-label">Current shift</span>
+                            <span class="dm-shift-code" style="border-color: @Model.CurrentShiftColorHex; color: @Model.CurrentShiftColorHex">
+                                @Model.CurrentShiftCode
+                            </span>
+                            <span class="dm-shift-name">@Model.CurrentShiftLabel</span>
+                        </div>
+                        <div class="dm-shift-arrow" aria-hidden="true">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                        <div class="dm-shift-card dm-shift-card--requested">
+                            <span class="dm-shift-card-label">Requested shift</span>
+                            <span class="dm-shift-code" style="border-color: @Model.RequestedShiftColorHex; color: @Model.RequestedShiftColorHex">
+                                @Model.RequestedShiftCode
+                            </span>
+                            <span class="dm-shift-name">@Model.RequestedShiftLabel</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dm-section">
+                <div class="dm-section-header">
+                    <i class="fas fa-comment-alt"></i>
+                    Reason
+                </div>
+                <div class="dm-section-body">
+                    <p class="dm-reason-box">@Model.Reason</p>
+                    @if (!string.IsNullOrWhiteSpace(Model.ReviewNotes))
+                    {
+                        <div class="mt-3">
+                            <span class="dm-detail-label d-block mb-1">Latest review notes</span>
+                            <p class="dm-reason-box mb-0">@Model.ReviewNotes</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+        </div>
+
+        @if (Model.ApprovalTimeline != null)
+        {
+            <div class="dm-review-side">
+                <div class="dm-section">
+                    <div class="dm-section-body">
+                        @await Html.PartialAsync("~/Views/ApprovalWorkflow/Partials/_ApprovalTimeline.cshtml", Model.ApprovalTimeline)
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

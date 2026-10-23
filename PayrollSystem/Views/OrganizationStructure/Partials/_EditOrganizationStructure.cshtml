@@ -1,0 +1,57 @@
+@model OrganizationStructureFormViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="Edit" asp-route-id="@Model.Id" method="post" asp-antiforgery="true" id="organizationStructureForm">
+        <input type="hidden" asp-for="Id" />
+        <div class="form-group">
+            <div class="input-container">
+                <select asp-for="ParentId" class="form-control floating-input select2 general-select" id="orgParentId"
+                        data-placeholder="-- None (Institution root) --">
+                    <option value="">-- None (Institution root) --</option>
+
+                    @foreach (var parent in Model.ParentOptions)
+                    {
+                        if (Model.ParentId == parent.Id)
+                        {
+                            <option value="@parent.Id" selected="selected">@parent.DisplayText</option>
+                        }
+                        else
+                        {
+                            <option value="@parent.Id">@parent.DisplayText</option>
+                        }
+                    }
+                </select>
+                <label asp-for="ParentId" class="floating-label">Parent Unit</label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="Code" type="text" class="form-control floating-input" required placeholder=" " maxlength="50" />
+                <label asp-for="Code" class="floating-label">Code <span class="text-danger">*</span></label>
+            </div>
+            <span asp-validation-for="Code" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="Name" type="text" class="form-control floating-input" required placeholder=" " maxlength="300" />
+                <label asp-for="Name" class="floating-label">Name <span class="text-danger">*</span></label>
+            </div>
+            <span asp-validation-for="Name" class="text-danger validation-message"></span>
+        </div>
+
+        <partial name="Partials/_OrganizationLevelField" model="Model" />
+
+        <div class="form-group">
+            <div class="custom-control custom-switch">
+                <input asp-for="IsActive" type="checkbox" class="custom-control-input" id="orgIsActive" />
+                <label class="custom-control-label" for="orgIsActive">Active</label>
+            </div>
+        </div>
+    </form>
+</div>
+
+<partial name="Partials/_OrganizationLevelScript" />
+

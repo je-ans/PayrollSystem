@@ -1,0 +1,276 @@
+@model OvertimeRequestPrintViewModel
+@{
+    ViewData["Title"] = $"Overtime Authorization – {Model.EmployeeName}";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.5pt; color: #111; background: #fff; }
+        .no-print { margin: 12px 16px; }
+        .no-print button {
+            padding: 7px 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px;
+            background: #f8f9fa; font-size: 13px;
+        }
+        .no-print button.primary { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
+        @@media print { .no-print { display: none !important; } }
+
+        .sheet {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px 28px 32px;
+        }
+
+        .company {
+            text-align: center;
+            margin-bottom: 18px;
+            border-bottom: 2px solid #1e3a5f;
+            padding-bottom: 12px;
+        }
+        .company img { max-height: 56px; margin-bottom: 6px; }
+        .company h1 { font-size: 15pt; letter-spacing: 0.02em; margin-bottom: 2px; }
+        .company .addr { font-size: 9pt; color: #444; }
+        .doc-title {
+            text-align: center;
+            font-size: 13pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 16px 0 4px;
+            letter-spacing: 0.04em;
+        }
+        .doc-sub {
+            text-align: center;
+            font-size: 9pt;
+            color: #555;
+            margin-bottom: 18px;
+        }
+
+        .meta {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 14px;
+        }
+        .meta th, .meta td {
+            border: 1px solid #999;
+            padding: 6px 8px;
+            vertical-align: top;
+            text-align: left;
+        }
+        .meta th {
+            width: 28%;
+            background: #f3f6f9;
+            font-weight: 600;
+            font-size: 9.5pt;
+        }
+
+        .section-title {
+            font-size: 10.5pt;
+            font-weight: 700;
+            margin: 16px 0 6px;
+            color: #1e3a5f;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .days {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+            font-size: 9.5pt;
+        }
+        .days th, .days td {
+            border: 1px solid #999;
+            padding: 5px 6px;
+            text-align: center;
+        }
+        .days th { background: #1e3a5f; color: #fff; font-weight: 600; }
+        .days td.left { text-align: left; }
+        .days tfoot td { font-weight: 700; background: #f3f6f9; }
+
+        .reason-box {
+            border: 1px solid #999;
+            padding: 10px 12px;
+            min-height: 48px;
+            white-space: pre-wrap;
+            margin-bottom: 8px;
+        }
+
+        .sig-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            margin-top: 40px;
+        }
+        .sig {
+            flex: 1;
+            text-align: center;
+        }
+        .sig .line {
+            border-top: 1px solid #000;
+            margin: 48px 12px 6px;
+        }
+        .sig .role { font-size: 9pt; color: #333; }
+        .sig .name { font-size: 9.5pt; font-weight: 600; min-height: 1.2em; }
+
+        .footer-note {
+            margin-top: 28px;
+            font-size: 8pt;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button type="button" class="primary" onclick="window.print()">Print / Save as PDF</button>
+        <button type="button" onclick="window.close()" style="margin-left:8px">Close</button>
+    </div>
+
+    <div class="sheet">
+        <div class="company">
+            @if (!string.IsNullOrWhiteSpace(Model.CompanyLogoUrl))
+            {
+                <img src="@Model.CompanyLogoUrl" alt="" />
+            }
+            <h1>@Model.CompanyName</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.CompanyAddress))
+            {
+                <div class="addr">@Model.CompanyAddress</div>
+            }
+        </div>
+
+        <div class="doc-title">Overtime Authorization</div>
+        <div class="doc-sub">Status: @Model.StatusDisplay · Printed @Model.PrintedOn.ToString("MMM dd, yyyy h:mm tt")</div>
+
+        <table class="meta">
+            <tr>
+                <th>Employee</th>
+                <td>@Model.EmployeeName</td>
+            </tr>
+            <tr>
+                <th>Employee ID</th>
+                <td>@(string.IsNullOrWhiteSpace(Model.EmployeeIdNumber) ? "—" : Model.EmployeeIdNumber)</td>
+            </tr>
+            @if (!string.IsNullOrWhiteSpace(Model.Designation))
+            {
+                <tr>
+                    <th>Designation</th>
+                    <td>@Model.Designation</td>
+                </tr>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.OrganizationUnitDisplay))
+            {
+                <tr>
+                    <th>Organization unit</th>
+                    <td>@Model.OrganizationUnitDisplay</td>
+                </tr>
+            }
+            <tr>
+                <th>OT date(s)</th>
+                <td>@Model.DateRangeDisplay</td>
+            </tr>
+            <tr>
+                <th>Daily time</th>
+                <td>@Model.DailyTimeDisplay</td>
+            </tr>
+            <tr>
+                <th>Lunch break</th>
+                <td>@(string.IsNullOrWhiteSpace(Model.LunchBreakDisplay) ? "None" : Model.LunchBreakDisplay)</td>
+            </tr>
+            <tr>
+                <th>Hours</th>
+                <td>
+                    @Model.NetHoursPerDay.ToString("0.##") net hour(s)/day
+                    (window @Model.GrossHoursPerDay.ToString("0.##")h)
+                    · <strong>@Model.TotalNetHours.ToString("0.##") total</strong>
+                    @if (Model.DayCount > 1)
+                    {
+                        <text> across @Model.DayCount days</text>
+                    }
+                </td>
+            </tr>
+            @if (!string.IsNullOrWhiteSpace(Model.DayTypeName))
+            {
+                <tr>
+                    <th>Day type</th>
+                    <td>@Model.DayTypeName</td>
+                </tr>
+            }
+            <tr>
+                <th>Submitted</th>
+                <td>@Model.SubmittedBy · @Model.SubmittedOn.ToString("MMM dd, yyyy h:mm tt")</td>
+            </tr>
+            @if (Model.ReviewedOn.HasValue)
+            {
+                <tr>
+                    <th>Reviewed</th>
+                    <td>
+                        @(Model.ReviewedByName ?? "—") · @Model.ReviewedOn.Value.ToString("MMM dd, yyyy h:mm tt")
+                    </td>
+                </tr>
+            }
+        </table>
+
+        <div class="section-title">Purpose / reason</div>
+        <div class="reason-box">@Model.Reason</div>
+        @if (!string.IsNullOrWhiteSpace(Model.ReviewNotes))
+        {
+            <div class="section-title">Review notes</div>
+            <div class="reason-box">@Model.ReviewNotes</div>
+        }
+
+        <div class="section-title">Authorized schedule</div>
+        <table class="days">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Day</th>
+                    <th>Time</th>
+                    <th>Lunch</th>
+                    <th>Net hours</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var day in Model.Days)
+                {
+                    <tr>
+                        <td class="left">@day.Date.ToString("MMM dd, yyyy")</td>
+                        <td>@day.DayName</td>
+                        <td>@day.TimeDisplay</td>
+                        <td>@(string.IsNullOrWhiteSpace(day.LunchBreakDisplay) ? "—" : day.LunchBreakDisplay)</td>
+                        <td>@day.NetHours.ToString("0.##")</td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4" class="left">Total net overtime hours</td>
+                    <td>@Model.TotalNetHours.ToString("0.##")</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <div class="sig-row">
+            <div class="sig">
+                <div class="name">@Model.EmployeeName</div>
+                <div class="line"></div>
+                <div class="role">Employee</div>
+            </div>
+            <div class="sig">
+                <div class="name">@(Model.ReviewedByName ?? "\u00A0")</div>
+                <div class="line"></div>
+                <div class="role">Approver / Authorized official</div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            This form authorizes overtime for the dates and times above.
+            Payable OT is based on this approved authorization.
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,265 @@
+@model PersonalInformationViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="EditPersonalInformation" method="post" asp-antiforgery="true" id="personalInformationForm">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="EmployeeId" />
+        <p><strong>Employee:</strong> @ViewBag.EmployeeName</p>
+        <hr />
+
+        <div class="row">
+            <div class="col-md-6">
+                <h4>Personal Details</h4>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Surname" type="text" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="Surname" class="floating-label">Surname</label>
+                    </div>
+                    <span asp-validation-for="Surname" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="FirstName" type="text" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="FirstName" class="floating-label">First Name</label>
+                    </div>
+                    <span asp-validation-for="FirstName" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="MiddleName" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="MiddleName" class="floating-label">Middle Name</label>
+                    </div>
+                    <span asp-validation-for="MiddleName" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="NameExtension" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="NameExtension" class="floating-label">Name Extension</label>
+                    </div>
+                    <span asp-validation-for="NameExtension" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="DateOfBirth" type="date" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="DateOfBirth" class="floating-label">Date of Birth</label>
+                    </div>
+                    <span asp-validation-for="DateOfBirth" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PlaceOfBirth" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="PlaceOfBirth" class="floating-label">Place of Birth</label>
+                    </div>
+                    <span asp-validation-for="PlaceOfBirth" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <select asp-for="Sex" class="form-control floating-input">
+                            <option value="">-- Select Sex --</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                        <label asp-for="Sex" class="floating-label">Sex</label>
+                    </div>
+                    <span asp-validation-for="Sex" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <select asp-for="CivilStatus" class="form-control floating-input">
+                            <option value="">-- Select Civil Status --</option>
+                            <option value="Single">Single</option>
+                            <option value="Married">Married</option>
+                            <option value="Widowed">Widowed</option>
+                            <option value="Separated">Separated</option>
+                        </select>
+                        <label asp-for="CivilStatus" class="floating-label">Civil Status</label>
+                    </div>
+                    <span asp-validation-for="CivilStatus" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Citizenship" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="Citizenship" class="floating-label">Citizenship</label>
+                    </div>
+                    <span asp-validation-for="Citizenship" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Height" type="number" step="0.01" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="Height" class="floating-label">Height (m)</label>
+                    </div>
+                    <span asp-validation-for="Height" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Weight" type="number" step="0.01" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="Weight" class="floating-label">Weight (kg)</label>
+                    </div>
+                    <span asp-validation-for="Weight" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="BloodType" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="BloodType" class="floating-label">Blood Type</label>
+                    </div>
+                    <span asp-validation-for="BloodType" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h4>Government ID Numbers</h4>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="GsisIdNo" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="GsisIdNo" class="floating-label">GSIS ID No.</label>
+                    </div>
+                    <span asp-validation-for="GsisIdNo" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PagIbigIdNo" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="PagIbigIdNo" class="floating-label">PAG-IBIG ID No.</label>
+                    </div>
+                    <span asp-validation-for="PagIbigIdNo" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PhilHealthNo" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="PhilHealthNo" class="floating-label">PhilHealth No.</label>
+                    </div>
+                    <span asp-validation-for="PhilHealthNo" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="SssNo" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="SssNo" class="floating-label">SSS No.</label>
+                    </div>
+                    <span asp-validation-for="SssNo" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="TinNo" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="TinNo" class="floating-label">TIN No.</label>
+                    </div>
+                    <span asp-validation-for="TinNo" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="AgencyEmployeeNo" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="AgencyEmployeeNo" class="floating-label">Agency Employee No.</label>
+                    </div>
+                    <span asp-validation-for="AgencyEmployeeNo" class="text-danger validation-message"></span>
+                </div>
+
+                <h4>Residential Address</h4>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="ResidentialHouseBlockLotNo" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="ResidentialHouseBlockLotNo" class="floating-label">House/Block/Lot No.</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="ResidentialStreet" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="ResidentialStreet" class="floating-label">Street</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="ResidentialSubdivisionVillage" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="ResidentialSubdivisionVillage" class="floating-label">Subdivision/Village</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="ResidentialBarangay" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="ResidentialBarangay" class="floating-label">Barangay</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="ResidentialCityMunicipality" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="ResidentialCityMunicipality" class="floating-label">City/Municipality</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="ResidentialProvince" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="ResidentialProvince" class="floating-label">Province</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="ResidentialZipCode" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="ResidentialZipCode" class="floating-label">ZIP Code</label>
+                    </div>
+                </div>
+
+                <h4>Permanent Address</h4>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PermanentHouseBlockLotNo" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="PermanentHouseBlockLotNo" class="floating-label">House/Block/Lot No.</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PermanentStreet" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="PermanentStreet" class="floating-label">Street</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PermanentSubdivisionVillage" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="PermanentSubdivisionVillage" class="floating-label">Subdivision/Village</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PermanentBarangay" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="PermanentBarangay" class="floating-label">Barangay</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PermanentCityMunicipality" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="PermanentCityMunicipality" class="floating-label">City/Municipality</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PermanentProvince" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="PermanentProvince" class="floating-label">Province</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PermanentZipCode" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="PermanentZipCode" class="floating-label">ZIP Code</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="TelephoneNo" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="TelephoneNo" class="floating-label">Telephone No.</label>
+                    </div>
+                    <span asp-validation-for="TelephoneNo" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="MobileNo" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="MobileNo" class="floating-label">Mobile No.</label>
+                    </div>
+                    <span asp-validation-for="MobileNo" class="text-danger validation-message"></span>
+                </div>
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="EmailAddress" type="email" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="EmailAddress" class="floating-label">Email Address</label>
+                    </div>
+                    <span asp-validation-for="EmailAddress" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

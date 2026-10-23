@@ -1,0 +1,213 @@
+@model OvertimeRequestFormViewModel
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+
+@if (Model.HasPendingRequest)
+{
+    <div class="dm-modal">
+        <div class="dm-alert-banner dm-alert-banner--warning mb-0">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>@(Model.StatusMessage ?? "A pending overtime request already overlaps this date range.")</div>
+        </div>
+    </div>
+}
+else
+{
+    <form id="requestOvertimeForm" method="post" asp-action="Submit" asp-controller="OvertimeRequest">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="EmployeeId" />
+
+        <div class="dm-modal">
+            <div class="dm-process-header">
+                <div>
+                    <h6>Request overtime</h6>
+                    <small>@Model.EmployeeName</small>
+                </div>
+                <span class="dm-status dm-status--pending">New</span>
+            </div>
+
+            <div class="dm-section">
+                <div class="dm-section-header">
+                    <i class="fas fa-business-time"></i>
+                    Overtime details
+                </div>
+                <div class="dm-section-body">
+                    <div class="dm-alert-banner dm-alert-banner--info mb-3">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            Request overtime ahead of time. Enter the date range and planned daily window.
+                            If OT includes a meal break, turn on lunch break and set the time (same pattern as shift types).
+                            @if (!Model.RequiresApproval)
+                            {
+                                <span class="d-block mt-1">Company policy does not require approval — this will queue as Pending OT for payroll import.</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="StartDate" class="dm-form-label"></label>
+                                <input asp-for="StartDate" class="form-control dm-form-control" type="date" id="otStartDate" />
+                                <span asp-validation-for="StartDate" class="text-danger validation-message"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="EndDate" class="dm-form-label"></label>
+                                <input asp-for="EndDate" class="form-control dm-form-control" type="date" id="otEndDate" />
+                                <span asp-validation-for="EndDate" class="text-danger validation-message"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="RequestedStartTime" class="dm-form-label"></label>
+                                <input asp-for="RequestedStartTime" class="form-control dm-form-control" type="time" id="otStartTime" required />
+                                <span asp-validation-for="RequestedStartTime" class="text-danger validation-message"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="RequestedEndTime" class="dm-form-label"></label>
+                                <input asp-for="RequestedEndTime" class="form-control dm-form-control" type="time" id="otEndTime" required />
+                                <span asp-validation-for="RequestedEndTime" class="text-danger validation-message"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="custom-control custom-switch mb-3">
+                        <input asp-for="HasLunchBreak" type="checkbox" class="custom-control-input" id="otHasLunchBreak" />
+                        <label class="custom-control-label" for="otHasLunchBreak">Has lunch break during OT</label>
+                    </div>
+
+                    <div id="otLunchFields" class="@(Model.HasLunchBreak ? "" : "d-none")">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="LunchStart" class="dm-form-label"></label>
+                                    <input asp-for="LunchStart" class="form-control dm-form-control" type="time" id="otLunchStart" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="LunchEnd" class="dm-form-label"></label>
+                                    <input asp-for="LunchEnd" class="form-control dm-form-control" type="time" id="otLunchEnd" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dm-alert-banner dm-alert-banner--info mb-3" id="otHoursPreview">
+                        <i class="fas fa-calculator"></i>
+                        <div>
+                            <strong>Net OT:</strong>
+                            <span id="otNetHoursLabel">—</span>
+                        </div>
+                    </div>
+
+                    <p class="dm-form-hint mb-3">
+                        Enter the planned OT start and end time for each day in the range (no default — set when you expect to work).
+                        If end time is earlier than start time, the window continues past midnight.
+                    </p>
+
+                    <div class="form-group mb-0">
+                        <label asp-for="Reason" class="dm-form-label"></label>
+                        <textarea asp-for="Reason"
+                                  class="form-control dm-form-control"
+                                  rows="3"
+                                  required
+                                  placeholder="Why is overtime needed?"></textarea>
+                        <span asp-validation-for="Reason" class="text-danger validation-message"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        (function () {
+            function parseTime(value) {
+                if (!value) return null;
+                var parts = value.split(':');
+                if (parts.length < 2) return null;
+                var h = parseInt(parts[0], 10);
+                var m = parseInt(parts[1], 10);
+                if (isNaN(h) || isNaN(m)) return null;
+                return h * 60 + m;
+            }
+
+            function durationMinutes(startMin, endMin) {
+                if (startMin == null || endMin == null) return 0;
+                var diff = endMin - startMin;
+                if (diff <= 0) diff += 24 * 60;
+                return diff;
+            }
+
+            function dayCount(startValue, endValue) {
+                if (!startValue || !endValue) return 1;
+                var start = new Date(startValue + 'T00:00:00');
+                var end = new Date(endValue + 'T00:00:00');
+                if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return 1;
+                return Math.floor((end - start) / 86400000) + 1;
+            }
+
+            function refreshHours() {
+                var startMin = parseTime(document.getElementById('otStartTime')?.value);
+                var endMin = parseTime(document.getElementById('otEndTime')?.value);
+                var hasLunch = document.getElementById('otHasLunchBreak')?.checked;
+                var lunchStartMin = parseTime(document.getElementById('otLunchStart')?.value);
+                var lunchEndMin = parseTime(document.getElementById('otLunchEnd')?.value);
+                var days = dayCount(
+                    document.getElementById('otStartDate')?.value,
+                    document.getElementById('otEndDate')?.value);
+                var label = document.getElementById('otNetHoursLabel');
+                if (!label) return;
+                if (startMin == null || endMin == null) {
+                    label.textContent = 'Enter start and end time';
+                    return;
+                }
+
+                var gross = durationMinutes(startMin, endMin);
+                var breakMin = hasLunch ? durationMinutes(lunchStartMin, lunchEndMin) : 0;
+                var net = Math.max(0, gross - breakMin);
+                var netHours = Math.round((net / 60) * 100) / 100;
+                var total = Math.round((netHours * days) * 100) / 100;
+                var grossHours = Math.round((gross / 60) * 100) / 100;
+
+                var lunchText = hasLunch && breakMin > 0
+                    ? ' − lunch ' + breakMin + 'm'
+                    : '';
+
+                label.textContent = days > 1
+                    ? netHours.toFixed(2).replace(/\.?0+$/, '') + 'h/day × ' + days + ' days = ' + total.toFixed(2).replace(/\.?0+$/, '') + 'h total'
+                      + ' (window ' + grossHours.toFixed(2).replace(/\.?0+$/, '') + 'h' + lunchText + ')'
+                    : netHours.toFixed(2).replace(/\.?0+$/, '') + 'h'
+                      + ' (window ' + grossHours.toFixed(2).replace(/\.?0+$/, '') + 'h' + lunchText + ')';
+            }
+
+            function toggleLunch() {
+                var hasLunch = document.getElementById('otHasLunchBreak')?.checked;
+                var fields = document.getElementById('otLunchFields');
+                if (fields) fields.classList.toggle('d-none', !hasLunch);
+                refreshHours();
+            }
+
+            var lunchToggle = document.getElementById('otHasLunchBreak');
+            if (lunchToggle) {
+                lunchToggle.addEventListener('change', toggleLunch);
+            }
+
+            ['otStartDate', 'otEndDate', 'otStartTime', 'otEndTime', 'otLunchStart', 'otLunchEnd'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', refreshHours);
+                    el.addEventListener('change', refreshHours);
+                }
+            });
+            toggleLunch();
+        })();
+    </script>
+}

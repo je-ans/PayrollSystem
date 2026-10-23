@@ -1,0 +1,13 @@
+@model RateTypeViewModel
+
+<form asp-action="DeleteConfirmed" method="post" asp-antiforgery="true" id="deleteRateTypeForm">
+    <input type="hidden" asp-for="Id" />
+    <div class="text-center my-3">
+        <i class="fa fa-exclamation-triangle text-danger fa-3x"></i>
+    </div>
+    <h5 class="text-center mb-3">Are you sure you want to delete this rate type?</h5>
+    <h5 class="font-weight-bold text-danger text-center">
+        <strong>@Model.Name</strong>
+    </h5>
+    <p class="text-muted text-center">This action cannot be undone.</p>
+</form>

@@ -1,0 +1,88 @@
+@model ScheduleChangeRequestFormViewModel
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+
+<div class="dm-modal">
+    <div class="dm-modal-hero">
+        <div class="dm-modal-hero-icon dm-accent-blue">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="dm-modal-hero-body">
+            <h5 class="dm-modal-title">Request Schedule Change</h5>
+            <p class="dm-modal-subtitle">@Model.DateDisplay</p>
+        </div>
+    </div>
+
+    @if (Model.HasPendingRequest)
+    {
+        <div class="dm-alert-banner dm-alert-banner--warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                <strong>Request unavailable</strong>
+                <span>@Model.StatusMessage</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <form id="scheduleChangeForm" method="post" asp-action="Submit" asp-controller="ScheduleChangeRequest">
+            @Html.AntiForgeryToken()
+            <span asp-validation-summary="ModelOnly" class="text-danger validation-summary mb-2"></span>
+            <input type="hidden" asp-for="EmployeeId" />
+            <input type="hidden" asp-for="Month" />
+            <input type="hidden" asp-for="Year" />
+            <input type="hidden" asp-for="Day" />
+            <input type="hidden" asp-for="OrganizationStructureId" />
+
+            <div class="dm-section">
+                <div class="dm-section-header">
+                    <i class="fas fa-exchange-alt"></i>
+                    Shift change
+                </div>
+                <div class="dm-section-body">
+                    @if (!string.IsNullOrEmpty(Model.OrganizationUnitDisplay))
+                    {
+                        <div class="dm-detail-item dm-detail-item--full mb-3">
+                            <span class="dm-detail-label">Organization unit</span>
+                            <span class="dm-detail-value dm-detail-value--muted">@Model.OrganizationUnitDisplay</span>
+                        </div>
+                    }
+
+                    <div class="dm-shift-compare">
+                        <div class="dm-shift-card dm-shift-card--current">
+                            <span class="dm-shift-card-label">Current shift</span>
+                            <span class="dm-shift-code" style="border-color: @Model.CurrentShiftColorHex; color: @Model.CurrentShiftColorHex">
+                                @Model.CurrentShiftCode
+                            </span>
+                            <span class="dm-shift-name">@Model.CurrentShiftLabel</span>
+                        </div>
+                        <div class="dm-shift-arrow" aria-hidden="true">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                        <div class="dm-shift-card dm-shift-card--requested">
+                            <span class="dm-shift-card-label">Requested shift</span>
+                            <select asp-for="RequestedShiftTypeId" class="form-control form-control-sm dm-form-control">
+                                <option value="">Select shift…</option>
+                                @foreach (var s in Model.ShiftTypes)
+                                {
+                                    <option value="@s.Id">@s.Code — @s.Label</option>
+                                }
+                            </select>
+                            <span asp-validation-for="RequestedShiftTypeId" class="text-danger validation-message"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dm-form-section">
+                <label asp-for="Reason" class="dm-form-label">Reason for change</label>
+                <textarea asp-for="Reason"
+                          class="form-control dm-form-control"
+                          rows="4"
+                          placeholder="Explain why you need this schedule change…"></textarea>
+                <span asp-validation-for="Reason" class="text-danger validation-message"></span>
+                <span class="dm-form-hint">This will be reviewed by your organization approver and HR.</span>
+            </div>
+        </form>
+    }
+</div>

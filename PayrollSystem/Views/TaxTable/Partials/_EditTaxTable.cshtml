@@ -1,0 +1,206 @@
+@model TaxTableViewModel
+
+<style>
+    .section-header-container {
+        position: relative;
+    }
+
+    .section-header {
+        color: #2c3e50;
+        font-weight: 600;
+        position: relative;
+        display: inline-block;
+        padding-right: 1rem;
+        background: white;
+        z-index: 1;
+    }
+
+    .section-divider {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        height: 1px;
+        background-color: #e0e0e0;
+        z-index: 0;
+    }
+
+    .section-divider-wide {
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <span asp-validation-summary="All" class="text-danger"></span>
+            <form asp-action="Edit" method="post" id="editTaxTableForm">
+                <input asp-for="Id" type="hidden" />
+
+                <!-- Basic Information Section -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Basic Information</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="Name" type="text" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="Name" class="floating-label">Tax Table Name <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="Name" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <select asp-for="IncomeBasis" class="form-control floating-input select2 general-select" required
+                                asp-items="Html.GetEnumSelectList<IncomeBasis>()">
+                            <option value="" selected disabled hidden>--Select Income Basis--</option>
+                        </select>
+                        <label asp-for="IncomeBasis" class="floating-label">Income Basis <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="IncomeBasis" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <textarea asp-for="Description" class="form-control floating-input" rows="3" placeholder=" "></textarea>
+                        <label asp-for="Description" class="floating-label">Description</label>
+                    </div>
+                    <span asp-validation-for="Description" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- Bracket Configuration Section -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Bracket Configuration</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <select asp-for="BracketType" class="form-control floating-input select2 general-select" required
+                                asp-items="Html.GetEnumSelectList<TaxBracketType>()">
+                            <option value="" selected disabled hidden>--Select Bracket Type--</option>
+                        </select>
+                        <label asp-for="BracketType" class="floating-label">Bracket Type <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="BracketType" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="BracketOrder" type="number" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="BracketOrder" class="floating-label">Bracket Order <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="BracketOrder" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- Income Range Section -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Income Range</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="MinIncome" type="number" step="0.01" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="MinIncome" class="floating-label">Minimum Income <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="MinIncome" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="MaxIncome" type="number" step="0.01" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="MaxIncome" class="floating-label">Maximum Income (Optional)</label>
+                    </div>
+                    <span asp-validation-for="MaxIncome" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- Tax Computation Section -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Tax Computation</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="TaxRate" type="number" step="0.01" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="TaxRate" class="floating-label">Tax Rate (%)</label>
+                    </div>
+                    <span asp-validation-for="TaxRate" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="FixedAmount" type="number" step="0.01" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="FixedAmount" class="floating-label">Fixed Amount</label>
+                    </div>
+                    <span asp-validation-for="FixedAmount" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="BaseTaxAmount" type="number" step="0.01" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="BaseTaxAmount" class="floating-label">Base Tax Amount <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="BaseTaxAmount" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- Reference & Effectivity Section -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Reference & Effectivity</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="EffectiveStartDate" type="date" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="EffectiveStartDate" class="floating-label">Effective Start Date <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="EffectiveStartDate" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="TaxYear" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="TaxYear" class="floating-label">Tax Year</label>
+                    </div>
+                    <span asp-validation-for="TaxYear" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="Reference" type="text" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="Reference" class="floating-label">Reference</label>
+                    </div>
+                    <span asp-validation-for="Reference" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- Settings Section -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Settings</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="custom-control custom-switch">
+                        <input asp-for="IsActive" type="checkbox" class="custom-control-input" id="isActiveSwitch">
+                        <label class="custom-control-label" for="isActiveSwitch">Is Active</label>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>

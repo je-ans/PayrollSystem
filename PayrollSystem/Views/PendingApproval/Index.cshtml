@@ -1,0 +1,180 @@
+@model PendingApprovalIndexViewModel
+
+@{
+    ViewData["Title"] = "Pending Approvals";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var processFilters = Model.Items
+        .GroupBy(i => i.ProcessType)
+        .OrderBy(g => (int)g.Key)
+        .Select(g => new { g.Key, Label = g.First().ProcessTypeDisplay, Count = g.Count() })
+        .ToList();
+}
+
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<section class="content aw-page aw-pending-page">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+                    <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                        <div class="flex-grow-1">
+                            <h3 class="card-title m-0">Pending Approvals</h3>
+                            <p class="aw-intro mt-1 mb-0">
+                                Review and act on requests assigned to you.
+                            </p>
+                        </div>
+                        @if (Model.TotalCount > 0)
+                        {
+                            <span class="badge badge-warning badge-pill px-3 py-2" id="pendingApprovalCount">
+                                @Model.TotalCount pending
+                            </span>
+                        }
+                    </div>
+
+                    <div class="card-body">
+                        @if (Model.Items.Count == 0)
+                        {
+                            <div class="aw-empty-state">
+                                <i class="fas fa-check-circle text-success d-block"></i>
+                                <h5>All caught up</h5>
+                                <p class="mb-0">You have no pending approvals right now.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="aw-pending-toolbar">
+                                <div class="aw-pending-search">
+                                    <i class="fas fa-search"></i>
+                                    <input type="search"
+                                           id="pendingApprovalSearch"
+                                           class="form-control form-control-sm"
+                                           placeholder="Search by name, designation, organization…"
+                                           autocomplete="off" />
+                                </div>
+                                <div class="aw-pending-filters" id="pendingApprovalFilters">
+                                    <button type="button"
+                                            class="aw-filter-pill is-active"
+                                            data-process-filter="all">
+                                        All <span class="aw-filter-count">@Model.TotalCount</span>
+                                    </button>
+                                    @foreach (var filter in processFilters)
+                                    {
+                                        <button type="button"
+                                                class="aw-filter-pill"
+                                                data-process-filter="@((int)filter.Key)">
+                                            @filter.Label <span class="aw-filter-count">@filter.Count</span>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="aw-pending-grid" id="pendingApprovalGrid">
+                                @foreach (var item in Model.Items)
+                                {
+                                    <article class="aw-pending-card"
+                                             data-search="@item.SearchText"
+                                             data-process-type="@((int)item.ProcessType)">
+                                        <div class="aw-pending-card-header">
+                                            @if (!string.IsNullOrEmpty(item.ProfilePictureUrl))
+                                            {
+                                                <img src="@item.ProfilePictureUrl"
+                                                     alt="@item.SubjectName"
+                                                     class="aw-pending-avatar aw-pending-avatar--photo" />
+                                            }
+                                            else
+                                            {
+                                                <div class="aw-pending-avatar aw-pending-avatar--initials @item.AccentClass">
+                                                    @item.SubjectInitials
+                                                </div>
+                                            }
+                                            <div class="aw-pending-card-heading">
+                                                <span class="aw-pending-process-label @item.AccentClass">
+                                                    @item.ProcessTypeDisplay
+                                                </span>
+                                                <h4 class="aw-pending-card-title">@item.SubjectName</h4>
+                                                @if (!string.IsNullOrWhiteSpace(item.SubjectDesignation))
+                                                {
+                                                    <div class="aw-pending-card-subtitle">@item.SubjectDesignation</div>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <div class="aw-pending-card-body">
+                                            @if (!string.IsNullOrWhiteSpace(item.ContextDateDisplay))
+                                            {
+                                                <div class="aw-pending-meta-row">
+                                                    <i class="fas fa-calendar-day text-muted"></i>
+                                                    <span>@(string.IsNullOrWhiteSpace(item.ContextDateLabel) ? "Date" : item.ContextDateLabel): @item.ContextDateDisplay</span>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(item.OrganizationName))
+                                            {
+                                                <div class="aw-pending-meta-row">
+                                                    <i class="fas fa-sitemap text-muted"></i>
+                                                    <span>@item.OrganizationName</span>
+                                                </div>
+                                            }
+                                            @if (string.IsNullOrWhiteSpace(item.ContextDateDisplay) && !string.IsNullOrWhiteSpace(item.SubmittedByName))
+                                            {
+                                                <div class="aw-pending-meta-row">
+                                                    <i class="fas fa-paper-plane text-muted"></i>
+                                                    <span>By @item.SubmittedByName</span>
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <div class="aw-pending-card-footer">
+                                            @if (item.HasDirectActions)
+                                            {
+                                                <div class="aw-pending-actions">
+                                                    <a href="javascript:void(0)"
+                                                       class="btn btn-success btn-sm open-modal"
+                                                       data-title="Approve Request"
+                                                       data-url="@item.ApproveUrl"
+                                                       data-modal-type="create"
+                                                       data-size="modal-lg">
+                                                        <i class="fas fa-check mr-1"></i> Approve
+                                                    </a>
+                                                    <a href="javascript:void(0)"
+                                                       class="btn btn-outline-danger btn-sm open-modal"
+                                                       data-title="Reject Request"
+                                                       data-url="@item.RejectUrl"
+                                                       data-modal-type="create"
+                                                       data-size="modal-lg">
+                                                        <i class="fas fa-times mr-1"></i> Reject
+                                                    </a>
+                                                </div>
+                                            }
+                                            else if (!string.IsNullOrEmpty(item.ExternalUrl))
+                                            {
+                                                <a href="@item.ExternalUrl" class="btn btn-primary btn-sm aw-pending-review-btn">
+                                                    <i class="fas fa-external-link-alt mr-1"></i> Open
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted small">No action available</span>
+                                            }
+                                        </div>
+                                    </article>
+                                }
+                            </div>
+
+                            <div id="pendingApprovalEmptyFilter" class="aw-empty-state d-none">
+                                <i class="fas fa-filter d-block"></i>
+                                <h5>No matches</h5>
+                                <p class="mb-0">Try a different search or filter.</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/pending-approval.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,28 @@
+@model ApprovalWorkflowViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="Create" method="post" asp-antiforgery="true" id="workflowForm">
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="Name" class="form-control floating-input" required placeholder=" " />
+                <label asp-for="Name" class="floating-label">Workflow Name <span class="text-danger">*</span></label>
+            </div>
+            <span asp-validation-for="Name" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <div class="input-container">
+                <select asp-for="ProcessType" class="form-control floating-input general-select" required
+                        asp-items="ViewBag.ProcessTypes" data-placeholder="Select Process Type"></select>
+                <label asp-for="ProcessType" class="floating-label">Process Type <span class="text-danger">*</span></label>
+            </div>
+            <span asp-validation-for="ProcessType" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <div class="custom-control custom-switch">
+                <input asp-for="IsActive" type="checkbox" class="custom-control-input" id="createIsActive" />
+                <label class="custom-control-label" for="createIsActive">Active</label>
+            </div>
+        </div>
+    </form>
+</div>

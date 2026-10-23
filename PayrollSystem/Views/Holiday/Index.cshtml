@@ -1,0 +1,129 @@
+@using PayrollSystem.Utility
+@model IEnumerable<Holiday>
+
+@{
+    ViewData["Title"] = "Holiday";
+    ViewBag.ActiveMenu = "MasterData";
+    ViewBag.ActiveLink = "Holiday";
+    var year = (int)(ViewBag.Year ?? DateTime.Today.Year);
+}
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center flex-wrap gap-2">
+        <div class="flex-grow-1 d-flex justify-content-start align-items-center flex-wrap gap-2">
+            <h3 class="card-title m-0">Holiday List</h3>
+            <form method="get" class="form-inline ml-2">
+                <label class="mr-1 mb-0 small text-muted">Year</label>
+                <select name="year" class="form-control form-control-sm" onchange="this.form.submit()" style="width:auto">
+                    @for (var y = DateTime.Today.Year - 1; y <= DateTime.Today.Year + 2; y++)
+                    {
+                        if (y == year)
+                        {
+                            <option value="@y" selected>@y</option>
+                        }
+                        else
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    }
+                </select>
+            </form>
+        </div>
+        <div class="card-tools d-flex align-items-center">
+            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+               data-title="Add Holiday"
+               data-url="/Holiday/CreateHoliday"
+               data-modal-type="create"
+               data-size="modal-lg"
+               data-toogle="tooltip"
+               title="Add Holiday">
+                <i class="fas fa-plus"></i>
+                <span class="d-none d-lg-inline">Add Holiday</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+            <table class="table table-hover table-striped table-bordered" id="myTable" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>No.</th>
+                        <th>Date</th>
+                        <th>Holiday Name</th>
+                        <th>Type</th>
+                        <th>Day Type</th>
+                        <th>Recurring</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        var index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@index</td>
+                                <td class="text-center">
+                                    @item.Date.ToString("MMM dd")
+                                    <span class="text-muted small d-block">
+                                        @(item.IsRecurring ? "every year" : item.Date.Year.ToString())
+                                    </span>
+                                </td>
+                                <td>@item.Name</td>
+                                <td class="text-center">@EnumHelper.GetDisplayName(item.HolidayType)</td>
+                                <td class="text-center">
+                                    <span class="badge badge-info">@(item.DayType?.Code ?? "—")</span>
+                                    <span class="small text-muted d-block">@(item.DayType?.Name ?? "")</span>
+                                </td>
+                                <td class="text-center">@(item.IsRecurring ? "Yes" : "No")</td>
+                                <td class="text-center">
+                                    <span class="badge @(item.IsActive ? "bg-success" : "bg-danger")">
+                                        <i class="@(item.IsActive ? "fa fa-check-circle text-white" : "fa fa-times-circle text-white")"></i>
+                                        @(item.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td align="center">
+                                    <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                        Action
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu" role="menu">
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Holiday Details"
+                                           data-url="/Holiday/ViewHoliday/@item.Id"
+                                           data-modal-type="view"
+                                           data-size="modal-lg">
+                                            <i class="fa fa-eye mr-2 text-dark"></i>
+                                            <span>View Holiday</span>
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Edit Holiday"
+                                           data-url="/Holiday/EditHoliday/@item.Id"
+                                           data-modal-type="edit"
+                                           data-size="modal-lg">
+                                            <i class="fa fa-edit mr-2 text-primary"></i>
+                                            <span>Edit Holiday</span>
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Delete Holiday"
+                                           data-url="/Holiday/DeleteHoliday/@item.Id"
+                                           data-modal-type="delete_data">
+                                            <i class="fa fa-trash mr-2 text-danger"></i>
+                                            <span>Delete Holiday</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

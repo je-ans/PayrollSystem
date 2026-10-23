@@ -1,0 +1,90 @@
+@using PayrollSystem.Utility
+@model SalaryHistory
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label font-weight-bold">Employee Name</label>
+            <p class="form-control-plaintext">@Model.Employee?.FullName</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label font-weight-bold">Change Type</label>
+            <p class="form-control-plaintext">
+                <span class="badge @(Model.ChangeType == SalaryChangeType.Increase ? "bg-success" : Model.ChangeType == SalaryChangeType.Decrease ? "bg-danger" : "bg-warning")">
+                    @PayrollSystem.Utility.EnumHelper.GetDisplayName(Model.ChangeType)
+                </span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label font-weight-bold">Previous Salary</label>
+            <p class="form-control-plaintext">@Model.PreviousBasicSalary.ToString("N2")</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label font-weight-bold">New Salary</label>
+            <p class="form-control-plaintext">@Model.NewBasicSalary.ToString("N2")</p>
+        </div>
+    </div>
+</div>
+
+<div class="mb-3">
+    <label class="form-label font-weight-bold">Change Amount</label>
+    <p class="form-control-plaintext">
+        <span class="h5 @(Model.NewBasicSalary > Model.PreviousBasicSalary ? "text-success" : Model.NewBasicSalary < Model.PreviousBasicSalary ? "text-danger" : "text-muted")">
+            @(Model.NewBasicSalary > Model.PreviousBasicSalary ? "+" : Model.NewBasicSalary < Model.PreviousBasicSalary ? "-" : "")
+            @Math.Abs(Model.NewBasicSalary - Model.PreviousBasicSalary).ToString("N2")
+        </span>
+        @if (Model.PreviousBasicSalary > 0)
+        {
+            <small class="text-muted ms-2">
+                (@((Model.NewBasicSalary - Model.PreviousBasicSalary) / Model.PreviousBasicSalary * 100).ToString("N2")%)
+            </small>
+        }
+    </p>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label font-weight-bold">Effective Date</label>
+            <p class="form-control-plaintext">@Model.EffectiveDate.ToString("MMM dd, yyyy")</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label font-weight-bold">Approval Date</label>
+            <p class="form-control-plaintext">@Model.ApprovalDate?.ToString("MMM dd, yyyy HH:mm")</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label font-weight-bold">Approved By</label>
+            <p class="form-control-plaintext">@Model.ApprovedBy?.UserName</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label font-weight-bold">Created Date</label>
+            <p class="form-control-plaintext">@Model.CreatedOn?.ToString("MMM dd, yyyy HH:mm")</p>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Reason))
+{
+    <div class="mb-3">
+        <label class="form-label font-weight-bold">Reason</label>
+        <p class="form-control-plaintext">@Model.Reason</p>
+    </div>
+}

@@ -1,0 +1,74 @@
+@model EmployeeOrganizationAssignmentFormViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <p class="text-muted small">Assign to <strong>@Model.OrganizationName</strong></p>
+
+    <form asp-controller="OrganizationStructure" asp-action="SaveEmployeeAssignment" method="post" asp-antiforgery="true" id="employeeAssignmentForm">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="OrganizationStructureId" />
+
+        <div class="form-group">
+            <div class="input-container">
+                @if (Model.Id > 0)
+                {
+                    <select asp-for="EmployeeId" class="form-control floating-input general-select"
+                            data-placeholder="Select Employee" disabled="disabled">
+                        <option value="">Select Employee</option>
+                        @foreach (var employee in ViewBag.Employees)
+                        {
+                            <option value="@employee.Id" selected="@(Model.EmployeeId == employee.Id)">@employee.Name</option>
+                        }
+                    </select>
+                    <input type="hidden" asp-for="EmployeeId" />
+                }
+                else
+                {
+                    <select asp-for="EmployeeId" class="form-control floating-input general-select" required
+                            data-placeholder="Select Employee">
+                        <option value="">Select Employee</option>
+                        @foreach (var employee in ViewBag.Employees)
+                        {
+                            <option value="@employee.Id" selected="@(Model.EmployeeId == employee.Id)">@employee.Name</option>
+                        }
+                    </select>
+                }
+                <label asp-for="EmployeeId" class="floating-label">Employee <span class="text-danger">*</span></label>
+            </div>
+            <span asp-validation-for="EmployeeId" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="EffectiveFrom" type="date" class="form-control floating-input" required placeholder=" " />
+                        <label asp-for="EffectiveFrom" class="floating-label">Effective From <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="EffectiveFrom" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="EffectiveTo" type="date" class="form-control floating-input" placeholder=" " />
+                        <label asp-for="EffectiveTo" class="floating-label">Effective To</label>
+                    </div>
+                    <span asp-validation-for="EffectiveTo" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="custom-control custom-checkbox">
+                <input asp-for="IsPrimary" type="checkbox" class="custom-control-input" id="assignmentIsPrimary" />
+                <label class="custom-control-label" for="assignmentIsPrimary">
+                    Primary schedule unit
+                </label>
+            </div>
+            <small class="text-muted d-block">
+                The employee appears on this unit's monthly work schedule. Secondary assignments keep the employee linked to the unit without duplicating them on multiple schedules.
+            </small>
+        </div>
+    </form>
+</div>

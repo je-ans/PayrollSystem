@@ -1,0 +1,150 @@
+@using PayrollSystem.Utility
+@model OvertimeRequestProcessViewModel
+@{
+    string StatusClass(OvertimeStatus status) => status switch
+    {
+        OvertimeStatus.Pending => "dm-status--pending",
+        OvertimeStatus.Approved => "dm-status--approved",
+        OvertimeStatus.Rejected => "dm-status--rejected",
+        _ => "dm-status--neutral"
+    };
+}
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<div class="dm-modal">
+    <div class="dm-modal-hero">
+        <div class="dm-modal-hero-icon dm-accent-orange">
+            <i class="fas fa-business-time"></i>
+        </div>
+        <div class="dm-modal-hero-body">
+            <h5 class="dm-modal-title">Overtime Request Logs</h5>
+            <p class="dm-modal-subtitle">
+                @Model.EmployeeName
+                @if (!string.IsNullOrWhiteSpace(Model.EmployeeIdNumber))
+                {
+                    <span>· @Model.EmployeeIdNumber</span>
+                }
+                · @Model.DateDisplay
+            </p>
+        </div>
+        <div class="dm-modal-hero-aside">
+            <span class="dm-status @StatusClass(Model.CurrentStatus)">
+                @EnumHelper.GetDisplayName(Model.CurrentStatus)
+                @if (Model.CurrentStatus == OvertimeStatus.Approved && !Model.IsProcessedToPayroll)
+                {
+                    <text> · Pending OT</text>
+                }
+                else if (Model.IsProcessedToPayroll)
+                {
+                    <text> · Imported</text>
+                }
+            </span>
+            <a href="@Url.Action("Print", "OvertimeRequest", new { id = Model.Id })"
+               target="_blank"
+               class="btn btn-sm btn-outline-primary mt-2"
+               title="Print overtime authorization">
+                <i class="fas fa-print mr-1"></i> Print
+            </a>
+        </div>
+    </div>
+
+    <div class="dm-review-layout">
+        <div class="dm-review-main">
+            <div class="dm-section">
+                <div class="dm-section-header">
+                    <i class="fas fa-info-circle"></i>
+                    Request details
+                </div>
+                <div class="dm-section-body">
+                    <div class="dm-detail-grid mb-3">
+                        @if (!string.IsNullOrWhiteSpace(Model.OrganizationUnitDisplay))
+                        {
+                            <div class="dm-detail-item dm-detail-item--full">
+                                <span class="dm-detail-label">Organization</span>
+                                <span class="dm-detail-value">@Model.OrganizationUnitDisplay</span>
+                            </div>
+                        }
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Submitted by</span>
+                            <span class="dm-detail-value dm-detail-value--muted">@Model.SubmittedBy</span>
+                        </div>
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Submitted on</span>
+                            <span class="dm-detail-value dm-detail-value--muted">@Model.SubmittedOn.ToString("MMM dd, yyyy h:mm tt")</span>
+                        </div>
+                        <div class="dm-detail-item dm-detail-item--full">
+                            <span class="dm-detail-label">OT dates</span>
+                            <span class="dm-detail-value dm-detail-value--muted">@Model.DateDisplay</span>
+                        </div>
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Daily time</span>
+                            <span class="dm-detail-value dm-detail-value--muted">
+                                @Model.RequestedTimes
+                            </span>
+                        </div>
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Lunch break</span>
+                            <span class="dm-detail-value dm-detail-value--muted">
+                                @(Model.HasLunchBreak && !string.IsNullOrWhiteSpace(Model.LunchBreakDisplay)
+                                    ? Model.LunchBreakDisplay
+                                    : "None")
+                            </span>
+                        </div>
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Net hours</span>
+                            <span class="dm-detail-value dm-detail-value--muted">
+                                @Model.HoursPerDay.ToString("0.##")h/day · @Model.RequestedHours.ToString("0.##") hrs total
+                            </span>
+                        </div>
+                        @if (Model.ApprovedStartTime.HasValue && Model.ApprovedEndTime.HasValue)
+                        {
+                            <div class="dm-detail-item">
+                                <span class="dm-detail-label">Approved daily time</span>
+                                <span class="dm-detail-value dm-detail-value--muted">
+                                    @Model.ApprovedStartTime.Value.ToString("h:mm tt") – @Model.ApprovedEndTime.Value.ToString("h:mm tt")
+                                </span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(Model.DayTypeName))
+                        {
+                            <div class="dm-detail-item dm-detail-item--full">
+                                <span class="dm-detail-label">Day type</span>
+                                <span class="dm-detail-value dm-detail-value--muted">@Model.DayTypeName</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="dm-section">
+                <div class="dm-section-header">
+                    <i class="fas fa-comment-alt"></i>
+                    Reason
+                </div>
+                <div class="dm-section-body">
+                    <p class="dm-reason-box">@Model.Reason</p>
+                    @if (!string.IsNullOrWhiteSpace(Model.ReviewNotes))
+                    {
+                        <div class="mt-3">
+                            <span class="dm-detail-label d-block mb-1">Latest review notes</span>
+                            <p class="dm-reason-box mb-0">@Model.ReviewNotes</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (Model.ApprovalTimeline != null)
+        {
+            <div class="dm-review-side">
+                <div class="dm-section">
+                    <div class="dm-section-body">
+                        @await Html.PartialAsync("~/Views/ApprovalWorkflow/Partials/_ApprovalTimeline.cshtml", Model.ApprovalTimeline)
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

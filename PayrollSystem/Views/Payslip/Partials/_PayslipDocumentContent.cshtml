@@ -1,0 +1,321 @@
+@using System.Linq
+@model PayslipViewModel
+
+@{
+    Layout = null;
+
+    // ── Format helpers ─────────────────────────────────────────────────────
+    string FmtD(decimal v) => v != 0 ? "₱" + v.ToString("N2") : "-";
+    string FmtH(decimal v) => v != 0 ? v.ToString("N2") : "-";
+
+    // ── Day-type breakdown helper ──────────────────────────────────────────
+    var dayTypeCols = Model.DayTypeColumns ?? Enumerable.Empty<DayTypeColumnInfo>();
+
+    DayTypeRowBreakdown? GetBd(int id) =>
+        Model.DayTypeBreakdown != null && Model.DayTypeBreakdown.ContainsKey(id)
+            ? Model.DayTypeBreakdown[id] : null;
+
+    // ── Deduction rows — grouped by Description ────────────────────────────
+    var dedRows = (Model.Deductions ?? Enumerable.Empty<DeductionViewModel>())
+        .GroupBy(d => string.IsNullOrWhiteSpace(d.Description)
+                      ? (d.DeductionTypeName ?? "Deduction") : d.Description)
+        .Select(g => (Label: g.Key, Amount: g.Sum(x => x.Amount)))
+        .ToList();
+
+    // ── Government contributions ───────────────────────────────────────────
+    var govtRows = (Model.GovernmentContributions ?? Enumerable.Empty<GovtContributionViewModel>())
+        .OrderBy(gc => gc.ContributionName)
+        .ToList();
+
+    // ── Benefits / allowances ──────────────────────────────────────────────
+    var benefitRows = (Model.Benefits ?? Enumerable.Empty<BenefitViewModel>())
+        .GroupBy(b => string.IsNullOrWhiteSpace(b.Description)
+                      ? b.BenefitType.ToString() : b.Description)
+        .Select(g => (Label: g.Key, Amount: g.Sum(x => x.Amount)))
+        .ToList();
+
+    // ── Basic salary ───────────────────────────────────────────────────────
+    string rateBasis = Model.RateBasis ?? "Hourly";
+    decimal baseRate = Model.Rate ?? 0M;
+
+    decimal hourlyRate = rateBasis == "Hourly" ? baseRate
+                           : rateBasis == "Daily" ? baseRate / 8M
+                           : baseRate / 22M / 8M;
+    decimal dailyRate = hourlyRate * 8M;
+    decimal monthlyRate = dailyRate * 22M;
+    decimal semiMonthlyRate = monthlyRate / 2M;
+
+    string basicSalaryLabel = rateBasis switch
+    {
+        "Monthly" => "Basic Monthly Salary",
+        "Daily" => "Basic Daily Rate",
+        _ => "Basic Hourly Rate"
+    };
+    decimal basicSalaryAmt = baseRate;
+
+    // ── Late/Undertime and Absences ────────────────────────────────────────
+    decimal lateUTAmt = dedRows
+        .Where(d => d.Label.Contains("Late", StringComparison.OrdinalIgnoreCase)
+                 || d.Label.Contains("Undertime", StringComparison.OrdinalIgnoreCase))
+        .Sum(d => d.Amount);
+
+    decimal absenceAmt = dedRows
+        .Where(d => d.Label.Contains("Absence", StringComparison.OrdinalIgnoreCase))
+        .Sum(d => d.Amount);
+
+    // ── Build LEFT (earnings) rows ─────────────────────────────────────────
+    var earningRows = new List<(string Label, string Amount, bool IsSub, bool IsTotal)>();
+
+    foreach (var dt in dayTypeCols)
+    {
+        var bd = GetBd(dt.DayTypeId);
+        if (dt.IsRegularDay)
+        {
+            earningRows.Add(("Basic Hours Work", FmtH(bd?.Hours ?? 0M), false, false));
+            earningRows.Add(("Basic Hours Amount", FmtD(bd?.Amount ?? 0M), false, false));
+            if ((bd?.OvertimeHours ?? 0M) > 0 || (bd?.OvertimeAmount ?? 0M) > 0)
+                earningRows.Add(("Regular OT", FmtD(bd?.OvertimeAmount ?? 0M), true, false));
+        }
+        else
+        {
+            if ((bd?.Hours ?? 0M) > 0 || (bd?.Amount ?? 0M) > 0)
+                earningRows.Add((dt.DayTypeName, FmtD(bd?.Amount ?? 0M), false, false));
+            if ((bd?.OvertimeHours ?? 0M) > 0 || (bd?.OvertimeAmount ?? 0M) > 0)
+                earningRows.Add(($"{dt.DayTypeName} OT", FmtD(bd?.OvertimeAmount ?? 0M), true, false));
+        }
+    }
+
+    if (benefitRows.Any())
+    {
+        earningRows.Add(("", "", false, false));
+        foreach (var b in benefitRows)
+            earningRows.Add((b.Label, FmtD(b.Amount), false, false));
+    }
+
+    earningRows.Add(("", "", false, false));
+    decimal grossEarningsDisplay = Model.TotalEarnings ?? 0M;
+    earningRows.Add(("GROSS EARNINGS", FmtD(grossEarningsDisplay), false, true));
+
+    // ── Build RIGHT (deductions) rows ──────────────────────────────────────
+    var dedRightRows = new List<(string Label, string Amount, string RowType)>();
+
+    if (govtRows.Any())
+    {
+        foreach (var gc in govtRows)
+            dedRightRows.Add((gc.ContributionName, FmtD(gc.EmployeeShare), "normal"));
+        dedRightRows.Add(("", "", "blank"));
+    }
+
+    decimal grossPayDisplay = Model.GrossPay ?? Model.TotalEarnings ?? 0M;
+    dedRightRows.Add(("GROSS PAY", FmtD(grossPayDisplay), "total"));
+    dedRightRows.Add(("", "", "blank"));
+
+    dedRightRows.Add(("Late/Undertime", lateUTAmt > 0 ? "₱" + lateUTAmt.ToString("N2") : "-", "normal"));
+    dedRightRows.Add(("Absences", absenceAmt > 0 ? "₱" + absenceAmt.ToString("N2") : "-", "normal"));
+
+    var otherDedRows = dedRows.Where(d =>
+        !d.Label.Contains("Late", StringComparison.OrdinalIgnoreCase) &&
+        !d.Label.Contains("Undertime", StringComparison.OrdinalIgnoreCase) &&
+        !d.Label.Contains("Absence", StringComparison.OrdinalIgnoreCase)).ToList();
+
+    if (otherDedRows.Any())
+    {
+        dedRightRows.Add(("", "", "blank"));
+        foreach (var d in otherDedRows)
+            dedRightRows.Add((d.Label, FmtD(d.Amount), "normal"));
+    }
+
+    dedRightRows.Add(("", "", "blank"));
+
+    decimal totalAllDed = Model.TotalAllDeductions;
+    dedRightRows.Add(("GROSS DEDUCTIONS", totalAllDed > 0 ? "₱" + totalAllDed.ToString("N2") : "-", "total"));
+
+    // ── Pad shorter list ───────────────────────────────────────────────────
+    int totalRows = Math.Max(earningRows.Count, dedRightRows.Count);
+    while (earningRows.Count < totalRows) earningRows.Add(("", "", false, false));
+    while (dedRightRows.Count < totalRows) dedRightRows.Add(("", "", "blank"));
+
+    // ── Period labels ──────────────────────────────────────────────────────
+    string periodLabel = Model.PeriodStartDate.HasValue && Model.PeriodEndDate.HasValue
+        ? $"{Model.PeriodStartDate.Value:MMM. dd} - {Model.PeriodEndDate.Value:MMM. dd}"
+        : (Model.PayrollPeriodName ?? "");
+    string payDateLabel = Model.PayDate.HasValue
+        ? Model.PayDate.Value.ToString("MMMM dd, yyyy") : "";
+
+    // ── Contact line ───────────────────────────────────────────────────────
+    var contactParts = new List<string>();
+    if (!string.IsNullOrWhiteSpace(Model.CompanyPhone)) contactParts.Add("Tel: " + Model.CompanyPhone);
+    if (!string.IsNullOrWhiteSpace(Model.CompanyEmail)) contactParts.Add(Model.CompanyEmail);
+    if (!string.IsNullOrWhiteSpace(Model.CompanyWebsite)) contactParts.Add(Model.CompanyWebsite);
+    string contactLine = string.Join("  |  ", contactParts);
+}
+
+<!-- ===== COMPANY HEADER ===== (styled like payroll) -->
+<div style="text-align:center; margin-bottom:20px; border-bottom:2px solid #000; padding-bottom:12px;">
+
+    @* Logo — only rendered if a path is set *@
+    @if (!string.IsNullOrWhiteSpace(Model.CompanyLogoPath))
+    {
+        <div style="margin-bottom:8px;">
+            <img src="@Model.CompanyLogoPath"
+                 alt="@Model.CompanyName"
+                 style="max-height:70px; max-width:200px; object-fit:contain;" />
+        </div>
+    }
+
+    @* Company Name *@
+    <div style="font-size:16px; font-weight:bold; text-transform:uppercase;">
+        @(Model.CompanyName ?? "COMPANY NAME")
+        @if (!string.IsNullOrWhiteSpace(Model.CompanyShortName))
+        {
+            <span style="font-size:12px; font-weight:normal; text-transform:none;">
+                (@Model.CompanyShortName)
+            </span>
+        }
+    </div>
+
+    @* Address *@
+    @if (!string.IsNullOrWhiteSpace(Model.CompanyAddress))
+    {
+        <div style="font-size:11px; margin-top:2px;">@Model.CompanyAddress</div>
+    }
+
+    @* Contact details — shown inline if any are present *@
+    @if (!string.IsNullOrWhiteSpace(contactLine))
+    {
+        <div style="font-size:10px; color:#555; margin-top:2px;">
+            @contactLine
+        </div>
+    }
+
+    @* Document title / payroll period *@
+    <div style="font-size:13px; font-weight:bold; text-decoration:underline; margin-top:10px;">
+        PAYSLIP
+    </div>
+    <div style="font-size:12px; margin-top:4px;">
+        Payroll Period: <strong>@(Model.PayrollPeriodName ?? periodLabel)</strong>
+        @if (Model.PeriodStartDate.HasValue && Model.PeriodEndDate.HasValue)
+        {
+            <text>&nbsp;(@Model.PeriodStartDate.Value.ToString("MMM dd, yyyy") &ndash; @Model.PeriodEndDate.Value.ToString("MMM dd, yyyy"))</text>
+        }
+    </div>
+</div>
+
+@* ── EMPLOYEE INFO ── *@
+<table style="width:100%; border-collapse:collapse; margin-bottom:26px; font-size:9pt; border:1px solid #000;">
+    <tr>
+        <td style="border:1px solid #000; padding:3px;"><strong>ID No.</strong></td>
+        <td style="border:1px solid #000; padding:3px;">@Model.EmployeeIdNumber</td>
+        <td style="border:1px solid #000; padding:3px;"><strong>Payroll Cut-Off</strong></td>
+        <td style="border:1px solid #000; padding:3px;">@periodLabel</td>
+    </tr>
+    <tr>
+        <td style="border:1px solid #000; padding:3px;"><strong>Full Name</strong></td>
+        <td style="border:1px solid #000; padding:3px;"><strong>@Model.EmployeeName</strong></td>
+        <td style="border:1px solid #000; padding:3px;"><strong>Payroll Date</strong></td>
+        <td style="border:1px solid #000; padding:3px;">@payDateLabel</td>
+    </tr>
+    <tr>
+        <td style="border:1px solid #000; padding:3px;"><strong>Department</strong></td>
+        <td style="border:1px solid #000; padding:3px;">@Model.OrganizationUnitName</td>
+        <td style="border:1px solid #000; padding:3px;"><strong>Position</strong></td>
+        <td style="border:1px solid #000; padding:3px;">@Model.DesignationName</td>
+    </tr>
+    <tr>
+        <td style="border:1px solid #000; padding:3px;"><strong>@basicSalaryLabel</strong></td>
+        <td style="border:1px solid #000; padding:3px;" colspan="3">&#8369;@basicSalaryAmt.ToString("N2")</td>
+    </tr>
+</table>
+
+@* ── EARNINGS & DEDUCTIONS — two separate tables side by side ── *@
+<table style="width:100%; border-collapse:collapse; font-size:9pt;">
+    <tr>
+        @* LEFT — Earnings *@
+        <td style="width:50%; vertical-align:top; padding-right:4px;">
+            <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
+                <thead>
+                    <tr>
+                        <th style="border:1px solid #000; text-align:left; padding:3px; background-color:#f5f5f5;">EARNINGS</th>
+                        <th style="border:1px solid #000; text-align:right; padding:3px; background-color:#f5f5f5;">AMOUNT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in earningRows)
+                    {
+                        <tr>
+                            @if (string.IsNullOrEmpty(e.Label))
+                            {
+                                <td colspan="2" style="border:1px solid #000; padding:3px;">&nbsp;</td>
+                            }
+                            else if (e.IsTotal)
+                            {
+                                <td style="border:1px solid #000; padding:3px; font-weight:bold;">@e.Label</td>
+                                <td style="border:1px solid #000; padding:3px; text-align:right; font-weight:bold;">@e.Amount</td>
+                            }
+                            else if (e.IsSub)
+                            {
+                                <td style="border:1px solid #000; padding:3px; padding-left:16px; font-style:italic;">@e.Label</td>
+                                <td style="border:1px solid #000; padding:3px; text-align:right;">@e.Amount</td>
+                            }
+                            else
+                            {
+                                <td style="border:1px solid #000; padding:3px;">@e.Label</td>
+                                <td style="border:1px solid #000; padding:3px; text-align:right;">@e.Amount</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </td>
+
+        @* RIGHT — Deductions *@
+        <td style="width:50%; vertical-align:top; padding-left:4px;">
+            <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
+                <thead>
+                    <tr>
+                        <th style="border:1px solid #000; text-align:left; padding:3px; background-color:#f5f5f5;">DEDUCTIONS</th>
+                        <th style="border:1px solid #000; text-align:right; padding:3px; background-color:#f5f5f5;">AMOUNT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in dedRightRows)
+                    {
+                        <tr>
+                            @if (d.RowType == "blank" || string.IsNullOrEmpty(d.Label))
+                            {
+                                <td colspan="2" style="border:1px solid #000; padding:3px;">&nbsp;</td>
+                            }
+                            else if (d.RowType == "total")
+                            {
+                                <td style="border:1px solid #000; padding:3px; font-weight:bold;">@d.Label</td>
+                                <td style="border:1px solid #000; padding:3px; text-align:right; font-weight:bold;">@d.Amount</td>
+                            }
+                            else
+                            {
+                                <td style="border:1px solid #000; padding:3px;">@d.Label</td>
+                                <td style="border:1px solid #000; padding:3px; text-align:right;">@d.Amount</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </td>
+    </tr>
+</table>
+
+@* ── NET PAY ── *@
+<div style="text-align:right; margin-top:8px; font-size:10pt;">
+    <strong>NET PAY: &#8369;@(Model.NetPay.HasValue ? Model.NetPay.Value.ToString("N2") : "0.00")</strong>
+</div>
+
+@* ── EMPLOYEE SIGNATURE ONLY (properly formatted) ── *@
+<div style="margin-top:60px; width:100%;">
+    <div style="width:300px; margin-left:auto; margin-right:0; text-align:center;">
+        <div style="font-style:italic; font-size:7.5pt; margin-bottom:50px;">
+            I acknowledge that the above mentioned amount is full compensation for the services I rendered.
+        </div>
+        <div style="border-top:1px solid #000; padding-top:4px; width:100%;">
+            <strong style="font-size:10pt;">EMPLOYEE SIGNATURE</strong>
+        </div>
+    </div>
+</div>

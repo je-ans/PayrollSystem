@@ -1,0 +1,638 @@
+@model PayrollSystem.ViewModels.WorkSchedule.WorkScheduleViewModel
+@using PayrollSystem.Utility
+
+@{
+    var isReadOnly = ViewBag.IsReadOnly as bool? ?? false;
+    var currentEmployeeId = ViewBag.CurrentEmployeeId as Guid?;
+    var detailController = ViewBag.DetailController as string ?? "WorkSchedule";
+    var pageTitle = isReadOnly ? "Office Schedule" : "Monthly Schedule";
+
+    ViewData["Title"] = $"{pageTitle} – {Model.MonthName} {Model.Year}";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var hasGrid = Model.Sections.Count > 0;
+    var totalEmployees = Model.Sections.Sum(s => s.Employees.Count);
+    var assignedCells = Model.ScheduleMap.Values.Sum(m => m.Count);
+    var expectedCells = totalEmployees * Model.DaysInMonth;
+    var fillPct = expectedCells > 0 ? Math.Min(100, (int)Math.Round(assignedCells * 100.0 / expectedCells)) : 0;
+    var isCurrentMonth = Model.Year == DateTime.Today.Year && Model.Month == DateTime.Today.Month;
+    var todayDay = DateTime.Today.Day;
+    var canWorkflowAction = Model.CanApprove || Model.CanReject;
+    var needsWorkflowJs = canWorkflowAction || Model.CanReopen || (!isReadOnly && (Model.CanSubmit || Model.CanReopen));
+    var workflowSuccessRedirect = ViewBag.WorkflowSuccessRedirect as string ?? "";
+    var canAssignFunctionalRoles = ViewBag.CanAssignFunctionalRoles as bool? ?? false;
+    var unitHasScheduler = ViewBag.UnitHasScheduler as bool? ?? false;
+
+    decimal totalDutyDays = 0, totalDutyHours = 0;
+    var totalOffDays = 0;
+    if (hasGrid)
+    {
+        foreach (var sec in Model.Sections)
+        {
+            foreach (var emp in sec.Employees)
+            {
+                var sum = Model.GetSummary(emp.Id);
+                totalDutyDays += sum.DutyDays;
+                totalDutyHours += sum.DutyHours;
+                totalOffDays += sum.LeaveOffCount;
+            }
+        }
+    }
+}
+
+<link rel="stylesheet" href="~/css/work-schedule.css" asp-append-version="true" />
+@if (ViewBag.ApprovalTimeline != null)
+{
+    <link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+}
+
+<section class="content ws-page">
+    <div class="container-fluid">
+        <div class="card card-outline rounded-0 card-primary mx-2 px-2 ws-detail-card">
+            <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                <div class="flex-grow-1">
+                    <nav class="ws-detail-breadcrumb" aria-label="breadcrumb">
+                        <a asp-controller="@detailController" asp-action="Index"
+                           asp-route-year="@Model.Year"
+                           asp-route-organizationStructureId="@Model.OrganizationStructureId">
+                            <i class="fas fa-calendar-alt mr-1"></i>All Months
+                        </a>
+                        <span class="separator">/</span>
+                        <span class="text-dark font-weight-bold">@Model.MonthName @Model.Year</span>
+                    </nav>
+                    <h3 class="card-title m-0 mt-1">
+                        @pageTitle
+                        <span class="badge @Model.StatusBadgeClass ml-2 align-middle">@Model.Status</span>
+                    </h3>
+                    <small class="text-muted d-block mt-1">@Model.OrganizationUnitDisplay</small>
+                </div>
+                <div class="card-tools ws-detail-actions">
+                    <div class="ws-action-group">
+                        <a asp-controller="@detailController" asp-action="Index"
+                           asp-route-year="@Model.Year"
+                           asp-route-organizationStructureId="@Model.OrganizationStructureId"
+                           class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i> Back
+                        </a>
+                    </div>
+
+                    @if (!isReadOnly)
+                    {
+                        @if (Model.CanSubmit || Model.CanApprove || Model.CanReject || Model.CanReopen)
+                        {
+                            <div class="ws-action-group">
+                                @if (Model.CanSubmit)
+                                {
+                                    <button class="btn btn-sm btn-primary" id="btnSubmit">
+                                        <i class="fas fa-paper-plane mr-1"></i> Submit
+                                    </button>
+                                }
+                                @if (Model.CanApprove)
+                                {
+                                    <button class="btn btn-sm btn-success" id="btnApprove">
+                                        <i class="fas fa-check mr-1"></i> Approve
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" id="btnReject">
+                                        <i class="fas fa-times mr-1"></i> Reject
+                                    </button>
+                                }
+                                @if (Model.CanReopen)
+                                {
+                                    <button class="btn btn-sm btn-outline-warning" id="btnReopen">
+                                        <i class="fas fa-undo mr-1"></i> Reopen
+                                    </button>
+                                }
+                            </div>
+                        }
+
+                        <div class="ws-action-group">
+                            @if (canAssignFunctionalRoles)
+                            {
+                                <a href="javascript:void(0)" class="btn btn-sm btn-outline-info open-modal"
+                                   data-title="@(unitHasScheduler ? "Change Scheduler" : "Assign Scheduler")"
+                                   data-url="@Url.Action("AddRoleAssignment", "OrganizationStructure", new { organizationStructureId = Model.OrganizationStructureId, functionalRole = OrganizationFunctionalRole.Scheduler })"
+                                   data-modal-type="create">
+                                    <i class="fas fa-user-cog mr-1"></i> @(unitHasScheduler ? "Change Scheduler" : "Assign Scheduler")
+                                </a>
+                            }
+                            <a asp-controller="ScheduleChangeRequest" asp-action="Index" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-inbox mr-1"></i> Changes
+                            </a>
+                            <a asp-controller="WorkSchedule" asp-action="Print"
+                               asp-route-month="@Model.Month"
+                               asp-route-year="@Model.Year"
+                               asp-route-organizationStructureId="@Model.OrganizationStructureId"
+                               class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="fas fa-print mr-1"></i> Print
+                            </a>
+                        </div>
+                    }
+                    else if (canWorkflowAction || Model.CanReopen)
+                    {
+                        <div class="ws-action-group">
+                            @if (Model.CanApprove)
+                            {
+                                <button class="btn btn-sm btn-success" id="btnApprove">
+                                    <i class="fas fa-check mr-1"></i> Approve
+                                </button>
+                                <button class="btn btn-sm btn-danger" id="btnReject">
+                                    <i class="fas fa-times mr-1"></i> Reject
+                                </button>
+                            }
+                            @if (Model.CanReopen)
+                            {
+                                <button class="btn btn-sm btn-outline-warning" id="btnReopen">
+                                    <i class="fas fa-undo mr-1"></i> Reopen
+                                </button>
+                            }
+                        </div>
+                        <div class="ws-action-group">
+                            <a asp-controller="@detailController" asp-action="Print"
+                               asp-route-month="@Model.Month"
+                               asp-route-year="@Model.Year"
+                               asp-route-organizationStructureId="@Model.OrganizationStructureId"
+                               class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="fas fa-print mr-1"></i> Print
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ws-action-group">
+                            <a asp-controller="MySchedule" asp-action="ChangeRequests" class="btn btn-sm btn-outline-info">
+                                <i class="fas fa-inbox mr-1"></i> My Changes
+                            </a>
+                            <a asp-controller="MySchedule" asp-action="Print"
+                               asp-route-month="@Model.Month"
+                               asp-route-year="@Model.Year"
+                               asp-route-organizationStructureId="@Model.OrganizationStructureId"
+                               class="btn btn-sm btn-outline-primary" target="_blank">
+                                <i class="fas fa-print mr-1"></i> Print
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card-body">
+                <!-- Filters -->
+                <div class="ws-overview-filters">
+                    <form method="get"
+                          asp-controller="@detailController"
+                          asp-action="Detail"
+                          id="wsDetailFilterForm"
+                          class="form-row align-items-end">
+                        @if (Model.OrganizationUnits.Count > 1)
+                        {
+                            <div class="col-lg-4 col-md-6">
+                                <div class="form-group mb-2 mb-md-0">
+                                    <label for="wsOrganizationStructureId" class="mb-1 font-weight-semibold">Organization Unit</label>
+                                    <select name="organizationStructureId"
+                                            id="wsOrganizationStructureId"
+                                            class="form-control select2 general-select"
+                                            required>
+                                        @foreach (var unit in Model.OrganizationUnits)
+                                        {
+                                            if (unit.Id == Model.OrganizationStructureId)
+                                            {
+                                                <option value="@unit.Id" selected>@unit.DisplayText</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@unit.Id">@unit.DisplayText</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        }
+                        else if (Model.OrganizationStructureId > 0)
+                        {
+                            <input type="hidden" name="organizationStructureId" id="wsOrganizationStructureId" value="@Model.OrganizationStructureId" />
+                        }
+
+                        @if (Model.OrganizationStructureId > 0 && Model.OrganizationUnits.Count > 1)
+                        {
+                            @* duplicate hidden ensures JS can read org id even when select is present *@
+                            <input type="hidden" id="wsOrganizationStructureIdValue" value="@Model.OrganizationStructureId" />
+                        }
+
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+                            <div class="form-group mb-2 mb-md-0">
+                                <label for="wsMonth" class="mb-1 font-weight-semibold">Month</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <button type="button" class="btn btn-outline-secondary" id="wsMonthPrev" title="Previous month">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                    </div>
+                                    <select name="month" id="wsMonth" class="form-control select2 general-select">
+                                        @for (int m = 1; m <= 12; m++)
+                                        {
+                                            if (m == Model.Month)
+                                            {
+                                                <option value="@m" selected>@(new DateTime(Model.Year, m, 1).ToString("MMMM"))</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@m">@(new DateTime(Model.Year, m, 1).ToString("MMMM"))</option>
+                                            }
+                                        }
+                                    </select>
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-outline-secondary" id="wsMonthNext" title="Next month">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+                            <div class="form-group mb-2 mb-md-0">
+                                <label for="wsYear" class="mb-1 font-weight-semibold">Year</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <button type="button" class="btn btn-outline-secondary" id="wsYearPrev" title="Previous year">
+                                            <i class="fas fa-chevron-left"></i>
+                                        </button>
+                                    </div>
+                                    <input type="number"
+                                           name="year"
+                                           id="wsYear"
+                                           value="@Model.Year"
+                                           class="form-control text-center"
+                                           min="2020"
+                                           max="2099" />
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-outline-secondary" id="wsYearNext" title="Next year">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-2 col-md-3 col-sm-6">
+                            <div class="form-group mb-0">
+                                <label class="mb-1 d-none d-md-block">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary btn-block" id="wsDetailViewBtn">
+                                    <i class="fas fa-search mr-1"></i> View
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                @if (Model.Status == WorkScheduleStatus.Rejected && !string.IsNullOrEmpty(Model.RejectionReason))
+                {
+                    <div class="ws-detail-status-strip ws-detail-status-rejected">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <strong>Rejected:</strong> @Model.RejectionReason
+                    </div>
+                }
+                else if (Model.Status == WorkScheduleStatus.Approved && Model.ApprovedAt.HasValue)
+                {
+                    <div class="ws-detail-status-strip ws-detail-status-approved">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Approved by <strong>@Model.ApprovedBy</strong> on @Model.ApprovedAt.Value.ToString("MMM d, yyyy h:mm tt")
+                    </div>
+                }
+                else if (Model.Status == WorkScheduleStatus.Submitted && Model.SubmittedAt.HasValue)
+                {
+                    <div class="ws-detail-status-strip ws-detail-status-submitted">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Submitted by <strong>@Model.SubmittedBy</strong> on @Model.SubmittedAt.Value.ToString("MMM d, yyyy h:mm tt") — awaiting approval
+                    </div>
+                }
+                else if (isReadOnly && Model.Status == WorkScheduleStatus.Draft)
+                {
+                    <div class="ws-detail-status-strip ws-detail-status-draft">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        This schedule is still being prepared and may change.
+                    </div>
+                }
+                else if (!isReadOnly && Model.IsEditable)
+                {
+                    <div class="ws-detail-status-strip ws-detail-status-draft">
+                        <i class="fas fa-edit mr-2"></i>
+                        Draft — click cells below to assign shifts, or use Quick Select.
+                    </div>
+                }
+
+                @if (ViewBag.ApprovalTimeline is PayrollSystem.ViewModels.ApprovalRequestTimelineViewModel approvalTimeline)
+                {
+                    <div class="ws-approval-panel" id="wsApprovalPanel">
+                        <div class="ws-approval-panel-header" data-toggle="collapse" data-target="#wsApprovalPanelBody" aria-expanded="true">
+                            <h6><i class="fas fa-route mr-2 text-primary"></i>Approval Workflow</h6>
+                            <span class="text-muted small">
+                                <span class="badge badge-info">@approvalTimeline.StatusDisplay</span>
+                                <i class="fas fa-chevron-down ml-2"></i>
+                            </span>
+                        </div>
+                        <div class="ws-approval-panel-body collapse show" id="wsApprovalPanelBody">
+                            @await Html.PartialAsync("~/Views/ApprovalWorkflow/Partials/_ApprovalTimeline.cshtml", approvalTimeline)
+                        </div>
+                    </div>
+                }
+
+                @if (!isReadOnly && Model.IsEditable)
+                {
+                    <div class="ws-shift-palette mt-3">
+                        <div class="ws-shift-palette-header">
+                            <strong><i class="fas fa-th mr-1"></i> Quick Select</strong>
+                            <span class="ws-shift-palette-hint">Click a shift, then click or long-press &amp; drag on cells to assign</span>
+                        </div>
+                        <div class="ws-shift-palette-items">
+                            @foreach (var s in Model.ShiftTypes)
+                            {
+                                <button type="button" class="shift-quick-btn"
+                                        data-shift-id="@s.Id"
+                                        data-code="@s.Code"
+                                        data-color="@s.ColorHex"
+                                        data-is-leave="@s.IsLeave.ToString().ToLower()"
+                                        style="--chip-color: @s.ColorHex">
+                                    <span class="shift-quick-dot" style="background: @s.ColorHex"></span>
+                                    <span class="shift-quick-code">@s.Code</span>
+                                    <span class="shift-quick-label">@s.Label</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!hasGrid)
+                {
+                    <div class="ws-empty-state">
+                        <div class="ws-empty-icon ws-empty-icon-info">
+                            <i class="fas fa-calendar-times"></i>
+                        </div>
+                        <h5 class="ws-empty-title">No schedule data for this month</h5>
+                        <p class="ws-empty-text">
+                            No employees are assigned to <em>@Model.OrganizationUnitDisplay</em> for @Model.MonthName @Model.Year.
+                            @if (!isReadOnly)
+                            {
+                                <span>Assign employees with a primary organization assignment, then start filling shifts.</span>
+                            }
+                        </p>
+                        @if (!isReadOnly)
+                        {
+                            <a asp-controller="Employee" asp-action="Index" class="btn btn-outline-primary btn-sm mt-2">
+                                <i class="fas fa-users mr-1"></i> Go to Employees
+                            </a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="ws-detail-summary-grid">
+                        <div class="ws-detail-stat ws-detail-stat-employees">
+                            <div class="ws-detail-stat-value">@totalEmployees</div>
+                            <div class="ws-detail-stat-label">Employees</div>
+                        </div>
+                        <div class="ws-detail-stat ws-detail-stat-fill">
+                            <div class="ws-detail-stat-value">@fillPct%</div>
+                            <div class="ws-detail-stat-label">Assigned</div>
+                        </div>
+                        <div class="ws-detail-stat ws-detail-stat-hours">
+                            <div class="ws-detail-stat-value">@totalDutyHours.ToString("F0")</div>
+                            <div class="ws-detail-stat-label">Duty Hours</div>
+                        </div>
+                        <div class="ws-detail-stat ws-detail-stat-off">
+                            <div class="ws-detail-stat-value">@totalOffDays</div>
+                            <div class="ws-detail-stat-label">Off / Leave Days</div>
+                        </div>
+                    </div>
+
+                    <div class="ws-schedule-toolbar">
+                        <div class="ws-schedule-toolbar-main">
+                            <div class="ws-schedule-period">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>@Model.MonthName @Model.Year</span>
+                                @if (isCurrentMonth)
+                                {
+                                    <span class="badge badge-primary badge-sm">Current month</span>
+                                }
+                            </div>
+                            <span class="ws-schedule-meta">
+                                @totalEmployees employee@(totalEmployees == 1 ? "" : "s")
+                                · @Model.Sections.Count section@(Model.Sections.Count == 1 ? "" : "s")
+                                · @Model.DaysInMonth days
+                            </span>
+                        </div>
+                        <div class="ws-schedule-toolbar-actions">
+                            @if (!isReadOnly && Model.IsEditable)
+                            {
+                                <span class="ws-schedule-hint">
+                                    <i class="fas fa-mouse-pointer"></i> Click or drag cells to assign shifts
+                                </span>
+                            }
+                            <div class="ws-schedule-search">
+                                <i class="fas fa-search"></i>
+                                <input type="search"
+                                       id="wsEmpSearch"
+                                       class="form-control form-control-sm"
+                                       placeholder="Search employee…"
+                                       autocomplete="off" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ws-table-wrapper" id="wsScheduleTableWrapper">
+                        <table class="ws-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-no sticky-col">#</th>
+                                    <th class="col-name sticky-col-2">Name</th>
+                                    @for (int d = 1; d <= Model.DaysInMonth; d++)
+                                    {
+                                        bool isWeekend = Model.IsWeekend(d);
+                                        bool isToday = isCurrentMonth && d == todayDay;
+                                        <th class="col-day @(isWeekend ? "weekend" : "") @(isToday ? "is-today" : "")">
+                                            @if (isToday)
+                                            {
+                                                <span class="ws-day-today-badge">Today</span>
+                                            }
+                                            <div class="ws-day-num">@d</div>
+                                            <div class="day-name">@Model.DayName(d)</div>
+                                        </th>
+                                    }
+                                    <th class="col-summary">Days</th>
+                                    <th class="col-summary">Hours</th>
+                                    <th class="col-summary">Off</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    int counter = 0;
+                                }
+                                @foreach (var sec in Model.Sections)
+                                {
+                                    <tr class="section-header-row">
+                                        <td colspan="@(Model.DaysInMonth + 5)">
+                                            <span class="ws-section-label">
+                                                <i class="fas fa-layer-group"></i>
+                                                @sec.Name
+                                                <span class="ws-section-count">@sec.Employees.Count</span>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    @foreach (var emp in sec.Employees)
+                                    {
+                                        counter++;
+                                        var summary = Model.GetSummary(emp.Id);
+                                        var isCurrentEmployee = currentEmployeeId.HasValue && emp.Id == currentEmployeeId.Value;
+                                        <tr class="emp-row @(isCurrentEmployee ? "emp-row-self" : "")"
+                                            data-emp-id="@emp.Id"
+                                            data-emp-name="@($"{emp.Surname}, {emp.FirstName}".ToLowerInvariant())">
+                                            <td class="col-no sticky-col text-center">
+                                                <span class="ws-row-num">@counter</span>
+                                            </td>
+                                            <td class="col-name sticky-col-2">
+                                                <div class="ws-emp-name">
+                                                    @($"{emp.Surname}, {emp.FirstName}")
+                                                    @if (isCurrentEmployee)
+                                                    {
+                                                        <span class="badge badge-primary badge-sm ml-1">You</span>
+                                                    }
+                                                </div>
+                                                @{
+                                                    var position = emp.Designations.FirstOrDefault(d => d.EffectiveTo == null)?.Designation?.DesignationName;
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(position))
+                                                {
+                                                    <div class="ws-emp-position">@position</div>
+                                                }
+                                            </td>
+                                            @for (int d = 1; d <= Model.DaysInMonth; d++)
+                                            {
+                                                var shift = Model.GetShift(emp.Id, d);
+                                                bool isWeekend = Model.IsWeekend(d);
+                                                bool isToday = isCurrentMonth && d == todayDay;
+                                                var isBlank = ShiftTypeScheduleHelper.IsUnassigned(shift);
+                                                var isOff = !isBlank && shift.IsLeave;
+                                                <td class="cell @(Model.IsEditable && !isReadOnly ? "cell-editable" : "") @(isWeekend ? "col-weekend" : "") @(isToday ? "col-today" : "") @(isBlank ? "cell-blank" : isOff ? "cell-off" : "")"
+                                                    data-emp="@emp.Id"
+                                                    data-day="@d"
+                                                    data-shift-id="@(isBlank ? "" : shift.Id)"
+                                                    style="--shift-color: @(isBlank ? ShiftTypeScheduleHelper.BlankShift.ColorHex : shift.ColorHex)">
+                                                    <span class="cell-text @(isOff ? "cell-text-off" : "")" title="@(isBlank ? "" : shift.Label)">@(isBlank ? "" : shift.Code)</span>
+                                                </td>
+                                            }
+                                            <td class="col-summary duty-days text-success fw-bold text-center"
+                                                data-emp-summary-days="@emp.Id">
+                                                @summary.DutyDays.ToString("F3").TrimEnd('0').TrimEnd('.')
+                                            </td>
+                                            <td class="col-summary duty-hours text-primary fw-bold text-center"
+                                                data-emp-summary-hours="@emp.Id">
+                                                @summary.DutyHours.ToString("F3").TrimEnd('0').TrimEnd('.')
+                                            </td>
+                                            <td class="col-summary text-danger text-center"
+                                                data-emp-summary-off="@emp.Id">
+                                                @summary.LeaveOffCount
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                            <tfoot>
+                                <tr class="on-duty-row">
+                                    <td colspan="2" class="on-duty-label">
+                                        <i class="fas fa-users mr-1"></i> On Duty
+                                    </td>
+                                    @for (int d = 1; d <= Model.DaysInMonth; d++)
+                                    {
+                                        var od = Model.GetOnDuty(d);
+                                        bool isWeekend = Model.IsWeekend(d);
+                                        bool isToday = isCurrentMonth && d == todayDay;
+                                        <td class="text-center on-duty-cell @(isWeekend ? "col-weekend" : "") @(isToday ? "col-today" : "")" data-day="@d">
+                                            <span class="on-duty-pill">@od</span>
+                                        </td>
+                                    }
+                                    <td colspan="3"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div class="ws-legend-card">
+                        <div class="ws-legend-header">
+                            <strong><i class="fas fa-palette mr-1"></i> Shift Legend</strong>
+                            <span class="text-muted small">@Model.ShiftTypes.Count shift type@(Model.ShiftTypes.Count == 1 ? "" : "s")</span>
+                        </div>
+                        <div class="ws-legend-items">
+                            @foreach (var s in Model.ShiftTypes)
+                            {
+                                <span class="ws-legend-chip" style="--chip-color: @s.ColorHex">
+                                    <span class="legend-dot" style="background: @s.ColorHex"></span>
+                                    <span class="ws-legend-code">@s.Code</span>
+                                    <span class="ws-legend-time">@ShiftTypeScheduleHelper.FormatTimeRange(s)</span>
+                                </span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+<div id="wsPageLoading" class="ws-page-loading" aria-hidden="true">
+    <div class="ws-page-loading-inner">
+        <div class="ws-spinner" aria-hidden="true"></div>
+        <p class="ws-page-loading-text">Loading schedule…</p>
+    </div>
+</div>
+
+@if (!isReadOnly)
+{
+    <select id="shiftPicker" class="form-select form-select-sm ws-shift-picker" style="display:none">
+        @foreach (var s in Model.ShiftTypes)
+        {
+            <option value="@s.Id" data-code="@s.Code" data-color="@s.ColorHex"
+                    data-is-leave="@s.IsLeave.ToString().ToLower()">
+                @s.Code - @s.Label
+            </option>
+        }
+    </select>
+
+    <div id="wsToast" class="ws-toast"></div>
+}
+
+@section Scripts {
+    @if (needsWorkflowJs)
+    {
+        @Html.AntiForgeryToken()
+    }
+    <script>
+        window.WS_DETAIL_CONFIG = {
+            month: @Model.Month,
+            year: @Model.Year,
+            organizationStructureId: @Model.OrganizationStructureId,
+            detailController: '@detailController',
+            isEditable: @Model.IsEditable.ToString().ToLower(),
+            isReadOnly: @isReadOnly.ToString().ToLower(),
+            workflowSuccessRedirect: '@workflowSuccessRedirect',
+            antiForgeryToken: ''
+        };
+
+        @if (needsWorkflowJs)
+        {
+            <text>
+            window.WS_CONFIG = window.WS_DETAIL_CONFIG;
+            (function() {
+                const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+                if (tokenInput) {
+                    window.WS_CONFIG.antiForgeryToken = tokenInput.value;
+                    window.WS_DETAIL_CONFIG.antiForgeryToken = tokenInput.value;
+                }
+            })();
+            </text>
+        }
+    </script>
+    <script src="~/js/work-schedule-detail.js" asp-append-version="true"></script>
+    @if (needsWorkflowJs)
+    {
+        <script src="~/js/work-schedule.js" asp-append-version="true"></script>
+    }
+}

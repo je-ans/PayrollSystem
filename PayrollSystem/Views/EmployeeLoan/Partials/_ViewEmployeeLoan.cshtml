@@ -1,0 +1,73 @@
+@model EmployeeLoanViewModel
+
+<div class="container">
+    <table class="table table-bordered table-hover">
+                <tr>
+                    <th class="bg-light" style="width: 35%;">Employee</th>
+                    <td>@Model.EmployeeName</td>
+                </tr>
+                <tr>
+                    <th class="bg-light">Loan</th>
+                    <td>@(Model.LoanName ?? Model.DeductionTypeName)</td>
+                </tr>
+                <tr>
+                    <th class="bg-light">Principal Amount</th>
+                    <td>₱@Model.PrincipalAmount.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <th class="bg-light">Interest Rate</th>
+                    <td>@((Model.InterestRate ?? 0M).ToString("N4")) %</td>
+                </tr>
+                <tr>
+                    <th class="bg-light">Total To Repay</th>
+                    <td>₱@Model.TotalAmountToRepay.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <th class="bg-light">Installment Amount</th>
+                    <td>₱@Model.InstallmentAmount.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <th class="bg-light">Installments</th>
+                    <td>@Model.InstallmentsPaid / @Model.TotalInstallments</td>
+                </tr>
+                <tr>
+                    <th class="bg-light">Remaining Balance</th>
+                    <td>₱@Model.RemainingBalance.ToString("N2")</td>
+                </tr>
+                <tr>
+                    <th class="bg-light">Start Date</th>
+                    <td>@Model.StartDate.ToString("MMM dd, yyyy")</td>
+                </tr>
+                @if (Model.EndDate.HasValue)
+                {
+                    <tr>
+                        <th class="bg-light">End Date</th>
+                        <td>@Model.EndDate.Value.ToString("MMM dd, yyyy")</td>
+                    </tr>
+                }
+                <tr>
+                    <th class="bg-light">Status</th>
+                    <td>
+                        @{
+                            var statusStr = Model.Status.ToString();
+                            var badgeClass = statusStr == "Active" ? "bg-success" : statusStr == "Completed" ? "bg-primary" : statusStr == "Cancelled" ? "bg-danger" : "bg-secondary";
+                        }
+                        <span class="badge @badgeClass">@statusStr</span>
+                    </td>
+                </tr>
+                @if (!string.IsNullOrWhiteSpace(Model.ReferenceNumber))
+                {
+                    <tr>
+                        <th class="bg-light">Reference #</th>
+                        <td>@Model.ReferenceNumber</td>
+                    </tr>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.Remarks))
+                {
+                    <tr>
+                        <th class="bg-light">Remarks</th>
+                        <td>@Model.Remarks</td>
+                    </tr>
+                }
+    </table>
+</div>

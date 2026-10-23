@@ -1,0 +1,23 @@
+@model OrganizationStructureViewModel
+
+<div class="container-fluid">
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle mr-1"></i>
+        <strong>@Model.Name</strong> cannot be deleted because:
+        <ul class="mb-0 mt-2">
+            @if (ViewBag.HasChildren == true)
+            {
+                <li>It has child organization units.</li>
+            }
+            @if (ViewBag.HasEmployees == true)
+            {
+                <li>Employees are assigned to this unit.</li>
+            }
+            @if (ViewBag.HasRoles == true)
+            {
+                <li>Role assignments exist for this unit.</li>
+            }
+        </ul>
+    </div>
+    <p class="text-muted mb-0">Remove or reassign dependencies first, or set the unit to inactive instead.</p>
+</div>

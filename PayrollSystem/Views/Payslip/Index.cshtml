@@ -1,0 +1,342 @@
+@model PayslipViewModel
+
+@{
+    ViewData["Title"] = "Payslips";
+    ViewData["PreviewTitle"] = "Payslip Document Preview";
+    var isEmployeeOnly = ViewBag.IsEmployeeOnly as bool? ?? false;
+
+    if (isEmployeeOnly)
+    {
+        // Employee self-service payslip (Employee Portal)
+        ViewBag.ActiveMenu = "Payslip";
+        ViewBag.ActiveLink = "";
+        ViewBag.ActiveMainMenu = "";
+    }
+    else
+    {
+        // Admin/HR payslip under Payroll Management
+        ViewBag.ActiveMenu = "PayrollManagement";
+        ViewBag.ActiveLink = "Payslip";
+        ViewBag.ActiveMainMenu = "PayrollManagement";
+    }
+
+    Layout = "_Layout";
+}
+
+<style>
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+        .filter-section h5 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .filter-section label {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+
+    @@media print {
+        .content-header, .filter-section, .card-header, .breadcrumb {
+            display: none !important;
+        }
+    }
+
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .loading-spinner {
+        text-align: center;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+
+    .no-data-wrapper {
+        min-height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+<section class="content">
+    <div class="container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="card card-outline rounded-0 card-info mx-2 px-2">
+            <div class="card-header">
+                <h3 class="card-title m-0"><i class="fas fa-file-invoice-dollar mr-2"></i> View Payslip</h3>
+            </div>
+            <div class="card-body">
+                <form id="filter-form" method="post" autocomplete="off">
+                    <!-- Filter Section -->
+                    <div class="filter-section">
+                        <h5><i class="fas fa-filter mr-2"></i> @(isEmployeeOnly ? "Select Payroll Period" : "Select Employee and Payroll Period")</h5>
+                        <div class="row">
+                            @if (!isEmployeeOnly)
+                            {
+                                <div class="form-group col-12 col-md-4">
+                                    <label for="viewEmployeeId">Employee</label>
+                                    <select id="viewEmployeeId" class="form-control select2 general-select">
+                                        <option value="">-- Select Employee --</option>
+                                        @foreach (var emp in ViewBag.Employees ?? new List<dynamic>())
+                                        {
+                                            <option value="@emp.Id">@emp.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                            }
+                            <div class="form-group col-12 col-md-4">
+                                <label for="viewPayrollPeriodId">Payroll Period</label>
+                                <select id="viewPayrollPeriodId" class="form-control select2 general-select">
+                                    <option value="">-- Select Period --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap flex-md-nowrap gap-2 justify-content-end align-items-center responsive-btn-group">
+                                <button type="button" class="btn btn-secondary mb-2 mb-md-0" id="clearSelection">
+                                    <i class="fas fa-times mr-2"></i>Clear Selection
+                                </button>
+                                <button type="submit" class="btn btn-info mb-2 mb-md-0" id="btnViewPayslip">
+                                    <i class="fas fa-play mr-2"></i>Generate Document
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <hr />
+
+                <!-- Document Preview Container -->
+                <div id="payslipPreviewContainer" class="container-fluid mt-4" style="display: none;">
+                    @{
+                        ViewData["ShowZoomControls"] = true;
+                        ViewData["ShowPrintButton"] = true;
+                        ViewData["ShowExportButton"] = false;
+                        ViewData["DocumentOrientation"] = "portrait";
+                        ViewData["DocumentFormat"] = "A4";
+                    }
+                    <partial name="~/Views/Shared/_DocumentPreview.cshtml" />
+                </div>
+
+                <!-- No Data / Initial message -->
+                <div id="noDataFoundMessage" class="no-data-wrapper">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-file-invoice fa-4x mb-4 opacity-50"></i>
+                        <h5>No Payslip Loaded</h5>
+                        <p class="mb-0">@(isEmployeeOnly ? "Select a payroll period, then click Generate Document to display the payslip." : "Select an employee and payroll period, then click Generate Document to display the payslip.")</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner">
+        <div class="spinner-grow text-info" role="status" style="width: 3rem; height: 3rem;">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <h5 class="mt-3 mb-2" style="color: #2c3e50;">Loading Payslip</h5>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">Please wait...</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            console.log('Page loaded');
+
+            var isEmployeeOnly = @(isEmployeeOnly ? "true" : "false");
+            var currentEmployeeId = '@(ViewBag.CurrentEmployeeId ?? "")';
+
+            loadViewPayslipDropdowns();
+
+            var viewPayrollEntryId = new URLSearchParams(window.location.search).get('viewPayrollEntryId');
+            if (viewPayrollEntryId) {
+                loadPayslipDocumentById(viewPayrollEntryId);
+                history.replaceState({}, document.title, window.location.pathname);
+                return;
+            }
+
+            // Clear Selection Handler
+            $('#clearSelection').on('click', function () {
+                console.log('Clear clicked');
+                if (!isEmployeeOnly) {
+                    $('#viewEmployeeId').val('');
+                }
+                $('#viewPayrollPeriodId').val('');
+                $('#payslipPreviewContainer').hide();
+                $('#noDataFoundMessage').show();
+            });
+
+            // Prevent form submission and handle via AJAX
+            $('#filter-form').on('submit', function (e) {
+                e.preventDefault();
+                console.log('Form submitted');
+                loadPayslipDocument();
+                return false;
+            });
+
+            function loadPayslipDocument() {
+                var employeeId = isEmployeeOnly ? currentEmployeeId : $('#viewEmployeeId').val();
+                var payrollPeriodId = $('#viewPayrollPeriodId').val();
+
+                console.log('Employee ID:', employeeId);
+                console.log('Payroll Period ID:', payrollPeriodId);
+
+                if (!isEmployeeOnly && !employeeId) {
+                    toastr.warning('Please select an employee.');
+                    return false;
+                }
+
+                if (!payrollPeriodId) {
+                    toastr.warning('Please select a payroll period.');
+                    return false;
+                }
+
+                loadPayslipDocumentByFilter(employeeId, payrollPeriodId);
+            }
+
+            function loadPayslipDocumentById(payrollEntryId) {
+                console.log('Loading payslip by ID:', payrollEntryId);
+                $('#loadingOverlay').show();
+                $('#noDataFoundMessage').hide();
+                $('#payslipPreviewContainer').hide();
+
+                $.ajax({
+                    url: '@Url.Action("GetPayslipDocument", "Payslip")',
+                    type: 'GET',
+                    data: { payrollEntryId: payrollEntryId },
+                    success: function (data) {
+                        console.log('Success - received data');
+                        $('#loadingOverlay').hide();
+                        if (data && data.trim() !== '') {
+                            $('#payslipPreviewContainer').show();
+                            $('#noDataFoundMessage').hide();
+                            $('#document-content').html(data);
+                            $(document).trigger('documentContentLoaded');
+                        } else {
+                            console.log('No data received');
+                            $('#payslipPreviewContainer').hide();
+                            $('#noDataFoundMessage').show().html('<div class="no-data-wrapper"><div class="text-center py-5 text-warning"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><h5>No payslip found</h5></div></div>');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.log('Error:', status, error);
+                        console.log('Response:', xhr.responseText);
+                        $('#loadingOverlay').hide();
+                        $('#payslipPreviewContainer').hide();
+                        $('#noDataFoundMessage').show();
+                        toastr.error('Error loading payslip. Please try again.');
+                    }
+                });
+            }
+
+            function loadPayslipDocumentByFilter(employeeId, payrollPeriodId) {
+                console.log('Loading payslip by filter');
+                $('#loadingOverlay').show();
+                $('#noDataFoundMessage').hide();
+                $('#payslipPreviewContainer').hide();
+
+                var url = '@Url.Action("GetPayslipDocumentByEmployeeAndPeriod", "Payslip")';
+                var data = { payrollPeriodId: payrollPeriodId };
+
+                if (!isEmployeeOnly) {
+                    data.employeeId = employeeId;
+                }
+
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    data: data,
+                    success: function (data) {
+                        console.log('Success - received data');
+                        $('#loadingOverlay').hide();
+                        if (data && data.trim() !== '') {
+                            $('#payslipPreviewContainer').show();
+                            $('#noDataFoundMessage').hide();
+                            $('#document-content').html(data);
+                            $(document).trigger('documentContentLoaded');
+                        } else {
+                            console.log('Empty response');
+                            $('#payslipPreviewContainer').hide();
+                            $('#noDataFoundMessage').show();
+                            $('#noDataFoundMessage').html('<div class="no-data-wrapper"><div class="text-center py-5 text-warning"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><h5>No payslip found</h5><p class="mb-0">No payroll data for ' + (isEmployeeOnly ? 'you' : 'this employee') + ' in the selected period.</p></div></div>');
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.log('Error:', status, error);
+                        console.log('Status code:', xhr.status);
+                        console.log('Response:', xhr.responseText);
+                        $('#loadingOverlay').hide();
+                        $('#payslipPreviewContainer').hide();
+                        $('#noDataFoundMessage').show();
+                        if (xhr.status === 404) {
+                            $('#noDataFoundMessage').html('<div class="no-data-wrapper"><div class="text-center py-5 text-warning"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><h5>No payslip found</h5><p class="mb-0">No payroll data for ' + (isEmployeeOnly ? 'you' : 'this employee') + ' in the selected period.</p></div></div>');
+                        } else {
+                            toastr.error('Error loading payslip. Please try again.');
+                        }
+                    }
+                });
+            }
+
+            function loadViewPayslipDropdowns() {
+                console.log('Loading dropdowns');
+
+                // Only load employees dropdown if not employee-only
+                if (!isEmployeeOnly) {
+                    $.get('@Url.Action("GetEmployeesForPayslip", "Payslip")').done(function (r) {
+                        console.log('Employees loaded:', r);
+                        if (r.success && r.data) {
+                            var $el = $('#viewEmployeeId');
+                            $el.find('option:not(:first)').remove();
+                            r.data.forEach(function (e) {
+                                $el.append($('<option></option>').val(e.id).text(e.name + ' (' + (e.employeeIdNumber || '') + ')'));
+                            });
+                        }
+                    }).fail(function(xhr, status, error) {
+                        console.log('Error loading employees:', error);
+                    });
+                }
+
+                // Load payroll periods
+                $.get('@Url.Action("GetPayrollPeriodsForPayslip", "Payslip")').done(function (r) {
+                    console.log('Periods loaded:', r);
+                    if (r.success && r.data) {
+                        var $el = $('#viewPayrollPeriodId');
+                        $el.find('option:not(:first)').remove();
+                        r.data.forEach(function (p) {
+                            $el.append($('<option></option>').val(p.id).text(p.name));
+                        });
+                    }
+                }).fail(function(xhr, status, error) {
+                    console.log('Error loading periods:', error);
+                });
+            }
+        });
+    </script>
+}

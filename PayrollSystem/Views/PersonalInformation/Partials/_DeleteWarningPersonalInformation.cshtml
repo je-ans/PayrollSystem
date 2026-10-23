@@ -1,0 +1,11 @@
+@model PersonalInformationViewModel
+
+<div class="container-fluid">
+    <div class="alert alert-danger">
+        <i class="icon fas fa-ban"></i> <strong>Cannot Delete Personal Information</strong>
+        <p>The personal information record for <strong>@ViewBag.EmployeeName</strong> 
+            cannot be deleted because it is still associated with an employee. 
+            This warning should not appear under normal circumstances as employees 
+            should not be deleted if they have personal information.</p>
+    </div>
+</div>

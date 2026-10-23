@@ -1,0 +1,634 @@
+@model PayrollConfigurationViewModel
+
+<style>
+    .section-header-container {
+        position: relative;
+    }
+
+    .section-header {
+        color: #2c3e50;
+        font-weight: 600;
+        position: relative;
+        display: inline-block;
+        padding-right: 1rem;
+        background: white;
+        z-index: 1;
+    }
+
+    .section-divider {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        height: 1px;
+        background-color: #e0e0e0;
+        z-index: 0;
+    }
+
+    .section-divider-wide {
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+    }
+
+    /* ===== Logo Upload � mirrors profile picture styles ===== */
+    .profile-picture-container {
+        border: 2px dashed #ced4da;
+        border-radius: 4px;
+        padding: 0.5rem;
+        text-align: center;
+        transition: all 0.2s ease;
+        position: relative;
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .profile-picture-container:hover {
+            border-color: #80bdff;
+            background-color: #f8f9fa;
+        }
+
+        .profile-picture-container input[type="file"] {
+            display: none;
+        }
+
+    .profile-picture-label {
+        cursor: pointer;
+        display: block;
+        padding: 0.5rem;
+        width: 100%;
+    }
+
+    .profile-picture-icon {
+        font-size: 2rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+
+    .image-preview-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .preview-image {
+        max-width: 200px;
+        max-height: 200px;
+        object-fit: contain;
+        border-radius: 4px;
+    }
+
+    .remove-image-btn {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,.2);
+        transition: all 0.2s ease;
+    }
+
+        .remove-image-btn:hover {
+            background: #c82333;
+            transform: scale(1.1);
+        }
+
+    .loading-spinner {
+        display: none;
+        width: 40px;
+        height: 40px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 1rem auto;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <span asp-validation-summary="All" class="text-danger"></span>
+            <form asp-action="Edit" method="post" asp-antiforgery="true"
+                  id="payrollConfigForm" enctype="multipart/form-data">
+                <input type="hidden" asp-for="Id" />
+
+                <!-- ===== Basic Configuration ===== -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Basic Configuration</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="Name" type="text" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="Name" class="floating-label">Configuration Name <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- ===== Company Profile ===== -->
+                <div class="row mb-2">
+                    <!-- Left col: text fields -->
+                    <div class="col-12 col-lg-6 col-md-12 col-sm-12">
+                        <div class="section-header-container mb-4">
+                            <h6 class="section-header">Company Profile</h6>
+                            <div class="section-divider"></div>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyName" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="CompanyName" class="floating-label">Company Name</label>
+                            </div>
+                            <span asp-validation-for="CompanyName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyShortName" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="CompanyShortName" class="floating-label">Short / Trade Name</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <textarea asp-for="CompanyDescription" class="form-control floating-input" rows="2" placeholder=" "></textarea>
+                                <label asp-for="CompanyDescription" class="floating-label">Description</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyContactNumber" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="CompanyContactNumber" class="floating-label">Contact Number</label>
+                            </div>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyEmail" type="email" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="CompanyEmail" class="floating-label">Email</label>
+                            </div>
+                            <span asp-validation-for="CompanyEmail" class="text-danger small"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyWebsite" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="CompanyWebsite" class="floating-label">Website</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right col: logo upload (same component as profile picture) -->
+                    <div class="col-12 col-lg-6 col-md-12 col-sm-12">
+                        <div class="section-header-container mb-4">
+                            <h6 class="section-header">Company Logo</h6>
+                            <div class="section-divider"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="profile-picture-container">
+
+                                <div id="logoImagePreview" class="image-preview-container"
+                                     style="display:@(!string.IsNullOrWhiteSpace(Model.CompanyLogoPath) ? "block" : "none")">
+                                    <div class="image-preview-wrapper">
+                                        <img id="logoPreview" class="preview-image"
+                                             src="@(string.IsNullOrWhiteSpace(Model.CompanyLogoPath) ? "#" : Model.CompanyLogoPath)"
+                                             alt="Company Logo" />
+                                        <button type="button" class="remove-image-btn" onclick="removeLogo()">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div id="logoLoadingSpinner" class="loading-spinner"></div>
+
+                                <label class="profile-picture-label" id="logoUploadLabel"
+                                       style="display:@(!string.IsNullOrWhiteSpace(Model.CompanyLogoPath) ? "none" : "block")">
+                                    <i class="fas fa-building profile-picture-icon"></i>
+                                    <div class="mb-2">Click to upload company logo</div>
+                                    <small class="text-muted d-block">Accepted formats: .png, .jpg, .jpeg, .webp (Max 2MB)</small>
+                                    <input type="file" accept=".png,.jpg,.jpeg,.webp"
+                                           id="logoFileInput" name="CompanyLogoFile"
+                                           onchange="previewLogo(this)" />
+                                </label>
+
+                            </div>
+                            <span asp-validation-for="CompanyLogoFile" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Address sub-row -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyAddress1" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="CompanyAddress1" class="floating-label">Address Line 1</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyAddress2" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="CompanyAddress2" class="floating-label">Address Line 2</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyCity" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="CompanyCity" class="floating-label">City</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyProvince" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="CompanyProvince" class="floating-label">Province</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyZipCode" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="CompanyZipCode" class="floating-label">Zip Code</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- ===== Rate Calculation Settings ===== -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Rate Calculation Settings</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="WorkingDaysPerMonth" type="number" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="WorkingDaysPerMonth" class="floating-label">Working Days Per Month <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="WorkingDaysPerMonth" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="WorkingHoursPerDay" type="number" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="WorkingHoursPerDay" class="floating-label">Working Hours Per Day <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="WorkingHoursPerDay" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- ===== Attendance Defaults ===== -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Attendance Defaults</h6>
+                    <div class="section-divider"></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="DefaultWorkStartTime" type="time" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="DefaultWorkStartTime" class="floating-label">Default Work Start Time</label>
+                            </div>
+                            <span asp-validation-for="DefaultWorkStartTime" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="DefaultWorkEndTime" type="time" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="DefaultWorkEndTime" class="floating-label">Default Work End Time</label>
+                            </div>
+                            <span asp-validation-for="DefaultWorkEndTime" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="DefaultGracePeriodMinutes" type="number" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="DefaultGracePeriodMinutes" class="floating-label">Attendance Grace Period</label>
+                            </div>
+                            <span asp-validation-for="DefaultGracePeriodMinutes" class="text-danger small"></span>
+                            <small class="text-muted">Minutes allowed before late status is assigned.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="DefaultHalfDayHours" type="number" step="0.5" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="DefaultHalfDayHours" class="floating-label">Half Day Threshold</label>
+                            </div>
+                            <span asp-validation-for="DefaultHalfDayHours" class="text-danger small"></span>
+                            <small class="text-muted">Minimum hours for half-day attendance.</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="DefaultBreakDurationMinutes" type="number" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="DefaultBreakDurationMinutes" class="floating-label">Default Break Duration</label>
+                            </div>
+                            <span asp-validation-for="DefaultBreakDurationMinutes" class="text-danger small"></span>
+                            <small class="text-muted">Standard break time used for auto calculations.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="DefaultAutomaticPairingWindowMinutes" type="number" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="DefaultAutomaticPairingWindowMinutes" class="floating-label">Auto Pairing Window</label>
+                            </div>
+                            <span asp-validation-for="DefaultAutomaticPairingWindowMinutes" class="text-danger small"></span>
+                            <small class="text-muted">Time window to automatically pair punches in attendance generation.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mt-3">
+                            <div class="custom-control custom-checkbox">
+                                <input asp-for="UseWeekendAsDayOff" type="checkbox" class="custom-control-input" id="useWeekendAsDayOff" />
+                                <label class="custom-control-label" for="useWeekendAsDayOff">Weekend Is Day Off</label>
+                            </div>
+                            <span asp-validation-for="UseWeekendAsDayOff" class="text-danger small"></span>
+                            <small class="text-muted d-block mt-1">Use this when no schedule exists for weekends.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Night Differential &amp; Overtime Rules</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="NightDifferentialStartTime" type="time" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="NightDifferentialStartTime" class="floating-label">ND Start</label>
+                            </div>
+                            <span asp-validation-for="NightDifferentialStartTime" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="NightDifferentialEndTime" type="time" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="NightDifferentialEndTime" class="floating-label">ND End</label>
+                            </div>
+                            <span asp-validation-for="NightDifferentialEndTime" class="text-danger small"></span>
+                            <small class="text-muted">Typical window: 10:00 PM – 6:00 AM.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="MinimumOvertimeMinutes" type="number" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="MinimumOvertimeMinutes" class="floating-label">Min OT Minutes</label>
+                            </div>
+                            <span asp-validation-for="MinimumOvertimeMinutes" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <select asp-for="OvertimeRoundingRule" asp-items="Html.GetEnumSelectList<PayrollSystem.Models.OvertimeRoundingRule>()" class="form-control floating-input" required></select>
+                                <label asp-for="OvertimeRoundingRule" class="floating-label">OT Rounding</label>
+                            </div>
+                            <span asp-validation-for="OvertimeRoundingRule" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group mt-3">
+                            <div class="custom-control custom-checkbox">
+                                <input asp-for="RequireOvertimeApproval" type="checkbox" class="custom-control-input" id="requireOvertimeApproval" />
+                                <label class="custom-control-label" for="requireOvertimeApproval">Require Overtime Approval</label>
+                            </div>
+                            <span asp-validation-for="RequireOvertimeApproval" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- ===== Contribution Table Years ===== -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Contribution Table Years</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="TaxTableYear" type="number" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="TaxTableYear" class="floating-label">Tax Table Year <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="TaxTableYear" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="SSSTableYear" type="number" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="SSSTableYear" class="floating-label">SSS Table Year <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="SSSTableYear" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="PhilHealthTableYear" type="number" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="PhilHealthTableYear" class="floating-label">PhilHealth Table Year <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="PhilHealthTableYear" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="PagIbigTableYear" type="number" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="PagIbigTableYear" class="floating-label">Pag-IBIG Table Year <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="PagIbigTableYear" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- ===== Government Registration Numbers ===== -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Government Registration Numbers</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyTIN" type="text" class="form-control floating-input" placeholder="XXX-XXX-XXX-XXX">
+                                <label asp-for="CompanyTIN" class="floating-label">TIN</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanySSSNumber" type="text" class="form-control floating-input" placeholder="XX-XXXXXXX-X">
+                                <label asp-for="CompanySSSNumber" class="floating-label">SSS Number</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyPhilHealthNumber" type="text" class="form-control floating-input" placeholder="XX-XXXXXXXXX-X">
+                                <label asp-for="CompanyPhilHealthNumber" class="floating-label">PhilHealth Number</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="CompanyPagIbigNumber" type="text" class="form-control floating-input" placeholder="XXXX-XXXX-XXXX">
+                                <label asp-for="CompanyPagIbigNumber" class="floating-label">Pag-IBIG Number</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- ===== Effective Period ===== -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Effective Period</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="EffectiveDate" type="datetime-local" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="EffectiveDate" class="floating-label">Effective Date <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="EffectiveDate" class="text-danger small"></span>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- ===== Settings ===== -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Settings</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="custom-control custom-switch">
+                        <input asp-for="IsActive" type="checkbox" class="custom-control-input" id="isActiveSwitch">
+                        <label class="custom-control-label" for="isActiveSwitch">Is Active</label>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function previewLogo(input) {
+        const preview      = document.getElementById('logoPreview');
+        const imagePreview = document.getElementById('logoImagePreview');
+        const spinner      = document.getElementById('logoLoadingSpinner');
+        const uploadLabel  = document.getElementById('logoUploadLabel');
+
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+
+            if (file.size > 2 * 1024 * 1024) {
+                alert('File size exceeds 2 MB limit.');
+                input.value = '';
+                return;
+            }
+
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert('Invalid file type. Please upload a .png, .jpg, .jpeg, or .webp file.');
+                input.value = '';
+                return;
+            }
+
+            spinner.style.display = 'block';
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                preview.src                 = e.target.result;
+                imagePreview.style.display  = 'block';
+                uploadLabel.style.display   = 'none';
+                spinner.style.display       = 'none';
+            };
+            reader.onerror = () => {
+                spinner.style.display = 'none';
+                alert('Error loading image.');
+                input.value = '';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            preview.src                 = '#';
+            imagePreview.style.display  = 'none';
+            uploadLabel.style.display   = 'block';
+        }
+    }
+
+    function removeLogo() {
+        const input        = document.getElementById('logoFileInput');
+        const imagePreview = document.getElementById('logoImagePreview');
+        const uploadLabel  = document.getElementById('logoUploadLabel');
+
+        input.value                 = '';
+        imagePreview.style.display  = 'none';
+        uploadLabel.style.display   = 'block';
+    }
+</script>

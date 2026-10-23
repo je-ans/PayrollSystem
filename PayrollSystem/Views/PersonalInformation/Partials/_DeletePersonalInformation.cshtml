@@ -1,0 +1,11 @@
+@model PersonalInformationViewModel
+
+<div class="container-fluid">
+    <form asp-action="DeleteConfirmed" method="post" asp-antiforgery="true" id="deletePersonalInformationForm">
+        <input type="hidden" asp-for="Id" />
+        <p>Are you sure you want to delete the personal information record for <strong>@ViewBag.EmployeeName</strong>?</p>
+        <div class="alert alert-warning">
+            <i class="icon fas fa-exclamation-triangle"></i> Deleting this record will permanently remove all associated data.
+        </div>
+    </form>
+</div>

@@ -1,0 +1,291 @@
+@model PayrollSystem.ViewModels.DutyExchangeRequestFormViewModel
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+
+<form id="requestDutyExchangeForm" method="post" asp-action="Submit" asp-controller="DutyExchangeRequest">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="FirstEmployeeId" />
+    <input type="hidden" asp-for="OrganizationStructureId" />
+    <input type="hidden" asp-for="FirstOriginalShiftTypeId" id="firstOriginalShiftTypeId" />
+    <input type="hidden" asp-for="FirstExchangedShiftTypeId" id="firstExchangedShiftTypeId" />
+    <input type="hidden" asp-for="SecondOriginalShiftTypeId" id="secondOriginalShiftTypeId" />
+    <input type="hidden" asp-for="SecondExchangedShiftTypeId" id="secondExchangedShiftTypeId" />
+
+    <div class="dm-modal">
+        <div class="dm-process-header">
+            <div>
+                <h6>Exchange of duty</h6>
+                <small>Swap schedules with a colleague</small>
+            </div>
+            <span class="dm-status dm-status--pending">New</span>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header">
+                <i class="fas fa-building"></i>
+                Request details
+            </div>
+            <div class="dm-section-body">
+                <div class="dm-alert-banner dm-alert-banner--info mb-3">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        File a formal exchange of duty when you and a colleague swap scheduled duties.
+                        @if (Model.RequiresApproval)
+                        {
+                            <span class="d-block mt-1">This request will be routed for approval. Schedules update automatically when fully approved.</span>
+                        }
+                        else
+                        {
+                            <span class="d-block mt-1">No approval workflow is configured — schedules will update immediately after submit.</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="dm-form-label">Department</label>
+                            <input class="form-control dm-form-control" value="@(string.IsNullOrWhiteSpace(Model.DepartmentName) ? "—" : Model.DepartmentName)" disabled />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="DateFiled" class="dm-form-label"></label>
+                            <input asp-for="DateFiled" class="form-control dm-form-control" type="date" />
+                            <span asp-validation-for="DateFiled" class="text-danger validation-message"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header">
+                <i class="fas fa-user"></i>
+                First employee
+            </div>
+            <div class="dm-section-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="form-group">
+                            <label class="dm-form-label">Name</label>
+                            <input class="form-control dm-form-control" value="@Model.FirstEmployeeName" disabled />
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="dm-form-label">ID Number</label>
+                            <input class="form-control dm-form-control" value="@Model.FirstEmployeeIdNumber" disabled />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="FirstOriginalDate" class="dm-form-label">Original date</label>
+                            <input asp-for="FirstOriginalDate" class="form-control dm-form-control duty-date" type="date"
+                                   data-employee-field="first" data-schedule-role="original" id="firstOriginalDate" />
+                            <span asp-validation-for="FirstOriginalDate" class="text-danger validation-message"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="dm-form-label">Original shift</label>
+                            <input class="form-control dm-form-control" type="text" id="firstOriginalShiftDisplay"
+                                   value="@Model.FirstOriginalShiftDisplay" placeholder="Select date to load shift…" readonly />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-0">
+                            <label asp-for="FirstExchangedDate" class="dm-form-label">Exchanged date</label>
+                            <input asp-for="FirstExchangedDate" class="form-control dm-form-control" type="date" id="firstExchangedDate" readonly />
+                            <span asp-validation-for="FirstExchangedDate" class="text-danger validation-message"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-0">
+                            <label class="dm-form-label">Exchanged shift</label>
+                            <input class="form-control dm-form-control" type="text" id="firstExchangedShiftDisplay"
+                                   value="@Model.FirstExchangedShiftDisplay" placeholder="Filled from Employee 2 original…" readonly />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header">
+                <i class="fas fa-user-friends"></i>
+                Second employee
+            </div>
+            <div class="dm-section-body">
+                <div class="form-group">
+                    <label asp-for="SecondEmployeeId" class="dm-form-label"></label>
+                    <select asp-for="SecondEmployeeId" class="form-control dm-form-control" id="secondEmployeeId">
+                        <option value="">Select colleague…</option>
+                        @foreach (var colleague in Model.ColleagueOptions)
+                        {
+                            <option value="@colleague.Id">@colleague.Name (@colleague.EmployeeIdNumber)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="SecondEmployeeId" class="text-danger validation-message"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="SecondOriginalDate" class="dm-form-label">Original date</label>
+                            <input asp-for="SecondOriginalDate" class="form-control dm-form-control duty-date" type="date"
+                                   data-employee-field="second" data-schedule-role="original" id="secondOriginalDate" />
+                            <span asp-validation-for="SecondOriginalDate" class="text-danger validation-message"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="dm-form-label">Original shift</label>
+                            <input class="form-control dm-form-control" type="text" id="secondOriginalShiftDisplay"
+                                   value="@Model.SecondOriginalShiftDisplay" placeholder="Select employee and date…" readonly />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-0">
+                            <label asp-for="SecondExchangedDate" class="dm-form-label">Exchanged date</label>
+                            <input asp-for="SecondExchangedDate" class="form-control dm-form-control" type="date" id="secondExchangedDate" readonly />
+                            <span asp-validation-for="SecondExchangedDate" class="text-danger validation-message"></span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-0">
+                            <label class="dm-form-label">Exchanged shift</label>
+                            <input class="form-control dm-form-control" type="text" id="secondExchangedShiftDisplay"
+                                   value="@Model.SecondExchangedShiftDisplay" placeholder="Filled from Employee 1 original…" readonly />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dm-form-section">
+            <label asp-for="Reason" class="dm-form-label"></label>
+            <textarea asp-for="Reason"
+                      class="form-control dm-form-control"
+                      rows="3"
+                      required
+                      placeholder="Reason for exchange of duty…"></textarea>
+            <span asp-validation-for="Reason" class="text-danger validation-message"></span>
+        </div>
+    </div>
+</form>
+
+<script>
+    (function () {
+        var $form = $('#requestDutyExchangeForm');
+        if (!$form.length) return;
+
+        var scheduleUrl = '@Url.Action("EmployeeSchedule", "DutyExchangeRequest")';
+        var firstEmployeeId = $form.find('[name="FirstEmployeeId"]').val();
+
+        var $secondEmployee = $('#secondEmployeeId');
+        var $firstOriginalDate = $('#firstOriginalDate');
+        var $secondOriginalDate = $('#secondOriginalDate');
+        var $firstExchangedDate = $('#firstExchangedDate');
+        var $secondExchangedDate = $('#secondExchangedDate');
+
+        var schedules = {
+            first: { original: null },
+            second: { original: null }
+        };
+
+        function setShiftDisplay(prefix, role, data) {
+            var $display = $('#' + prefix + role.charAt(0).toUpperCase() + role.slice(1) + 'ShiftDisplay');
+            var $hidden = $('#' + prefix + role.charAt(0).toUpperCase() + role.slice(1) + 'ShiftTypeId');
+
+            if (!data) {
+                $display.val('').attr('placeholder', role === 'original' ? 'No schedule found' : '—');
+                $hidden.val('');
+                return;
+            }
+
+            $display.val(data.display || (data.code + ' — ' + data.label));
+            $hidden.val(data.shiftTypeId);
+        }
+
+        function loadSchedule(employeeId, date) {
+            if (!employeeId || !date) {
+                return $.Deferred().resolve(null).promise();
+            }
+
+            return $.get(scheduleUrl, { employeeId: employeeId, date: date });
+        }
+
+        function syncExchangedSides() {
+            var first = schedules.first.original;
+            var second = schedules.second.original;
+
+            if (second) {
+                $firstExchangedDate.val($secondOriginalDate.val());
+                setShiftDisplay('first', 'exchanged', second);
+            } else {
+                $firstExchangedDate.val('');
+                setShiftDisplay('first', 'exchanged', null);
+            }
+
+            if (first) {
+                $secondExchangedDate.val($firstOriginalDate.val());
+                setShiftDisplay('second', 'exchanged', first);
+            } else {
+                $secondExchangedDate.val('');
+                setShiftDisplay('second', 'exchanged', null);
+            }
+        }
+
+        function refreshFirstOriginal() {
+            var date = $firstOriginalDate.val();
+            return loadSchedule(firstEmployeeId, date).done(function (data) {
+                if (data && data.success) {
+                    schedules.first.original = data;
+                    setShiftDisplay('first', 'original', data);
+                } else {
+                    schedules.first.original = null;
+                    setShiftDisplay('first', 'original', null);
+                }
+                syncExchangedSides();
+            });
+        }
+
+        function refreshSecondOriginal() {
+            var employeeId = $secondEmployee.val();
+            var date = $secondOriginalDate.val();
+            if (!employeeId) {
+                schedules.second.original = null;
+                setShiftDisplay('second', 'original', null);
+                syncExchangedSides();
+                return $.Deferred().resolve().promise();
+            }
+
+            return loadSchedule(employeeId, date).done(function (data) {
+                if (data && data.success) {
+                    schedules.second.original = data;
+                    setShiftDisplay('second', 'original', data);
+                } else {
+                    schedules.second.original = null;
+                    setShiftDisplay('second', 'original', null);
+                }
+                syncExchangedSides();
+            });
+        }
+
+        $firstOriginalDate.on('change', refreshFirstOriginal);
+        $secondOriginalDate.on('change', refreshSecondOriginal);
+        $secondEmployee.on('change', refreshSecondOriginal);
+
+        refreshFirstOriginal();
+    })();
+</script>

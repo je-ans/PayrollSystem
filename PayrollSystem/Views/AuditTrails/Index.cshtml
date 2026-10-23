@@ -1,0 +1,889 @@
+﻿@using System.Text.Json
+@model object
+
+@{
+    ViewData["Title"] = "Audit Trail";
+    ViewBag.ActiveMenu = "AuditTrails";
+}
+
+<style>
+    /* General table styles */
+    .table-responsive {
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    .table thead th {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        z-index: 2;
+    }
+
+    #auditTable td, #auditTable th {
+        white-space: normal !important;
+        word-wrap: break-word;
+    }
+
+        /* Enhanced data cell styling */
+        #auditTable td:nth-child(5),
+        #auditTable td:nth-child(6) {
+            max-width: 450px;
+            max-height: 250px;
+            overflow-y: auto;
+            overflow-wrap: break-word;
+            vertical-align: top;
+            padding: 0.75rem;
+            font-size: 0.875rem;
+        }
+
+    /* Compact data display in table */
+    .data-preview {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+    }
+
+    .data-preview-item {
+        margin-bottom: 0.5rem;
+        padding: 0.4rem 0.6rem;
+        background-color: #f8f9fa;
+        border-left: 3px solid #dee2e6;
+        border-radius: 3px;
+    }
+
+        .data-preview-item:last-child {
+            margin-bottom: 0;
+        }
+
+    .data-preview-key {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.8rem;
+        text-transform: capitalize;
+        display: inline-block;
+        min-width: 100px;
+    }
+
+    .data-preview-value {
+        color: #212529;
+        margin-left: 0.5rem;
+        word-break: break-word;
+    }
+
+    .data-preview-empty {
+        color: #6c757d;
+        font-style: italic;
+        text-align: center;
+        padding: 1rem;
+        background-color: #f8f9fa;
+        border-radius: 3px;
+    }
+
+    .data-preview-truncated {
+        color: #007bff;
+        font-size: 0.75rem;
+        text-align: center;
+        padding: 0.25rem;
+        cursor: pointer;
+        background-color: #e7f3ff;
+        border-radius: 3px;
+        margin-top: 0.5rem;
+    }
+
+        .data-preview-truncated:hover {
+            background-color: #cce5ff;
+        }
+
+    #auditTable th, #auditTable td {
+        min-width: 100px;
+    }
+
+    /* Minimal Modal Styles */
+    #viewDataModal .modal-dialog {
+        max-width: 850px;
+    }
+
+    #viewDataModal .modal-content {
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    #viewDataModal .modal-header {
+        background-color: #fff;
+        border-bottom: 1px solid #dee2e6;
+        padding: 1rem 1.25rem;
+    }
+
+    #viewDataModal .modal-title {
+        font-size: 1.1rem;
+        font-weight: 500;
+        color: #212529;
+    }
+
+    #viewDataModal .modal-body {
+        padding: 1.25rem;
+        background-color: #fff;
+    }
+
+    #viewDataModal .modal-footer {
+        background-color: #fff;
+        border-top: 1px solid #dee2e6;
+        padding: 0.75rem 1.25rem;
+    }
+
+    #viewDataModal .close {
+        font-size: 1.5rem;
+        opacity: 0.5;
+        transition: opacity 0.15s;
+    }
+
+        #viewDataModal .close:hover {
+            opacity: 0.75;
+        }
+
+    /* Content organization styles */
+    .modal-section {
+        margin-bottom: 1.25rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+        .modal-section:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+    .modal-section-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .audit-meta-item {
+        display: flex;
+        margin-bottom: 0.5rem;
+        padding: 0.4rem 0;
+    }
+
+    .audit-meta-label {
+        flex: 0 0 120px;
+        font-weight: 500;
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+
+    .audit-meta-value {
+        flex: 1;
+        word-break: break-word;
+        color: #212529;
+        font-size: 0.85rem;
+    }
+
+    .audit-action-badge {
+        display: inline-block;
+        padding: 0.25rem 0.6rem;
+        font-size: 0.7rem;
+        font-weight: 500;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .audit-action-created {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .audit-action-updated {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+    }
+
+    .audit-action-deleted {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .audit-action-login {
+        background-color: #e2e3e5;
+        color: #383d41;
+        border: 1px solid #d6d8db;
+    }
+
+    .audit-action-logout {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+    }
+
+    /* Minimal data comparison panels */
+    .data-comparison {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 0 -0.5rem;
+        gap: 1rem;
+    }
+
+    .data-panel {
+        flex: 1 1 calc(50% - 1rem);
+        min-width: 280px;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+    }
+
+    .data-panel-header {
+        padding: 0.75rem 1rem;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 500;
+        font-size: 0.85rem;
+        color: #495057;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .data-panel-body {
+        padding: 1rem;
+        font-size: 0.85rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+        /* Custom scrollbar for data panels */
+        .data-panel-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .data-panel-body::-webkit-scrollbar-track {
+            background: #f8f9fa;
+        }
+
+        .data-panel-body::-webkit-scrollbar-thumb {
+            background: #ced4da;
+            border-radius: 3px;
+        }
+
+            .data-panel-body::-webkit-scrollbar-thumb:hover {
+                background: #adb5bd;
+            }
+
+    .data-field {
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #f1f3f5;
+    }
+
+        .data-field:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+
+    .data-field-name {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 0.35rem;
+        font-size: 0.8rem;
+        text-transform: capitalize;
+    }
+
+    .data-field-value {
+        word-break: break-word;
+        color: #212529;
+        font-size: 0.85rem;
+        line-height: 1.5;
+    }
+
+    .btn-modal-close {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        padding: 0.375rem 0.75rem;
+        border-radius: 3px;
+        font-size: 0.875rem;
+        transition: background-color 0.15s;
+    }
+
+        .btn-modal-close:hover {
+            background-color: #5a6268;
+        }
+
+    .no-data-message {
+        color: #6c757d;
+        font-style: italic;
+        padding: 1.5rem;
+        text-align: center;
+        font-size: 0.85rem;
+    }
+
+    /* Highlight differences in data */
+    .highlight-change {
+        background-color: #fff3cd;
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        border-radius: 3px;
+        border-bottom: none;
+    }
+
+    .data-panel-counter {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+
+    .empty-data-panel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100px;
+    }
+
+    /* Diff indicator */
+    .diff-indicator {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        margin-right: 0.5rem;
+        background-color: #ffc107;
+    }
+
+    .diff-indicator-added {
+        background-color: #28a745;
+    }
+
+    .diff-indicator-removed {
+        background-color: #dc3545;
+    }
+</style>
+
+<!-- Enhanced View Data Modal -->
+<div class="modal fade" id="viewDataModal" role="dialog" aria-labelledby="viewDataModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content custom-modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewDataModalLabel">Audit Record Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Event Information Section -->
+                <div class="modal-section">
+                    <h6 class="modal-section-title">Event Information</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="audit-meta-item">
+                                <div class="audit-meta-label">Action</div>
+                                <div class="audit-meta-value">
+                                    <span id="modalAction" class="audit-action-badge"></span>
+                                </div>
+                            </div>
+                            <div class="audit-meta-item">
+                                <div class="audit-meta-label">Module</div>
+                                <div class="audit-meta-value" id="modalModule"></div>
+                            </div>
+                            <div class="audit-meta-item">
+                                <div class="audit-meta-label">Affected Table</div>
+                                <div class="audit-meta-value" id="modalAffectedTable"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="audit-meta-item">
+                                <div class="audit-meta-label">Timestamp</div>
+                                <div class="audit-meta-value" id="modalTimeStamp"></div>
+                            </div>
+                            <div class="audit-meta-item">
+                                <div class="audit-meta-label">User</div>
+                                <div class="audit-meta-value" id="modalUser"></div>
+                            </div>
+                            <div class="audit-meta-item">
+                                <div class="audit-meta-label">IP Address</div>
+                                <div class="audit-meta-value" id="modalIpAddress"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Comparison Section -->
+                <div class="modal-section">
+                    <h6 class="modal-section-title">Data Changes</h6>
+                    <div class="data-comparison">
+                        <div class="data-panel">
+                            <div class="data-panel-header">
+                                <span>Previous Data</span>
+                                <span class="data-panel-counter" id="oldDataCounter"></span>
+                            </div>
+                            <div class="data-panel-body" id="modalOldData"></div>
+                        </div>
+                        <div class="data-panel">
+                            <div class="data-panel-header">
+                                <span>New Data</span>
+                                <span class="data-panel-counter" id="newDataCounter"></span>
+                            </div>
+                            <div class="data-panel-body" id="modalNewData"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-modal-close" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header">
+        <h3 class="card-title">Audit Trail</h3>
+    </div>
+    <div class="card-body">
+        <div class="container-fluid">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped table-bordered w-100" id="auditTable">
+                    <thead>
+                        <tr class="text-center">
+                            <th hidden>No.</th>
+                            <th>Action</th>
+                            <th>Module</th>
+                            <th>Affected Table</th>
+                            <th>Old Data</th>
+                            <th>New Data</th>
+                            <th>TimeStamp</th>
+                            <th>User</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var table = $('#auditTable').DataTable({
+            processing: true,
+            serverSide: true,
+            searching: true,
+            ordering: true,
+            paging: true,
+            info: true,
+            scrollX: true,
+            autoWidth: true,
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100, 500, 1000],
+            ajax: {
+                url: '@Url.Action("GetAuditTrailJson", "AuditTrails")',
+                type: 'POST'
+            },
+            columns: [
+                { data: "id", visible: false },
+                { data: "action", className: "text-center" },
+                { data: "module" },
+                { data: "affectedTable" },
+                {
+                    data: null,
+                    render: function (data, type, row) {
+                        return renderCompactData(row.oldDataFormatted, row.oldData, 'old');
+                    }
+                },
+                {
+                    data: null,
+                    render: function (data, type, row) {
+                        return renderCompactData(row.newDataFormatted, row.newData, 'new');
+                    }
+                },
+                { data: "timeStamp", render: function (data) { return formatDate(data); } },
+                { data: "userFullName" },
+                { data: "ipAddress" }
+            ],
+            columnDefs: [
+                { targets: [1, 2, 3, 4, 5], className: "text-wrap" },
+                { targets: [4, 5], orderable: false }
+            ],
+            order: [[6, 'desc']],
+            language: { emptyTable: "No data available." }
+        });
+
+        // Function to render compact data preview in table cells
+        function renderCompactData(formattedData, rawData, type) {
+            if (!formattedData ||
+                formattedData.includes("No previous data") ||
+                formattedData.includes("No relevant data") ||
+                formattedData.includes("No data")) {
+                return '<div class="data-preview-empty">No data recorded</div>';
+            }
+
+            try {
+                var extractedData = extractDataFromHtml(formattedData);
+
+                if (Object.keys(extractedData).length === 0) {
+                    return '<div class="data-preview-empty">No data available</div>';
+                }
+
+                var html = '<div class="data-preview">';
+                var fieldCount = 0;
+                var maxFields = 3; // Show maximum 3 fields in table view
+
+                for (var key in extractedData) {
+                    if (fieldCount >= maxFields) break;
+
+                    var value = extractedData[key];
+                    if (value && value.toString().length > 50) {
+                        value = value.toString().substring(0, 50) + '...';
+                    }
+
+                    html += '<div class="data-preview-item">';
+                    html += '<span class="data-preview-key">' + cleanText(key) + ':</span>';
+                    html += '<span class="data-preview-value">' + cleanText(value) + '</span>';
+                    html += '</div>';
+
+                    fieldCount++;
+                }
+
+                var totalFields = Object.keys(extractedData).length;
+                if (totalFields > maxFields) {
+                    html += '<div class="data-preview-truncated">+ ' + (totalFields - maxFields) + ' more field(s) - Click to view all</div>';
+                }
+
+                html += '</div>';
+                return html;
+            } catch (e) {
+                console.error('Error rendering compact data:', e);
+                return '<div class="data-preview-empty">Error displaying data</div>';
+            }
+        }
+
+        $('#auditTable tbody').on('click', 'tr', function () {
+            var data = table.row(this).data() || {};
+
+            // Set action with appropriate badge class
+            var actionText = (data.action || '').trim();
+            var badgeClass = 'audit-action-badge ';
+
+            switch (actionText.toLowerCase()) {
+                case 'created':
+                    badgeClass += 'audit-action-created';
+                    break;
+                case 'updated':
+                    badgeClass += 'audit-action-updated';
+                    break;
+                case 'deleted':
+                    badgeClass += 'audit-action-deleted';
+                    break;
+                case 'login':
+                    badgeClass += 'audit-action-login';
+                    break;
+                case 'logout':
+                    badgeClass += 'audit-action-logout';
+                    break;
+                default:
+                    badgeClass += 'badge-secondary';
+                    break;
+            }
+
+            $('#modalAction').text(actionText).removeClass().addClass(badgeClass);
+            $('#modalModule').text(data.module || '');
+            $('#modalAffectedTable').text(data.affectedTable || '');
+
+            var oldDataHtml = data.oldData || "{}";
+            var newDataHtml = data.newData || "{}";
+
+            var { oldData, newData, fields } = parseAuditData(oldDataHtml, newDataHtml);
+            displayFormattedData(oldData, newData, fields);
+
+            $('#modalTimeStamp').text(formatDate(data.timeStamp) || '');
+            $('#modalUser').text(data.userFullName || '');
+            $('#modalIpAddress').text(data.ipAddress || '');
+
+            $('#viewDataModal').modal('show');
+        });
+
+        function extractDataFromHtml(html) {
+            if (!html ||
+                html.includes("No previous data recorded") ||
+                html.includes("No relevant data available")) {
+                return {};
+            }
+
+            var extractedData = {};
+
+            try {
+                var tempDiv = $('<div>').html(html);
+
+                if (tempDiv.find('strong').length > 0) {
+                    tempDiv.find('strong').each(function() {
+                        var key = $(this).text().replace(':', '').trim();
+                        var value = '';
+
+                        var nextNode = $(this).get(0).nextSibling;
+                        if (nextNode) {
+                            value = nextNode.nodeType === 3 ? nextNode.textContent.trim() : $(nextNode).text().trim();
+                        }
+
+                        if (!value) {
+                            var parentText = $(this).parent().text();
+                            value = parentText.substring(parentText.indexOf(key) + key.length).replace(':', '').trim();
+                        }
+
+                        if (key) {
+                            extractedData[key] = value;
+                        }
+                    });
+                }
+                else if (tempDiv.text().includes('{') || tempDiv.text().includes('[')) {
+                    try {
+                        var jsonObj = JSON.parse(tempDiv.text());
+                        for (var key in jsonObj) {
+                            extractedData[key] = jsonObj[key];
+                        }
+                    } catch (e) {
+                        console.error('JSON parse error:', e);
+                    }
+                }
+                else {
+                    var text = tempDiv.text();
+                    var lines = text.split(/[\r\n]+/);
+
+                    lines.forEach(function(line) {
+                        var colonPos = line.indexOf(':');
+                        if (colonPos > 0) {
+                            var key = line.substring(0, colonPos).trim();
+                            var value = line.substring(colonPos + 1).trim();
+
+                            if (key) {
+                                extractedData[key] = value;
+                            }
+                        }
+                    });
+                }
+
+                if (Object.keys(extractedData).length === 0 && tempDiv.text().trim()) {
+                    extractedData['Data'] = tempDiv.text().trim();
+                }
+
+                return extractedData;
+            } catch (e) {
+                console.error('Data extraction error:', e);
+                return {};
+            }
+        }
+
+        function parseAuditData(oldDataHtml, newDataHtml) {
+            var oldData = {};
+            var newData = {};
+            var allFields = new Set();
+
+            oldData = extractDataFromHtml(oldDataHtml);
+            newData = extractDataFromHtml(newDataHtml);
+
+            Object.keys(oldData).forEach(key => allFields.add(key));
+            Object.keys(newData).forEach(key => allFields.add(key));
+
+            var sortedFields = Array.from(allFields).sort();
+
+            return {
+                oldData: oldData,
+                newData: newData,
+                fields: sortedFields
+            };
+        }
+
+        function displayFormattedData(oldData, newData, fields) {
+            var oldDataHtml = '';
+            var newDataHtml = '';
+
+            var hasOldData = Object.keys(oldData).length > 0;
+            var hasNewData = Object.keys(newData).length > 0;
+
+            if (!hasOldData) {
+                oldDataHtml = '<div class="empty-data-panel"><div class="no-data-message">No previous data recorded</div></div>';
+                $('#oldDataCounter').text('0 fields');
+            } else {
+                $('#oldDataCounter').text(Object.keys(oldData).length + ' field(s)');
+            }
+
+            if (!hasNewData) {
+                newDataHtml = '<div class="empty-data-panel"><div class="no-data-message">No new data recorded</div></div>';
+                $('#newDataCounter').text('0 fields');
+            } else {
+                $('#newDataCounter').text(Object.keys(newData).length + ' field(s)');
+            }
+
+            if (hasOldData || hasNewData) {
+                fields.forEach(function(field) {
+                    if (field === 'Data') return;
+
+                    var oldValue = (oldData[field] !== undefined && oldData[field] !== null) ? oldData[field] : '';
+                    var newValue = (newData[field] !== undefined && newData[field] !== null) ? newData[field] : '';
+
+                    var valueChanged = oldValue !== newValue && (oldValue || newValue);
+                    var diffIndicator = '';
+
+                    if (oldValue || (valueChanged && hasOldData)) {
+                        var highlightClass = valueChanged ? 'highlight-change' : '';
+                        if (valueChanged && !newValue) {
+                            diffIndicator = '<span class="diff-indicator diff-indicator-removed"></span>';
+                        } else if (valueChanged) {
+                            diffIndicator = '<span class="diff-indicator"></span>';
+                        }
+
+                        oldDataHtml += `
+                            <div class="data-field ${highlightClass}">
+                                <div class="data-field-name">${diffIndicator}${cleanText(field)}</div>
+                                <div class="data-field-value">${formatFieldValue(field, oldValue)}</div>
+                            </div>`;
+                    }
+
+                    diffIndicator = '';
+                    if (newValue || (valueChanged && hasNewData)) {
+                        var highlightClass = valueChanged ? 'highlight-change' : '';
+                        if (valueChanged && !oldValue) {
+                            diffIndicator = '<span class="diff-indicator diff-indicator-added"></span>';
+                        } else if (valueChanged) {
+                            diffIndicator = '<span class="diff-indicator"></span>';
+                        }
+
+                        newDataHtml += `
+                            <div class="data-field ${highlightClass}">
+                                <div class="data-field-name">${diffIndicator}${cleanText(field)}</div>
+                                <div class="data-field-value">${formatFieldValue(field, newValue)}</div>
+                            </div>`;
+                    }
+                });
+            }
+
+            $('#modalOldData').html(oldDataHtml);
+            $('#modalNewData').html(newDataHtml);
+        }
+
+        function cleanText(text) {
+            if (text === undefined || text === null) return '';
+            text = String(text);
+            text = text.replace(/<\/?[^>]+(>|$)/g, "");
+            text = text.trim();
+            text = $('<div>').text(text).html();
+            return text;
+        }
+
+        function formatDate(value) {
+            if (!value) return '';
+            try {
+                const d = new Date(value);
+                if (isNaN(d.getTime())) return value;
+                return d.toLocaleString();
+            } catch (e) {
+                return value;
+            }
+        }
+
+        function formatFieldValue(field, value) {
+            if (value === null || value === undefined || value === '') return '<em style="color: #6c757d;">No value</em>';
+
+            // If it's already an object/array, pretty print
+            if (typeof value === 'object') {
+                try {
+                    return '<pre style="white-space:pre-wrap;margin:0;padding:0.5rem;background-color:#f8f9fa;border-radius:4px;border:1px solid #dee2e6;">' +
+                           $('<div>').text(JSON.stringify(value, null, 2)).html() + '</pre>';
+                } catch (e) {
+                    return $('<div>').text(String(value)).html();
+                }
+            }
+
+            // If it's an array-like string that looks like JSON, try parse
+            if (typeof value === 'string' && (value.trim().startsWith('{') || value.trim().startsWith('['))) {
+                try {
+                    const parsed = JSON.parse(value);
+                    return formatFieldValue(field, parsed);
+                } catch (e) {
+                    // fall back to string display
+                }
+            }
+
+            // Dates: common keys
+            const keyLower = (field || '').toLowerCase();
+            if (keyLower === 'date' || keyLower.endsWith('date') || keyLower.includes('time')) {
+                return $('<div>').text(formatDate(value)).html();
+            }
+
+            // Boolean values
+            if (typeof value === 'boolean' || value === 'true' || value === 'false') {
+                var boolValue = value === true || value === 'true';
+                return boolValue ?
+                    '<span style="color: #4CAF50; font-weight: 600;">✓ True</span>' :
+                    '<span style="color: #f44336; font-weight: 600;">✗ False</span>';
+            }
+
+            // Default: escape text
+            return $('<div>').text(String(value)).html();
+        }
+    });
+</script>
+
+@functions {
+    private HashSet<string> GlobalIgnoredFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "Id", "Users", "CreatedById", "CreatedBy", "CreatedOn", "Password", "UserId", "DesignationId", "PasswordChangedOn",
+        "DepartmentId", "UpdatedById", "UpdatedBy", "UpdatedOn", "IsDeleted", "UserCount", "DisplayName", "RoleId"
+    };
+
+    private Dictionary<string, string> PropertyMappings = new Dictionary<string, string>
+    {
+        { "UserName", "Username" },
+        { "Name", "Fullname" },
+        { "FirstName", "Firstname" },
+        { "LastName", "Lastname" },
+        { "PhoneNumber", "Phone Number" },
+        { "RoleName", "Role" },
+        { "DepartmentName", "Department" },
+        { "DesignationName", "Designation" },
+        { "DesignationDescription", "Description" },
+        { "DepartmentDescription", "Description" }
+    };
+
+    private string RenderFilteredJsonData(string jsonData, string tableName)
+    {
+        if (string.IsNullOrWhiteSpace(jsonData))
+        {
+            return "<p>No previous data recorded.</p>";
+        }
+
+        try
+        {
+            var dataDict = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonData);
+            if (dataDict == null || !dataDict.Any())
+            {
+                return "<p>No relevant data available.</p>";
+            }
+
+            var transformedData = dataDict
+                .Select(kvp => new KeyValuePair<string, object>(
+                    PropertyMappings.TryGetValue(kvp.Key, out var newKey) ? newKey : kvp.Key,
+                    kvp.Value))
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+            var filteredData = transformedData
+                .Where(kvp => !GlobalIgnoredFields.Contains(kvp.Key, StringComparer.OrdinalIgnoreCase))
+                .Select(kvp => $"<strong>{System.Net.WebUtility.HtmlEncode(kvp.Key)}:</strong> {System.Net.WebUtility.HtmlEncode(kvp.Value?.ToString())}")
+                .ToList();
+
+            return filteredData.Any() ? "<p>" + string.Join("<br />", filteredData) + "</p>" : "<p>No relevant data available.</p>";
+        }
+        catch (JsonException ex)
+        {
+            return $"<p style='color: red;'>Error parsing data: {System.Net.WebUtility.HtmlEncode(ex.Message)}</p>";
+        }
+    }
+}

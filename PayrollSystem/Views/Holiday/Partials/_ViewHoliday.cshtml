@@ -1,0 +1,53 @@
+@model HolidayFormViewModel
+
+<div class="container">
+    <table class="table table-bordered table-hover">
+        <tr>
+            <th class="bg-light" style="width:40%">Holiday Name</th>
+            <td>@Model.Name</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Date</th>
+            <td>@Model.Date.ToString("MMMM d, yyyy")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Holiday Type</th>
+            <td>@EnumHelper.GetDisplayName(Model.HolidayType)</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Day Type</th>
+            <td>
+                @if (!string.IsNullOrWhiteSpace(Model.DayTypeCode))
+                {
+                    <span class="badge badge-info">@Model.DayTypeCode</span>
+                    <span>@Model.DayTypeName</span>
+                }
+                else
+                {
+                    <span>—</span>
+                }
+            </td>
+        </tr>
+        <tr>
+            <th class="bg-light">Recurring</th>
+            <td>@(Model.IsRecurring ? "Yes (every year)" : "No")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Description</th>
+            <td>@(string.IsNullOrEmpty(Model.Description) ? "—" : Model.Description)</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Status</th>
+            <td>
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Inactive</span>
+                }
+            </td>
+        </tr>
+    </table>
+</div>

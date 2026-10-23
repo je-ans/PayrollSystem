@@ -1,0 +1,254 @@
+@model ExchangeRestDayRequestPrintViewModel
+@{
+    ViewData["Title"] = "Exchange Rest Day";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.5pt; color: #111; background: #fff; }
+        .no-print { margin: 12px 16px; }
+        .no-print button {
+            padding: 7px 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px;
+            background: #f8f9fa; font-size: 13px;
+        }
+        .no-print button.primary { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
+        @@media print { .no-print { display: none !important; } }
+
+        .sheet {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 24px 28px 32px;
+        }
+
+        .company {
+            text-align: center;
+            margin-bottom: 18px;
+            border-bottom: 2px solid #1e3a5f;
+            padding-bottom: 12px;
+        }
+        .company img { max-height: 56px; margin-bottom: 6px; }
+        .company h1 { font-size: 15pt; letter-spacing: 0.02em; margin-bottom: 2px; }
+        .company .addr { font-size: 9pt; color: #444; }
+        .doc-title {
+            text-align: center;
+            font-size: 13pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 16px 0 4px;
+            letter-spacing: 0.04em;
+        }
+        .doc-sub {
+            text-align: center;
+            font-size: 9pt;
+            color: #555;
+            margin-bottom: 18px;
+        }
+
+        .meta {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 14px;
+        }
+        .meta th, .meta td {
+            border: 1px solid #999;
+            padding: 6px 8px;
+            vertical-align: top;
+            text-align: left;
+        }
+        .meta th {
+            width: 24%;
+            background: #f3f6f9;
+            font-weight: 600;
+            font-size: 9.5pt;
+        }
+
+        .section-title {
+            font-size: 10.5pt;
+            font-weight: 700;
+            margin: 16px 0 6px;
+            color: #1e3a5f;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .employee-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 14px;
+        }
+        .employee-table th, .employee-table td {
+            border: 1px solid #999;
+            padding: 6px 8px;
+            vertical-align: top;
+            text-align: left;
+        }
+        .employee-table th {
+            background: #f3f6f9;
+            font-weight: 600;
+            font-size: 9.5pt;
+        }
+        .employee-table .subhead {
+            background: #e8eef5;
+            font-weight: 600;
+            font-size: 9.5pt;
+        }
+
+        .reason-box {
+            border: 1px solid #999;
+            padding: 10px 12px;
+            min-height: 48px;
+            white-space: pre-wrap;
+            margin-bottom: 8px;
+        }
+
+        .sig-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 40px;
+        }
+        .sig {
+            flex: 1;
+            text-align: center;
+        }
+        .sig .line {
+            border-top: 1px solid #000;
+            margin: 48px 12px 6px;
+        }
+        .sig .role { font-size: 9pt; color: #333; }
+        .sig .name { font-size: 9.5pt; font-weight: 600; min-height: 1.2em; }
+
+        .footer-note {
+            margin-top: 28px;
+            font-size: 8pt;
+            color: #666;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button type="button" class="primary" onclick="window.print()">Print / Save as PDF</button>
+        <button type="button" onclick="window.close()" style="margin-left:8px">Close</button>
+    </div>
+
+    <div class="sheet">
+        <div class="company">
+            @if (!string.IsNullOrWhiteSpace(Model.CompanyLogoUrl))
+            {
+                <img src="@Model.CompanyLogoUrl" alt="" />
+            }
+            <h1>@Model.CompanyName</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.CompanyAddress))
+            {
+                <div class="addr">@Model.CompanyAddress</div>
+            }
+        </div>
+
+        <div class="doc-title">Exchange Rest Day Form</div>
+        <div class="doc-sub">Printed @Model.PrintedOn.ToString("MMM dd, yyyy h:mm tt")</div>
+
+        <table class="meta">
+            <tr>
+                <th>Department</th>
+                <td>@(string.IsNullOrWhiteSpace(Model.DepartmentName) ? "—" : Model.DepartmentName)</td>
+            </tr>
+            <tr>
+                <th>Date Filed</th>
+                <td>@Model.DateFiled.ToString("MMMM dd, yyyy")</td>
+            </tr>
+            <tr>
+                <th>Submitted</th>
+                <td>@Model.SubmittedBy · @Model.SubmittedOn.ToString("MMM dd, yyyy h:mm tt")</td>
+            </tr>
+        </table>
+
+        <div class="section-title">Employee details</div>
+        <table class="employee-table">
+            <thead>
+                <tr>
+                    <th style="width:18%"></th>
+                    <th>First Employee</th>
+                    <th>Second Employee</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th>Name</th>
+                    <td>@Model.FirstEmployeeName</td>
+                    <td>@Model.SecondEmployeeName</td>
+                </tr>
+                <tr>
+                    <th>Employee ID</th>
+                    <td>@(string.IsNullOrWhiteSpace(Model.FirstEmployeeIdNumber) ? "—" : Model.FirstEmployeeIdNumber)</td>
+                    <td>@(string.IsNullOrWhiteSpace(Model.SecondEmployeeIdNumber) ? "—" : Model.SecondEmployeeIdNumber)</td>
+                </tr>
+                <tr class="subhead">
+                    <td colspan="3">Rest days being exchanged</td>
+                </tr>
+                <tr>
+                    <th>Rest date</th>
+                    <td>@Model.FirstRestDate.ToString("MMMM dd, yyyy")</td>
+                    <td>@Model.SecondRestDate.ToString("MMMM dd, yyyy")</td>
+                </tr>
+                <tr>
+                    <th>Rest shift</th>
+                    <td>@Model.FirstRestShiftDisplay</td>
+                    <td>@Model.SecondRestShiftDisplay</td>
+                </tr>
+                <tr class="subhead">
+                    <td colspan="3">Work shifts on the other rest day</td>
+                </tr>
+                <tr>
+                    <th>Work date</th>
+                    <td>@Model.SecondRestDate.ToString("MMMM dd, yyyy")</td>
+                    <td>@Model.FirstRestDate.ToString("MMMM dd, yyyy")</td>
+                </tr>
+                <tr>
+                    <th>Work shift</th>
+                    <td>@Model.FirstWorkShiftDisplay</td>
+                    <td>@Model.SecondWorkShiftDisplay</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="section-title">Reason for exchange</div>
+        <div class="reason-box">@Model.Reason</div>
+
+        <div class="sig-row">
+            <div class="sig">
+                <div class="name">@Model.FirstEmployeeName</div>
+                <div class="line"></div>
+                <div class="role">First Employee</div>
+            </div>
+            <div class="sig">
+                <div class="name">@Model.SecondEmployeeName</div>
+                <div class="line"></div>
+                <div class="role">Second Employee</div>
+            </div>
+        </div>
+
+        <div class="sig-row">
+            <div class="sig">
+                <div class="name">&nbsp;</div>
+                <div class="line"></div>
+                <div class="role">Noted By</div>
+            </div>
+            <div class="sig">
+                <div class="name">&nbsp;</div>
+                <div class="line"></div>
+                <div class="role">Approved By</div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            This form documents the mutual exchange of rest days between the employees above.
+        </div>
+    </div>
+</body>
+</html>

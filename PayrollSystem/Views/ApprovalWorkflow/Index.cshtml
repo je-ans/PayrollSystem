@@ -1,0 +1,46 @@
+@{
+    ViewData["Title"] = "Approval Workflows";
+    ViewBag.ActiveMenu = "ApprovalWorkflow";
+    ViewBag.ActiveLink = "ApprovalWorkflow";
+    ViewBag.ActiveMainMenu = "BuildUp";
+}
+
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<section class="content aw-page">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+                    <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                        <div class="flex-grow-1">
+                            <h3 class="card-title m-0">Approval Workflows</h3>
+                            <p class="aw-intro mt-1">Define who approves work schedules, DTR, payroll, and other transactions.</p>
+                        </div>
+                        <div class="card-tools" asp-permission="APPROVAL_WORKFLOW_VIEW">
+                            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+                               data-title="Add Workflow"
+                               data-url="@Url.Action("Create")"
+                               data-modal-type="create">
+                                <i class="fas fa-plus"></i>
+                                <span class="d-none d-lg-inline ml-1">Add Workflow</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="awWorkflowGrid" class="aw-workflow-grid">
+                            <div class="col-12 text-center text-muted py-4">
+                                <i class="fas fa-spinner fa-spin mr-1"></i> Loading workflows…
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script src="~/js/approval-workflow.js" asp-append-version="true"></script>
+}

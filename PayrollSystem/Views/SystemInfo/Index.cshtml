@@ -1,0 +1,159 @@
+@model SystemInfo
+
+@{
+    ViewData["Title"] = "System Information";
+    ViewBag.ActiveMenu = "SystemSetting";
+    ViewBag.ActiveLink = "SystemInfo";
+}
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center">
+		<div class="flex-grow-1 d-flex justify-content-start">
+            <h3 class="card-title m-0">System Information</h3>
+		</div>
+		<div class="card-tools d-flex align-items-center">
+            @if (Model == null)
+            {
+                <a href="javascript:void(0)" class="btn btn-flat btn-primary open-modal" 
+                    data-title="Add System Information"
+                    data-url="/SystemInfo/CreateSystemInfo" 
+                    data-modal-type="create"
+                    data-toogle="tooltip"
+                    title="Add System Information">
+                    <i class="fas fa-plus"></i>
+                    <span class="d-none d-sm-inline">Add System Information</span>
+                </a>
+            }
+            else
+            {
+                @*<a href="javascript:void(0)" class="btn btn-flat btn-info open-modal" 
+                    data-title="View System Information"
+                    data-url="/SystemInfo/ViewSystemInfo" 
+                    data-modal-type="view">
+                    <i class="fas fa-eye"></i>
+                    <span class="d-none d-sm-inline">View System Information</span>
+                </a> *@
+                <a href="javascript:void(0)" class="btn btn-flat btn-warning open-modal" 
+                    data-title="Edit System Information"
+                    data-url="/SystemInfo/EditSystemInfo" 
+                    data-modal-type="edit"
+                    data-toogle="tooltip"
+                    title="Edit System Information">
+                    <i class="fas fa-edit"></i>
+                    <span class="d-none d-sm-inline">Edit System Information</span>
+                </a>
+                @*<a href="javascript:void(0)" class="btn btn-flat btn-danger open-modal" 
+                    data-title="Delete System Information"
+                    data-url="/SystemInfo/DeleteSystemInfo" 
+                    data-modal-type="delete_data">
+                    <i class="fas fa-trash"></i>
+                    <span class="d-none d-sm-inline">Delete System Information</span>
+                </a> *@
+            }
+		</div>
+	</div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+            @if (Model != null)
+            {
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-lg-3 col-md-4 col-sm-12 text-center mb-3 mb-md-0">
+                                        <img src="@(string.IsNullOrEmpty(Model.LogoUrl) ? Url.Content("~/image/no-image-available.png") : Url.Content(Model.LogoUrl))"
+                                             alt="System Logo"
+                                             class="img-fluid rounded shadow-sm border border-3 border-light-subtle"
+                                             style="max-width: 200px; max-height: 200px; object-fit: contain;">
+                                    </div>
+                                    <div class="col-lg-9 col-md-8 col-sm-12">
+                                        <h4 class="text-primary mb-3">@Model.SystemName</h4>
+                                        <div class="row mb-2">
+                                            <div class="col-12">
+                                                <p class="text-muted mb-1"><strong>Short Name:</strong> @Model.ShortName</p>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <p class="text-muted mb-2"><strong>Description:</strong> @Model.Description</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="row">
+                                            <div class="col-lg-6 col-md-12 mb-2">
+                                                <small class="text-muted">
+                                                    <strong>Created:</strong> @(Model.CreatedOn?.ToString("MMM dd, yyyy HH:mm") ?? "N/A")
+                                                </small>
+                                            </div>
+                                            <div class="col-lg-6 col-md-12 mb-2">
+                                                <small class="text-muted">
+                                                    <strong>Last Updated:</strong> @(Model.UpdatedOn?.ToString("MMM dd, yyyy HH:mm") ?? "N/A")
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-info-circle fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">No System Information Found</h4>
+                    <p class="text-muted">Click the "Add System Information" button to configure your system details.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Mobile responsive improvements */
+    @@media (max-width: 768px) {
+        .card-header .card-tools {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .card-header .card-tools .btn {
+            margin: 2px;
+            min-width: 60px;
+        }
+        
+        .card-body img {
+            max-width: 150px !important;
+            max-height: 150px !important;
+        }
+        
+        .text-break {
+            word-break: break-all;
+        }
+    }
+    
+    @@media (max-width: 576px) {
+        .card-header .card-tools .btn {
+            font-size: 0.875rem;
+            padding: 0.375rem 0.75rem;
+        }
+        
+        .card-body img {
+            max-width: 120px !important;
+            max-height: 120px !important;
+        }
+    }
+    
+    .gap-2 {
+        gap: 0.5rem !important;
+    }
+    
+    @@media (max-width: 768px) {
+        .gap-2 {
+            gap: 0.25rem !important;
+        }
+    }
+</style> 

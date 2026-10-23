@@ -1,0 +1,98 @@
+@model PayrollPeriodViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="Edit" method="post" id="editPayrollPeriodForm">
+        <input asp-for="Id" type="hidden" />
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Name" type="text" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="Name" class="floating-label">Period Name <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="Name" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PeriodStartDate" type="date" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="PeriodStartDate" class="floating-label">Start Date <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="PeriodStartDate" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PeriodEndDate" type="date" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="PeriodEndDate" class="floating-label">End Date <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="PeriodEndDate" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="PayDate" type="date" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="PayDate" class="floating-label">Pay Date <span class="text-danger">*</span></label>
+            </div>
+            <span asp-validation-for="PayDate" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <textarea asp-for="Description" class="form-control floating-input" rows="3" placeholder=" "></textarea>
+                <label asp-for="Description" class="floating-label">Description (Optional)</label>
+            </div>
+            <span asp-validation-for="Description" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group mt-2">
+            <div class="custom-control custom-switch">
+                <input asp-for="IsActive" type="checkbox" class="custom-control-input" id="statusSwitch">
+                <label class="custom-control-label" for="statusSwitch">Active</label>
+            </div>
+            <small class="text-muted d-block mt-2">Inactive periods cannot be used for payroll.</small>
+        </div>
+
+        <div class="aw-info-banner">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Period Information</strong>
+                <ul class="mb-0">
+                    <li><strong>Type:</strong> @Model.DetectedFrequency</li>
+                    <li><strong>Days:</strong> @Model.DaysInPeriod days</li>
+                    @if (Model.IsFirstHalfOfMonth)
+                    {
+                        <li><strong>Half:</strong> First half of month (1st-15th)</li>
+                    }
+                    else if (Model.IsSecondHalfOfMonth)
+                    {
+                        <li><strong>Half:</strong> Second half of month (16th-end)</li>
+                    }
+                    else
+                    {
+                        <li><strong>Note:</strong> Cross-month period</li>
+                    }
+                </ul>
+            </div>
+        </div>
+
+        @if (Model.IsLocked)
+        {
+            <div class="aw-info-banner mt-3" style="background:#fffbeb;border-color:#fde68a;color:#92400e;">
+                <i class="fas fa-lock"></i>
+                <div>
+                    <strong>This period is locked.</strong> You cannot modify locked periods.
+                </div>
+            </div>
+        }
+    </form>
+</div>

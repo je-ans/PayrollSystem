@@ -1,0 +1,165 @@
+@model IEnumerable<ShiftType>
+@using PayrollSystem.Utility
+
+@{
+    ViewData["Title"] = "Shift Type";
+    ViewBag.ActiveMenu = "ShiftType";
+    ViewBag.ActiveLink = "ShiftType";
+    ViewBag.ActiveMainMenu = "";
+    var hasItems = Model != null && Model.Any();
+}
+
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<section class="content aw-page">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+                    <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                        <div class="flex-grow-1">
+                            <h3 class="card-title m-0">Shift Types</h3>
+                            <p class="aw-intro mt-1 mb-0">
+                                Define work shifts, leave codes, credited hours, and schedule rules used across DTR and payroll.
+                            </p>
+                        </div>
+                        <div class="card-tools">
+                            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+                               data-title="Add Shift Type"
+                               data-url="@Url.Action("CreateShiftType", "ShiftType")"
+                               data-modal-type="create"
+                               data-size="modal-xl"
+                               title="Add Shift Type">
+                                <i class="fas fa-plus"></i>
+                                <span class="d-none d-lg-inline ml-1">Add Shift Type</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        @if (!hasItems)
+                        {
+                            <div class="aw-empty-state">
+                                <i class="fas fa-clock d-block"></i>
+                                <h5>No shift types yet</h5>
+                                <p class="mb-3">Create shift codes for regular duty, night shift, rest days, and leave types.</p>
+                                <a href="javascript:void(0)" class="btn btn-primary open-modal"
+                                   data-title="Add Shift Type"
+                                   data-url="@Url.Action("CreateShiftType", "ShiftType")"
+                                   data-modal-type="create"
+                                   data-size="modal-xl">
+                                    <i class="fas fa-plus mr-1"></i> Add First Shift Type
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="aw-pending-toolbar aw-pending-toolbar--row">
+                                <div class="aw-pending-search">
+                                    <i class="fas fa-search"></i>
+                                    <input type="search"
+                                           id="shiftTypeSearch"
+                                           class="form-control form-control-sm"
+                                           placeholder="Search code, label, schedule…"
+                                           autocomplete="off" />
+                                </div>
+                                <span class="badge badge-light border px-3 py-2">
+                                    <i class="fas fa-layer-group mr-1 text-muted"></i>
+                                    @Model!.Count() shift type@(Model.Count() == 1 ? "" : "s")
+                                </span>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped table-bordered aw-pending-table" id="shiftTypeTable" width="100%">
+                                    <thead>
+                                        <tr class="text-center">
+                                            <th>No.</th>
+                                            <th>Code</th>
+                                            <th>Label</th>
+                                            <th>Schedule</th>
+                                            <th>Hours</th>
+                                            <th>Leave/Off</th>
+                                            <th>Color</th>
+                                            <th>Sort</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{
+                                            var index = 1;
+                                            foreach (var item in Model!)
+                                            {
+                                                <tr>
+                                                    <td class="text-center">@index</td>
+                                                    <td><span class="aw-queue-employee">@item.Code</span></td>
+                                                    <td>@item.Label</td>
+                                                    <td class="text-center">@ShiftTypeScheduleHelper.FormatTimeRange(item)</td>
+                                                    <td class="text-right">@item.Hours.ToString("N2")</td>
+                                                    <td class="text-center">
+                                                        <span class="badge @(item.IsLeave ? "badge-warning" : "badge-secondary")">
+                                                            @(item.IsLeave ? "Yes" : "No")
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="d-inline-block rounded border"
+                                                              style="width: 24px; height: 24px; background-color: @item.ColorHex;"
+                                                              title="@item.ColorHex"></span>
+                                                    </td>
+                                                    <td class="text-center">@item.SortOrder</td>
+                                                    <td class="text-center">
+                                                        <span class="badge @(item.IsActive ? "badge-success" : "badge-danger")">
+                                                            @(item.IsActive ? "Active" : "Inactive")
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                                            Action
+                                                            <span class="sr-only">Toggle Dropdown</span>
+                                                        </button>
+                                                        <div class="dropdown-menu" role="menu">
+                                                            <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                                               data-title="Shift Type Details"
+                                                               data-url="@Url.Action("ViewShiftType", "ShiftType", new { id = item.Id })"
+                                                               data-modal-type="view"
+                                                               data-size="modal-lg">
+                                                                <i class="fa fa-eye mr-2 text-dark"></i>
+                                                                <span>View Shift Type</span>
+                                                            </a>
+                                                            <div class="dropdown-divider"></div>
+                                                            <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                                               data-title="Edit Shift Type"
+                                                               data-url="@Url.Action("EditShiftType", "ShiftType", new { id = item.Id })"
+                                                               data-modal-type="edit"
+                                                               data-size="modal-xl">
+                                                                <i class="fa fa-edit mr-2 text-primary"></i>
+                                                                <span>Edit Shift Type</span>
+                                                            </a>
+                                                            <div class="dropdown-divider"></div>
+                                                            <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                                               data-title="Delete Shift Type"
+                                                               data-url="@Url.Action("DeleteShiftType", "ShiftType", new { id = item.Id })"
+                                                               data-modal-type="delete_data">
+                                                                <i class="fa fa-trash mr-2 text-danger"></i>
+                                                                <span>Delete Shift Type</span>
+                                                            </a>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                index++;
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/shift-type.js" asp-append-version="true"></script>
+}

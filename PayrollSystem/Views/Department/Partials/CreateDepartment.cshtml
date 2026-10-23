@@ -1,0 +1,23 @@
+﻿@model DepartmentViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="CreateDepartment" method="post" asp-antiforgery="true" id="departmentForm">
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="DepartmentName" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="DepartmentName" class="floating-label">Department Name</label>
+            </div>
+            <span asp-validation-for="DepartmentName" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="DepartmentDescription" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="DepartmentDescription" class="floating-label">Description</label>
+            </div>
+            <span asp-validation-for="DepartmentDescription" class="text-danger validation-message"></span>
+        </div>
+    </form>
+</div>
+

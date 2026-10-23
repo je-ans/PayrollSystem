@@ -1,0 +1,178 @@
+@using PayrollSystem.Utility
+@model WorkingCalendarMonthViewModel
+
+@{
+    ViewData["Title"] = "Working Calendar";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.ActiveMenu = "MasterData";
+    ViewBag.ActiveLink = "WorkingCalendar";
+
+    var year = Model.Year;
+    var month = Model.Month;
+    var first = new DateOnly(year, month, 1);
+    var startOffset = ((int)first.DayOfWeek + 6) % 7; // Monday-first grid
+    var daysInMonth = DateTime.DaysInMonth(year, month);
+    var byDate = Model.Days.ToDictionary(d => d.Date.Day);
+    var today = DateOnly.FromDateTime(DateTime.Today);
+    var prevYear = month == 1 ? year - 1 : year;
+    var prevMonth = month == 1 ? 12 : month - 1;
+    var nextYear = month == 12 ? year + 1 : year;
+    var nextMonth = month == 12 ? 1 : month + 1;
+
+    // Overlay holidays onto days so names always render inside the matching cell
+    var holidaysByDay = (Model.YearHolidays ?? new List<PayrollSystem.ViewModels.HolidayListItemViewModel>())
+        .Where(h => h.IsActive && h.Date.Month == month)
+        .GroupBy(h => h.Date.Day)
+        .ToDictionary(g => g.Key, g => g.First());
+
+    var holidayDays = new HashSet<int>(Model.Days.Where(d => d.IsHoliday).Select(d => d.Date.Day));
+    foreach (var d in holidaysByDay.Keys) holidayDays.Add(d);
+    var monthHolidayCount = holidayDays.Count;
+}
+
+<link rel="stylesheet" href="~/css/holiday-calendar.css" asp-append-version="true" />
+
+<section class="content hc-page">
+    <div class="container-fluid">
+        <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+            <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                <div class="flex-grow-1">
+                    <h3 class="card-title m-0">Working Calendar</h3>
+                    <p class="hc-intro mt-1">
+                        Company-wide date source for schedules, DTR, overtime, holidays, and payroll Day Types.
+                    </p>
+                </div>
+                <div class="card-tools d-flex align-items-center flex-wrap gap-2">
+                    <div class="hc-month-nav">
+                        <a class="btn btn-outline-secondary btn-sm"
+                           asp-action="Index"
+                           asp-route-year="@prevYear"
+                           asp-route-month="@prevMonth"
+                           title="Previous month">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                        <span class="hc-month-label">@Model.MonthName</span>
+                        <a class="btn btn-outline-secondary btn-sm"
+                           asp-action="Index"
+                           asp-route-year="@nextYear"
+                           asp-route-month="@nextMonth"
+                           title="Next month">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+                    <a asp-controller="Holiday" asp-action="Index" asp-route-year="@year"
+                       class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-calendar-day"></i>
+                        <span class="d-none d-md-inline ml-1">Manage Holidays</span>
+                    </a>
+                    <a href="javascript:void(0)"
+                       class="btn btn-primary open-modal"
+                       data-title="Generate Calendar Year"
+                       data-url="@Url.Action("GenerateForm")"
+                       data-modal-type="create"
+                       data-size="modal-md">
+                        <i class="fas fa-sync-alt"></i>
+                        <span class="d-none d-lg-inline ml-1">Generate Year</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="hc-toolbar">
+                    <div class="hc-stats">
+                        <span class="hc-stat-pill hc-stat-pill--work">
+                            <i class="fas fa-briefcase"></i> @Model.WorkingCount working
+                        </span>
+                        <span class="hc-stat-pill hc-stat-pill--rest">
+                            <i class="fas fa-moon"></i> @Model.NonWorkingCount non-working
+                        </span>
+                        <span class="hc-stat-pill hc-stat-pill--holiday">
+                            <i class="fas fa-star"></i> @monthHolidayCount holiday@(monthHolidayCount == 1 ? "" : "s") this month
+                        </span>
+                    </div>
+                    <div class="hc-legend ml-md-auto">
+                        <span class="hc-legend-item"><span class="hc-legend-swatch work"></span> Working</span>
+                        <span class="hc-legend-item"><span class="hc-legend-swatch weekend"></span> Weekend</span>
+                        <span class="hc-legend-item"><span class="hc-legend-swatch rest"></span> Rest</span>
+                        <span class="hc-legend-item"><span class="hc-legend-swatch holiday-regular"></span> Regular</span>
+                        <span class="hc-legend-item"><span class="hc-legend-swatch holiday-special"></span> Special</span>
+                        <span class="hc-legend-item"><span class="hc-legend-swatch holiday-company"></span> Company</span>
+                    </div>
+                </div>
+
+                <div class="hc-grid mb-2">
+                    @foreach (var dow in new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" })
+                    {
+                        <div class="hc-dow">@dow</div>
+                    }
+                </div>
+
+                <div class="hc-grid">
+                    @for (var i = 0; i < startOffset; i++)
+                    {
+                        <div class="hc-cell is-empty"></div>
+                    }
+                    @for (var day = 1; day <= daysInMonth; day++)
+                    {
+                        byDate.TryGetValue(day, out var cell);
+                        holidaysByDay.TryGetValue(day, out var holiday);
+                        var cellDate = new DateOnly(year, month, day);
+
+                        var holidayName = cell?.HolidayName ?? holiday?.Name;
+                        var holidayType = cell?.HolidayType ?? holiday?.HolidayType;
+                        var isHoliday = !string.IsNullOrWhiteSpace(holidayName);
+                        var dayTypeCode = cell?.DayTypeCode;
+                        if (isHoliday && holiday != null && string.IsNullOrWhiteSpace(dayTypeCode))
+                            dayTypeCode = holiday.DayTypeCode;
+
+                        var css = "hc-cell";
+                        if (isHoliday)
+                        {
+                            css += " is-holiday";
+                            css += holidayType switch
+                            {
+                                HolidayType.Special => " is-special",
+                                HolidayType.Company => " is-company",
+                                _ => " is-regular"
+                            };
+                        }
+                        else if (cell != null)
+                        {
+                            if (!cell.IsWorkingDay) css += " is-rest";
+                            else if (cell.IsWeekend) css += " is-weekend";
+                        }
+                        if (cellDate == today) css += " is-today";
+
+                        var tip = isHoliday
+                            ? $"{holidayName}{(dayTypeCode != null ? " · " + dayTypeCode : "")}"
+                            : (cell?.DayTypeName ?? "");
+
+                        <div class="@css" title="@tip">
+                            <div class="hc-cell-top">
+                                <span class="hc-daynum">@day</span>
+                                @if (cell?.IsLocked == true)
+                                {
+                                    <span class="hc-lock" title="Locked"><i class="fas fa-lock"></i></span>
+                                }
+                            </div>
+                            <div class="hc-cell-body">
+                                @if (!string.IsNullOrWhiteSpace(dayTypeCode))
+                                {
+                                    <span class="hc-code">@dayTypeCode</span>
+                                }
+                                @if (isHoliday)
+                                {
+                                    <div class="hc-hol-chip">@holidayName</div>
+                                }
+                                else if (cell == null)
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

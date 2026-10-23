@@ -1,0 +1,28 @@
+﻿@model DesignationViewModel
+
+<div class="container">
+    <table class="table table-bordered table-hover">
+        <tr>
+            <th class="bg-light">Designation</th>
+            <td>@Model.DesignationName</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Description</th>
+            <td>@Model.DesignationDescription</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Status</th>
+            <td>
+                @if (Model.IsActive == true)
+                {
+                    <span class="badge bg-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Inactive</span>
+                }
+            </td>
+        </tr>
+    </table>
+
+</div>

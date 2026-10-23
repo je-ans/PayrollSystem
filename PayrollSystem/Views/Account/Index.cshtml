@@ -1,0 +1,504 @@
+﻿@model LoginViewModel;
+
+@{
+    ViewBag.Title = "Login";
+    Layout = "~/Views/Shared/_LoginLayout.cshtml";
+}
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+        body::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(255, 255, 255, 0.08) 0%, transparent 50%), radial-gradient(circle at 70% 80%, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
+            animation: backgroundShift 20s ease-in-out infinite;
+        }
+
+    @@keyframes backgroundShift {
+        0%, 100% {
+            transform: translate(0, 0);
+        }
+
+        50% {
+            transform: translate(-50px, -50px);
+        }
+    }
+
+    .login-container {
+        background: #ffffff;
+        padding: 48px 40px;
+        border-radius: 24px;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2), 0 8px 16px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 440px;
+        position: relative;
+        z-index: 10;
+        animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.96);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    .login-header {
+        margin-bottom: 32px;
+        text-align: center;
+    }
+
+    .logo-circle {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+    }
+
+        .logo-circle i {
+            font-size: 28px;
+            color: #ffffff;
+        }
+
+    .login-header h2 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a202c;
+        margin-bottom: 8px;
+        letter-spacing: -0.5px;
+    }
+
+    .login-header p {
+        font-size: 15px;
+        color: #718096;
+        line-height: 1.5;
+        font-weight: 400;
+    }
+
+    .form-group {
+        margin-bottom: 24px;
+        position: relative;
+    }
+
+    .input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .floating-input {
+        width: 100%;
+        padding: 14px 48px 14px 16px;
+        font-size: 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        outline: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #ffffff;
+        color: #2d3748;
+        font-weight: 500;
+    }
+
+        .floating-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .floating-input::placeholder {
+            color: transparent;
+        }
+
+    .floating-label {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 15px;
+        color: #a0aec0;
+        pointer-events: none;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: #ffffff;
+        padding: 0 4px;
+        font-weight: 500;
+    }
+
+    .floating-input:focus + .floating-label,
+    .floating-input:not(:placeholder-shown) + .floating-label {
+        top: 0;
+        font-size: 12px;
+        color: #667eea;
+        font-weight: 600;
+    }
+
+    .input-icon {
+        position: absolute;
+        right: 16px;
+        font-size: 18px;
+        color: #cbd5e0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 2;
+    }
+
+        .input-icon:hover {
+            color: #667eea;
+            transform: scale(1.05);
+        }
+
+    .floating-input:focus ~ .input-icon {
+        color: #667eea;
+    }
+
+    .icheck-primary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 20px 0 28px;
+        padding: 0 2px;
+    }
+
+    .checkbox-wrapper {
+        display: flex;
+        align-items: center;
+    }
+
+    .icheck-primary input[type="checkbox"] {
+        margin-right: 10px;
+        width: 20px;
+        height: 20px;
+        accent-color: #667eea;
+        cursor: pointer;
+        border-radius: 6px;
+    }
+
+    .icheck-primary label {
+        font-size: 14px;
+        color: #4a5568;
+        cursor: pointer;
+        font-weight: 500;
+        user-select: none;
+    }
+
+    .forgot-password {
+        font-size: 14px;
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.3s ease;
+    }
+
+        .forgot-password:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 16px 24px;
+        font-size: 16px;
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 100%;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        position: relative;
+        overflow: hidden;
+        color: #ffffff;
+        cursor: pointer;
+    }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+
+    .alert {
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        font-weight: 500;
+        animation: alertSlide 0.4s ease-out;
+    }
+
+    @@keyframes alertSlide {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .alert-danger {
+        background: #fee;
+        color: #c53030;
+        border: 1px solid #feb2b2;
+    }
+
+    .validation-summary-no-list ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .validation-message,
+    .text-danger {
+        color: #e53e3e;
+        font-size: 13px;
+        margin-top: 6px;
+        display: block;
+        font-weight: 500;
+    }
+
+    .divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 28px 0;
+        color: #a0aec0;
+        font-size: 13px;
+        font-weight: 500;
+    }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .divider span {
+            padding: 0 12px;
+        }
+
+    .footer-text {
+        text-align: center;
+        margin-top: 24px;
+        color: #718096;
+        font-size: 14px;
+    }
+
+        .footer-text a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+            .footer-text a:hover {
+                color: #764ba2;
+                text-decoration: underline;
+            }
+
+    /* Decorative elements */
+    .decorative-element {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px);
+        opacity: 0.3;
+        animation: float 8s ease-in-out infinite;
+        pointer-events: none;
+    }
+
+    @@keyframes float {
+        0%, 100% {
+            transform: translate(0, 0) scale(1);
+        }
+
+        33% {
+            transform: translate(20px, -20px) scale(1.1);
+        }
+
+        66% {
+            transform: translate(-20px, 20px) scale(0.9);
+        }
+    }
+
+    .deco-1 {
+        width: 300px;
+        height: 300px;
+        background: rgba(102, 126, 234, 0.3);
+        top: -100px;
+        left: -100px;
+        animation-delay: 0s;
+    }
+
+    .deco-2 {
+        width: 250px;
+        height: 250px;
+        background: rgba(118, 75, 162, 0.3);
+        bottom: -80px;
+        right: -80px;
+        animation-delay: 3s;
+    }
+
+    /* Responsive */
+    @@media (max-width: 480px) {
+        .login-container {
+            padding: 36px 28px;
+            margin: 20px;
+        }
+
+        .login-header h2 {
+            font-size: 24px;
+        }
+
+        .icheck-primary {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+    }
+</style>
+
+<!-- Decorative elements -->
+<div class="decorative-element deco-1"></div>
+<div class="decorative-element deco-2"></div>
+
+<div class="login-container">
+    <div class="login-header">
+        <div class="logo-circle">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <h2>@(ViewBag.SystemInfo?.ShortName ?? "Welcome Back")</h2>
+        <p>@(ViewBag.SystemInfo?.Description ?? "Sign in to your account to continue")</p>
+    </div>
+
+    @if (TempData["LoginError"] != null)
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-circle"></i> @TempData["LoginError"]
+        </div>
+    }
+
+    <form asp-action="Index" method="post">
+        <div asp-validation-summary="All" class="text-danger validation-summary-no-list"></div>
+
+        <div class="form-group">
+            <div class="input-wrapper">
+                <input asp-for="UserName" type="text" class="form-control floating-input" placeholder=" ">
+                <label asp-for="UserName" class="floating-label">Username</label>
+                <span class="input-icon"><i class="fas fa-user"></i></span>
+            </div>
+            <span asp-validation-for="UserName" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="input-wrapper">
+                <input asp-for="Password" type="password" class="form-control floating-input password-input" placeholder=" ">
+                <label asp-for="Password" class="floating-label">Password</label>
+                <span class="input-icon password-toggle">
+                    <i class="fas fa-lock" id="password-icon"></i>
+                </span>
+            </div>
+            <span asp-validation-for="Password" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="icheck-primary">
+            <div class="checkbox-wrapper">
+                <input asp-for="RememberMe" type="checkbox" id="remember" />
+                <label for="remember">Remember me</label>
+            </div>
+            <a href="#" class="forgot-password">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
+    </form>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const passwordInput = document.querySelector('.password-input');
+        const passwordIcon = document.getElementById('password-icon');
+        const passwordToggle = document.querySelector('.password-toggle');
+
+        function togglePassword() {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            passwordIcon.className = isPassword ? 'fas fa-eye' : 'fas fa-eye-slash';
+        }
+
+        function updateIcon() {
+            if (!passwordInput.value) {
+                passwordIcon.className = 'fas fa-lock';
+            } else if (passwordInput.type === 'password') {
+                passwordIcon.className = 'fas fa-eye';
+            }
+        }
+
+        passwordInput.addEventListener('input', updateIcon);
+        passwordToggle.addEventListener('click', togglePassword);
+
+        // Smooth focus transitions
+        const inputs = document.querySelectorAll('.floating-input');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'scale(1.01)';
+            });
+
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'scale(1)';
+            });
+        });
+
+        updateIcon();
+    });
+</script>

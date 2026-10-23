@@ -1,0 +1,102 @@
+@model DayTypeViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="CreateDayType" method="post" asp-antiforgery="true" id="dayTypeForm">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Name" type="text" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="Name" class="floating-label">Day Type Name</label>
+                    </div>
+                    <span asp-validation-for="Name" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Code" type="text" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="Code" class="floating-label">Code</label>
+                    </div>
+                    <span asp-validation-for="Code" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="input-container">
+                <textarea asp-for="Description" class="form-control floating-input" placeholder=" "></textarea>
+                <label asp-for="Description" class="floating-label">Description</label>
+            </div>
+            <span asp-validation-for="Description" class="text-danger validation-message"></span>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="BasicMultiplier" type="number" step="0.0001" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="BasicMultiplier" class="floating-label">Basic Multiplier</label>
+                    </div>
+                    <span asp-validation-for="BasicMultiplier" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="OvertimeMultiplier" type="number" step="0.0001" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="OvertimeMultiplier" class="floating-label">Overtime Multiplier</label>
+                    </div>
+                    <span asp-validation-for="OvertimeMultiplier" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="NightDifferentialMultiplier" type="number" step="0.0001" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="NightDifferentialMultiplier" class="floating-label">Night Differential Multiplier</label>
+                    </div>
+                    <span asp-validation-for="NightDifferentialMultiplier" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="NightDifferentialOvertimeMultiplier" type="number" step="0.0001" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="NightDifferentialOvertimeMultiplier" class="floating-label">Night Differential OT Multiplier</label>
+                    </div>
+                    <span asp-validation-for="NightDifferentialOvertimeMultiplier" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="EffectiveFrom" type="date" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="EffectiveFrom" class="floating-label">Effective From</label>
+                    </div>
+                    <span asp-validation-for="EffectiveFrom" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="EffectiveTo" type="date" class="form-control floating-input" placeholder=" ">
+                        <label asp-for="EffectiveTo" class="floating-label">Effective To</label>
+                    </div>
+                    <span asp-validation-for="EffectiveTo" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <div class="custom-control custom-switch">
+                    <input class="custom-control-input" asp-for="IsActive" id="createIsActive" />
+                    <label class="custom-control-label" for="createIsActive">Active</label>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

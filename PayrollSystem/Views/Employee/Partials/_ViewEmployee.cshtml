@@ -1,0 +1,114 @@
+@model EmployeeViewModel
+
+<div class="container">
+    <table class="table table-bordered table-hover">
+        <tr>
+            <th class="bg-light">Employee ID</th>
+            <td>@Model.EmployeeIdNumber</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Full Name</th>
+            <td>@Model.FullName</td>
+        </tr>
+        <tr>
+            <th class="bg-light">First Name</th>
+            <td>@Model.FirstName</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Middle Name</th>
+            <td>@Model.MiddleName</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Surname</th>
+            <td>@Model.Surname</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Name Extension</th>
+            <td>@Model.NameExtension</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Date of Birth</th>
+            <td>@Model.DateOfBirth?.ToString("MMMM dd, yyyy")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Sex</th>
+            <td>@Model.Sex</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Email Address</th>
+            <td>@Model.EmailAddress</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Mobile No.</th>
+            <td>@Model.MobileNo</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Telephone No.</th>
+            <td>@Model.TelephoneNo</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Employment Basis</th>
+            <td>@Model.EmploymentBasis</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Biometric ID</th>
+            <td>@Model.BiometricId</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Rate Type</th>
+            <td>@Model.RateTypes?.FirstOrDefault(r => r.Id == Model.DefaultRateTypeId)?.Name</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Date Hired</th>
+            <td>@Model.DateHired?.ToString("MMMM dd, yyyy")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Designation</th>
+            <td>@(Model.DesignationName ?? "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Organization Units</th>
+            <td>
+                @if (!string.IsNullOrEmpty(Model.OrganizationUnitsDisplay))
+                {
+                    @Model.OrganizationUnitsDisplay
+                }
+                else
+                {
+                    <span class="text-muted">—</span>
+                }
+            </td>
+        </tr>
+        <tr>
+            <th class="bg-light">Roles</th>
+            <td>
+                @if (Model.OrganizationPlacements.Any())
+                {
+                    <ul class="mb-0 pl-3">
+                        @foreach (var line in Model.OrganizationPlacements)
+                        {
+                            <li>@line</li>
+                        }
+                    </ul>
+                }
+                else
+                {
+                    <span class="text-muted">— (assign via Organization Structure → Staff Structure)</span>
+                }
+            </td>
+        </tr>
+        <tr>
+            <th class="bg-light">Status</th>
+            <td>
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Inactive</span>
+                }
+            </td>
+        </tr>
+    </table>
+</div>

@@ -1,0 +1,59 @@
+﻿@model UserProfileAndChangePasswordViewModel
+
+<form id="profileForm" method="post" asp-action="UpdatingUserProfile">
+    <input type="hidden" name="FormType" value="Profile" />
+    <div class="form-group">
+        <div class="row">
+            <div class="col-lg-4 col-md-4 col-sm-12 pt-3">
+                <div class="input-container">
+                    <input asp-for="UserProfile.FirstName" type="text" class="form-control floating-input" required placeholder=" ">
+                    <label asp-for="UserProfile.FirstName" class="floating-label">Firstname</label>
+                </div>
+                <span asp-validation-for="UserProfile.FirstName" class="text-danger validation-message"></span>
+            </div>
+
+            <div class="col-lg-4 col-md-4 col-sm-12 pt-3">
+                <div class="input-container">
+                    <input asp-for="UserProfile.MiddleName" type="text" class="form-control floating-input" required placeholder=" ">
+                    <label asp-for="UserProfile.MiddleName" class="floating-label">Middle Name</label>
+                </div>
+                <span asp-validation-for="UserProfile.MiddleName" class="text-danger validation-message"></span>
+            </div>
+
+            <div class="col-lg-4 col-md-4 col-sm-12 pt-3">
+                <div class="input-container">
+                    <input asp-for="UserProfile.LastName" type="text" class="form-control floating-input" required placeholder=" ">
+                    <label asp-for="UserProfile.LastName" class="floating-label">Lastname</label>
+                </div>
+                <span asp-validation-for="UserProfile.LastName" class="text-danger validation-message"></span>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="form-group">
+        <div class="input-container">
+            <input asp-for="UserProfile.Email" type="email" class="form-control floating-input" required placeholder=" ">
+            <label asp-for="UserProfile.Email" class="floating-label">Email</label>
+        </div>
+        <span asp-validation-for="UserProfile.Email" class="text-danger validation-message"></span>
+    </div>
+
+    <div class="form-group">
+        <div class="input-container">
+            <input asp-for="UserProfile.UserName" type="text" class="form-control floating-input" required placeholder=" ">
+            <label asp-for="UserProfile.UserName" class="floating-label">Username</label>
+        </div>
+        <span asp-validation-for="UserProfile.UserName" class="text-danger validation-message"></span>
+    </div>
+
+    <div class="form-group">
+        <div class="input-container">
+            <input asp-for="UserProfile.PhoneNumber" type="phone" class="form-control floating-input" required placeholder=" ">
+            <label asp-for="UserProfile.PhoneNumber" class="floating-label">PhoneNumber</label>
+        </div>
+        <span asp-validation-for="UserProfile.PhoneNumber" class="text-danger validation-message"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary submitButton" id="">Save Changes</button>
+</form>

@@ -1,0 +1,345 @@
+@model PayrollPeriodViewModel
+
+@{
+    ViewData["Title"] = "Payroll Periods";
+    Layout = "_Layout";
+    ViewBag.ActiveMenu = "PayrollManagement";
+    ViewBag.ActiveLink = "PayrollPeriod";
+    ViewBag.ActiveMainMenu = "PayrollManagement";
+}
+
+<link rel="stylesheet" href="~/css/payroll-period.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<section class="content pp-page">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+                    <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                        <div class="flex-grow-1">
+                            <h3 class="card-title m-0">Payroll Periods</h3>
+                            <p class="pp-intro mt-1 mb-0">
+                                Create pay periods, assign employee time cards, and run payroll when ready.
+                            </p>
+                        </div>
+                        <div class="card-tools d-flex align-items-center">
+                            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+                               data-title="Add Payroll Period"
+                               data-url="@Url.Action("Create", "PayrollPeriod")"
+                               data-modal-type="create"
+                               title="Add Payroll Period">
+                                <i class="fas fa-plus"></i>
+                                <span class="d-none d-lg-inline ml-1">Add Payroll Period</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="pp-toolbar">
+                            <div class="pp-toolbar-search">
+                                <i class="fas fa-search"></i>
+                                <input type="search"
+                                       id="payrollPeriodSearch"
+                                       class="form-control form-control-sm"
+                                       placeholder="Search period name, dates, status…"
+                                       autocomplete="off" />
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped table-bordered pp-periods-table" id="payrollPeriodsTable" width="100%">
+                                <thead>
+                                    <tr class="text-center">
+                                        <th>No.</th>
+                                        <th>Name</th>
+                                        <th>Frequency</th>
+                                        <th>Days</th>
+                                        <th>Period Start</th>
+                                        <th>Period End</th>
+                                        <th>Pay Date</th>
+                                        <th>Status</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Data loaded via AJAX -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<form id="antiForgeryForm" style="display: none;">
+    @Html.AntiForgeryToken()
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var table = $('#payrollPeriodsTable').DataTable({
+                dom: '<"row"<"col-sm-12"tr>><"row"<"col-sm-5"i><"col-sm-7"p>>',
+                ajax: {
+                    url: '@Url.Action("GetPayrollPeriods")',
+                    type: 'GET',
+                    dataSrc: function (json) {
+                        return json.data;
+                    }
+                },
+                columns: [
+                    {
+                        data: null,
+                        render: function (data, type, row, meta) {
+                            return meta.row + 1;
+                        },
+                        className: 'text-center',
+                        orderable: false,
+                        width: '5%'
+                    },
+                    {
+                        data: 'name',
+                        width: '15%'
+                    },
+                    {
+                        data: 'detectedFrequency',
+                        render: function (data) {
+                            if (data === 'Weekly') return '<span class="badge badge-info">Weekly</span>';
+                            if (data === 'Bi-Weekly') return '<span class="badge badge-primary">Bi-Weekly</span>';
+                            if (data === 'Semi-Monthly') return '<span class="badge badge-success">Semi-Monthly</span>';
+                            if (data === 'Monthly') return '<span class="badge badge-warning">Monthly</span>';
+                            return '<span class="badge badge-secondary">' + data + '</span>';
+                        },
+                        className: 'text-center',
+                        width: '8%'
+                    },
+                    {
+                        data: 'daysInPeriod',
+                        render: function (data) {
+                            return data + ' days';
+                        },
+                        className: 'text-center',
+                        width: '5%'
+                    },
+                    {
+                        data: 'periodStartDate',
+                        render: function (data) {
+                            return data ? new Date(data).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            }) : '';
+                        },
+                        className: 'text-center',
+                        width: '8%'
+                    },
+                    {
+                        data: 'periodEndDate',
+                        render: function (data) {
+                            return data ? new Date(data).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            }) : '';
+                        },
+                        className: 'text-center',
+                        width: '8%'
+                    },
+                    {
+                        data: 'payDate',
+                        render: function (data) {
+                            return data ? new Date(data).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                            }) : '';
+                        },
+                        className: 'text-center',
+                        width: '8%'
+                    },
+                    {
+                        data: 'isActive',
+                        render: function (data, type, row) {
+                            if (row.isLocked) {
+                                return '<span class="badge badge-secondary"><i class="fas fa-lock"></i> Locked</span>';
+                            }
+                            return data ?
+                                '<span class="badge badge-success"><i class="fa fa-check-circle"></i> Active</span>' :
+                                '<span class="badge badge-danger"><i class="fa fa-times-circle"></i> Inactive</span>';
+                        },
+                        className: 'text-center',
+                        width: '8%'
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        render: function (data, type, row) {
+                            var hasCompletedRun = row.hasCompletedPayrollRun;
+                            var isLocked = row.isLocked;
+
+                            var viewItem = `
+                                <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                data-title="View Payroll Period"
+                                data-url="/PayrollPeriod/ViewPayrollPeriod/${data}"
+                                data-modal-type="view">
+                                    <i class="fa fa-eye mr-2 text-dark"></i>
+                                    <span>View Details</span>
+                                </a>
+                                <div class="dropdown-divider"></div>`;
+
+                            var editItem = !isLocked ? `
+                                <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                data-title="Edit Payroll Period"
+                                data-url="/PayrollPeriod/Edit/${data}"
+                                data-modal-type="edit">
+                                    <i class="fa fa-edit mr-2 text-primary"></i>
+                                    <span>Edit Period</span>
+                                </a>
+                                <div class="dropdown-divider"></div>` : '';
+
+                            var assignItem = !isLocked ? `
+                                <a href="/PayrollPeriod/AssignEmployeesAndTimeCard/${data}" class="dropdown-item">
+                                    <i class="fa fa-users mr-2 text-info"></i>
+                                    <span>Employee Time Card</span>
+                                </a>
+                                <div class="dropdown-divider"></div>` : '';
+
+                            var runPayrollItem = !hasCompletedRun && !isLocked ? `
+                                <a href="javascript:void(0)" class="dropdown-item run-payroll"
+                                data-id="${data}"
+                                data-name="${row.name}">
+                                    <i class="fas fa-play mr-2 text-success"></i>
+                                    <span>Run Payroll</span>
+                                </a>
+                                <div class="dropdown-divider"></div>` : '';
+
+                            var viewRunsItem = hasCompletedRun ? `
+                                <a href="/Payroll?periodId=${data}" class="dropdown-item">
+                                    <i class="fas fa-list mr-2 text-info"></i>
+                                    <span>View Payroll Runs</span>
+                                </a>` : '';
+
+                            var deleteItem = !isLocked && !hasCompletedRun ? `
+                                <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                data-title="Delete Payroll Period"
+                                data-url="/PayrollPeriod/Delete/${data}"
+                                data-modal-type="delete_data">
+                                    <i class="fa fa-trash mr-2 text-danger"></i>
+                                    <span>Delete Period</span>
+                                </a>` : '';
+
+                            if (!editItem && !assignItem && !runPayrollItem && !viewRunsItem && !deleteItem) {
+                                return '<span class="text-muted">No actions available</span>';
+                            }
+
+                            return `
+                                <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                    Action <span class="sr-only">Toggle Dropdown</span>
+                                </button>
+                                <div class="dropdown-menu" role="menu">
+                                    ${viewItem}
+                                    ${editItem}
+                                    ${assignItem}
+                                    ${runPayrollItem}
+                                    ${viewRunsItem}
+                                    ${deleteItem}
+                                </div>`;
+                        },
+                        className: 'text-center',
+                        width: '12%'
+                    }
+                ],
+                order: [[4, 'desc']],
+                responsive: true,
+                lengthChange: true,
+                autoWidth: false,
+                pageLength: 10,
+                language: {
+                    emptyTable: "No payroll periods found",
+                    info: "Showing _START_ to _END_ of _TOTAL_ payroll periods",
+                    infoEmpty: "Showing 0 to 0 of 0 payroll periods",
+                    loadingRecords: "Loading...",
+                    processing: "Processing...",
+                    search: "Search:",
+                    zeroRecords: "No matching payroll periods found"
+                }
+            });
+
+            $('#payrollPeriodSearch').on('input', function () {
+                table.search(this.value).draw();
+            });
+
+            $(document).on('click', '.run-payroll', function () {
+                var payrollPeriodId = $(this).data('id');
+                var payrollPeriodName = $(this).data('name');
+
+                Swal.fire({
+                    title: 'Run Payroll',
+                    html: `Are you sure you want to run payroll for "<strong>${payrollPeriodName}</strong>"?<br><br>This will create and process a new payroll run for the selected period.`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, Run Payroll',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Processing...',
+                            html: 'Please wait while we run the payroll. This may take a few moments.',
+                            allowOutsideClick: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+
+                        $.ajax({
+                            url: `/PayrollPeriod/RunPayroll/${payrollPeriodId}`,
+                            type: 'POST',
+                            data: {
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function (response) {
+                                if (response.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Success!',
+                                        text: response.message,
+                                        timer: 3000,
+                                        showConfirmButton: false
+                                    }).then(() => {
+                                        table.ajax.reload();
+                                    });
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: response.message
+                                    });
+                                }
+                            },
+                            error: function (xhr) {
+                                var errorMessage = 'An error occurred while running payroll.';
+                                if (xhr.responseJSON && xhr.responseJSON.message) {
+                                    errorMessage = xhr.responseJSON.message;
+                                }
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: errorMessage
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+        });
+
+        $(document).on('modalClosed', function () {
+            $('#payrollPeriodsTable').DataTable().ajax.reload();
+        });
+    </script>
+}

@@ -1,0 +1,188 @@
+﻿@using Microsoft.AspNetCore.Html
+@model AssignRolePermissionsViewModel
+
+<style>
+    .userrights-table th, .userrights-table td {
+        vertical-align: middle !important;
+        padding: 0.75rem 1rem;
+    }
+    .userrights-table tbody tr.selected {
+        background: #e3f2fd !important;
+    }
+    .userrights-table tbody tr:hover {
+        background: #f1f3f4;
+    }
+    .userrights-table thead th {
+        position: sticky;
+        top: 0;
+        background: #f8f9fa;
+        z-index: 2;
+    }
+    .userrights-task-icon {
+        margin-right: 8px;
+        color: #007bff;
+    }
+    .access-checkbox, #selectAllCheckbox {
+        width: 16px;
+        height: 16px;
+        transform: scale(1.3);
+        margin: 0 4px 0 0;
+        vertical-align: middle;
+    }
+    @@media (max-width: 600px) {
+        .userrights-table th, 
+        .userrights-table td { 
+            padding: 0.5rem !important; 
+        }
+    }
+</style>
+
+<div class="container-fluid p-3">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="UserRights" id="userRightsForm">
+        <div class="form-group mb-4">
+            <div class="input-container">
+                <select asp-for="RoleId" id="CreateDesgId" class="form-control floating-input select2 role-select" asp-items="ViewBag.RoleId" value="" disabled>
+                </select>
+                <label asp-for="RoleId" class="floating-label font-weight-bold">Role</label>
+                <input type="hidden" name="RoleId" id="hiddenRoleId" value="@Model.RoleId" />
+            </div>
+            <span asp-validation-for="RoleId" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="mb-2"><i class="fas fa-tasks userrights-task-icon"></i>Assign Access</h5>
+            <div class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input" id="selectAllCheckbox">
+                <label class="custom-control-label font-weight-bold" for="selectAllCheckbox" title="Select or deselect all rights">Select All</label>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm userrights-table">
+                <thead>
+                    <tr class="text-center align-middle">
+                        <th style="width:70%">Tasks</th>
+                        <th style="width:30%">Access</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var task in Model.SystemTasks)
+                    {
+                        <tr class="bg-light">
+                            <td><i class="fas fa-folder userrights-task-icon" title="Main Task"></i><strong>@task.TaskName</strong></td>
+                            <td class="text-center">
+                                <input type="checkbox"
+                                        class="access-checkbox"
+                                        name="Ids[]"
+                                        value="@task.Id"
+                                        @(Model.RightsIdsAssigned.Contains(task.Id) ? "checked" : "")
+                                        title="Grant access to @task.TaskName" />
+                            </td>
+                        </tr>
+
+                        @foreach (var subTask in (task.ChildTasks ?? Enumerable.Empty<SystemTask>()))
+                        {
+                            <tr>
+                                <td style="padding-left: 28px;"><i class="fas fa-angle-right userrights-task-icon" title="Sub Task"></i>@subTask.TaskName</td>
+                                <td class="text-center">
+                                    <input type="checkbox"
+                                            class="access-checkbox"
+                                            name="Ids[]"
+                                            value="@subTask.Id"
+                                            @(Model.RightsIdsAssigned.Contains(subTask.Id) ? "checked" : "")
+                                            title="Grant access to @subTask.TaskName" />
+                                </td>
+                            </tr>
+
+                            @* Render grandchildren (third level) *@
+                            @foreach (var subSubTask in (subTask.ChildTasks ?? Enumerable.Empty<SystemTask>()))
+                            {
+                                <tr>
+                                    <td style="padding-left: 48px;"><i class="fas fa-angle-double-right userrights-task-icon" title="Sub-Sub Task"></i>@subSubTask.TaskName</td>
+                                    <td class="text-center">
+                                        <input type="checkbox"
+                                                class="access-checkbox"
+                                                name="Ids[]"
+                                                value="@subSubTask.Id"
+                                                @(Model.RightsIdsAssigned.Contains(subSubTask.Id) ? "checked" : "")
+                                                title="Grant access to @subSubTask.TaskName" />
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var form = $('#userRightsForm');
+        // Select All Checkbox
+        $("#selectAllCheckbox").on("change", function () {
+            var isChecked = $(this).prop("checked");
+            $("input.access-checkbox").prop("checked", isChecked).trigger("change");
+        });
+
+        // Parent -> Child selection
+        $(document).on("change", "tr.bg-light .access-checkbox", function () {
+            var row = $(this).closest("tr");
+            var isChecked = $(this).prop("checked");
+            // Toggle all following sibling rows until next parent row
+            var next = row.next();
+            while (next.length && !next.hasClass("bg-light")) {
+                next.find(".access-checkbox").prop("checked", isChecked).trigger("change");
+                next = next.next();
+            }
+        });
+
+        // Child -> Parent selection
+        $(document).on("change", "tr:not(.bg-light) .access-checkbox", function () {
+            var row = $(this).closest("tr");
+            // find previous parent row
+            var prev = row.prev();
+            while (prev.length && !prev.hasClass("bg-light")) {
+                prev = prev.prev();
+            }
+            if (prev.length) {
+                var anyChecked = false;
+                var next = prev.next();
+                while (next.length && !next.hasClass("bg-light")) {
+                    if (next.find(".access-checkbox").prop("checked")) { anyChecked = true; break; }
+                    next = next.next();
+                }
+                prev.find(".access-checkbox").prop("checked", anyChecked);
+            }
+
+            // If all checkboxes are selected, check "Select All"
+            var allChecked = $("input.access-checkbox").length === $("input.access-checkbox:checked").length;
+            $("#selectAllCheckbox").prop("checked", allChecked);
+        });
+
+        // Highlight selected rows
+        $(document).on("change", ".access-checkbox", function () {
+            var row = $(this).closest("tr");
+            if ($(this).prop("checked")) {
+                row.addClass("selected");
+            } else {
+                row.removeClass("selected");
+            }
+        });
+        // Initial highlight
+        $(".access-checkbox:checked").each(function () {
+            $(this).closest("tr").addClass("selected");
+        });
+    });
+</script>
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,260 @@
+@using PayrollSystem.Utility
+@model IEnumerable<OvertimeRequestListViewModel>
+
+@{
+    var isEmployeePortal = ViewBag.IsEmployeePortal == true;
+    ViewData["Title"] = isEmployeePortal ? "My Overtime Requests" : "Overtime Requests";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    if (!isEmployeePortal)
+    {
+        ViewBag.ActiveMenu = "AttendanceMonitoring";
+        ViewBag.ActiveLink = "OvertimeRequest";
+    }
+
+    var filterStatus = ViewBag.FilterStatus as OvertimeStatus?;
+    var pendingCount = (int)(ViewBag.PendingCount ?? 0);
+    var approvedCount = (int)(ViewBag.ApprovedCount ?? 0);
+    var rejectedCount = (int)(ViewBag.RejectedCount ?? 0);
+    var totalCount = (int)(ViewBag.TotalCount ?? 0);
+    var hasItems = Model != null && Model.Any();
+    var listAction = isEmployeePortal ? "MyRequests" : "Index";
+}
+
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<section class="content aw-page aw-queue-page">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+                    <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                        <div class="flex-grow-1">
+                            <h3 class="card-title m-0">@(isEmployeePortal ? "My Overtime Requests" : "Overtime Requests")</h3>
+                            <p class="aw-intro mt-1 mb-0">
+                                @if (isEmployeePortal)
+                                {
+                                    @:Request overtime ahead of time for a date range and planned hours. Approved requests stay as Pending OT until payroll imports them.
+                                }
+                                else
+                                {
+                                    @:Manage ahead-of-time overtime requests. Approved OT (by date range and time) remains Pending OT until payroll imports it.
+                                }
+                            </p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            @if (pendingCount > 0)
+                            {
+                                <span class="badge badge-warning badge-pill px-3 py-2">
+                                    @pendingCount pending
+                                </span>
+                            }
+                            @if (isEmployeePortal)
+                            {
+                                <a href="javascript:void(0)"
+                                   class="btn btn-sm btn-primary open-modal"
+                                   data-title="Request Overtime"
+                                   data-url="@Url.Action("Create", "OvertimeRequest")"
+                                   data-modal-type="create"
+                                   data-size="modal-lg">
+                                    <i class="fas fa-plus mr-1"></i> Request OT
+                                </a>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        @if (!hasItems)
+                        {
+                            <div class="aw-empty-state">
+                                <i class="fas fa-business-time d-block"></i>
+                                <h5>No overtime requests</h5>
+                                <p class="mb-0">
+                                    @if (filterStatus.HasValue)
+                                    {
+                                        @:No @EnumHelper.GetDisplayName(filterStatus.Value).ToLower() requests found.
+                                    }
+                                    else if (isEmployeePortal)
+                                    {
+                                        @:You have not submitted any overtime requests yet.
+                                    }
+                                    else
+                                    {
+                                        @:There are no overtime requests yet.
+                                    }
+                                </p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="aw-pending-toolbar aw-pending-toolbar--row">
+                                <div class="aw-pending-search">
+                                    <i class="fas fa-search"></i>
+                                    <input type="search"
+                                           id="approvalQueueSearch"
+                                           class="form-control form-control-sm"
+                                           placeholder="Search employee, ID, date, status…"
+                                           autocomplete="off" />
+                                </div>
+                                <div class="aw-pending-filters">
+                                    <a asp-action="@listAction"
+                                       asp-route-status="@((int?)OvertimeStatus.Pending)"
+                                       class="aw-filter-pill @(filterStatus == OvertimeStatus.Pending ? "is-active" : "")">
+                                        Pending <span class="aw-filter-count">@pendingCount</span>
+                                    </a>
+                                    <a asp-action="@listAction"
+                                       asp-route-status="@((int?)OvertimeStatus.Approved)"
+                                       class="aw-filter-pill @(filterStatus == OvertimeStatus.Approved ? "is-active" : "")">
+                                        Approved <span class="aw-filter-count">@approvedCount</span>
+                                    </a>
+                                    <a asp-action="@listAction"
+                                       asp-route-status="@((int?)OvertimeStatus.Rejected)"
+                                       class="aw-filter-pill @(filterStatus == OvertimeStatus.Rejected ? "is-active" : "")">
+                                        Rejected <span class="aw-filter-count">@rejectedCount</span>
+                                    </a>
+                                    <a asp-action="@listAction"
+                                       asp-route-status=""
+                                       class="aw-filter-pill @(!filterStatus.HasValue ? "is-active" : "")">
+                                        All <span class="aw-filter-count">@totalCount</span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped table-bordered aw-pending-table" id="approvalQueueTable" width="100%">
+                                    <thead>
+                                        <tr class="text-center">
+                                            <th>No.</th>
+                                            @if (!isEmployeePortal)
+                                            {
+                                                <th>Employee</th>
+                                                <th>ID No.</th>
+                                            }
+                                            <th>Dates</th>
+                                            <th>Daily time</th>
+                                            <th>Net hours</th>
+                                            <th>Status</th>
+                                            <th>Payroll</th>
+                                            <th>Submitted</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{
+                                            var index = 1;
+                                            foreach (var item in Model!)
+                                            {
+                                                var statusBadge = item.Status switch
+                                                {
+                                                    OvertimeStatus.Pending => "badge-warning",
+                                                    OvertimeStatus.Approved => "badge-success",
+                                                    OvertimeStatus.Rejected => "badge-danger",
+                                                    _ => "badge-secondary"
+                                                };
+                                                var badgeText = item.Status switch
+                                                {
+                                                    OvertimeStatus.Pending when item.CurrentStepOrder == 1 => "Pending (Step 1: Org Approver)",
+                                                    OvertimeStatus.Pending when item.CurrentStepOrder == 2 => "Pending (Step 2: HR Approver)",
+                                                    OvertimeStatus.Approved when !item.IsProcessedToPayroll => "Approved (Pending OT)",
+                                                    _ => EnumHelper.GetDisplayName(item.Status)
+                                                };
+                                                var payrollBadge = item.Status == OvertimeStatus.Approved
+                                                    ? (item.IsProcessedToPayroll ? "badge-info" : "badge-warning")
+                                                    : "badge-secondary";
+                                                var payrollText = item.Status != OvertimeStatus.Approved
+                                                    ? "—"
+                                                    : (item.IsProcessedToPayroll ? "Imported" : "Pending OT");
+                                                <tr data-queue-row>
+                                                    <td class="text-center">@index</td>
+                                                    @if (!isEmployeePortal)
+                                                    {
+                                                        <td><span class="aw-queue-employee">@item.EmployeeName</span></td>
+                                                        <td class="text-center">@item.EmployeeIdNumber</td>
+                                                    }
+                                                    <td class="text-center">
+                                                        <div>@item.DateRangeDisplay</div>
+                                                        @if (item.DayCount > 1)
+                                                        {
+                                                            <div class="aw-queue-meta">@item.DayCount days · @item.HoursPerDay.ToString("0.##")h/day</div>
+                                                        }
+                                                    </td>
+                                                    <td class="small text-center">
+                                                        <div>@item.RequestedTimes</div>
+                                                        @if (item.HasLunchBreak && !string.IsNullOrWhiteSpace(item.LunchBreakDisplay))
+                                                        {
+                                                            <div class="aw-queue-meta">Lunch @item.LunchBreakDisplay</div>
+                                                        }
+                                                    </td>
+                                                    <td class="text-center">@item.RequestedHours.ToString("0.##")</td>
+                                                    <td class="text-center">
+                                                        <span class="badge @statusBadge">@badgeText</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <span class="badge @payrollBadge">@payrollText</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <div class="small">@item.SubmittedBy</div>
+                                                        <div class="aw-queue-meta">@item.SubmittedOn.ToString("MMM dd, yyyy hh:mm tt")</div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if (!isEmployeePortal && item.Status == OvertimeStatus.Pending && item.CanReview && item.ApprovalRequestId.HasValue)
+                                                        {
+                                                            <div class="btn-group btn-group-sm aw-action-group">
+                                                                <a href="javascript:void(0)"
+                                                                   class="btn btn-success open-modal"
+                                                                   data-title="Approve Overtime"
+                                                                   data-url="@Url.Action("Process", "OvertimeRequest", new { id = item.Id, status = OvertimeStatus.Approved })"
+                                                                   data-modal-type="create"
+                                                                   data-size="modal-lg">
+                                                                    Approve
+                                                                </a>
+                                                                <a href="javascript:void(0)"
+                                                                   class="btn btn-outline-danger open-modal"
+                                                                   data-title="Reject Overtime"
+                                                                   data-url="@Url.Action("Process", "OvertimeRequest", new { id = item.Id, status = OvertimeStatus.Rejected })"
+                                                                   data-modal-type="create"
+                                                                   data-size="modal-lg">
+                                                                    Reject
+                                                                </a>
+                                                            </div>
+                                                        }
+                                                        else
+                                                        {
+                                                            <div class="btn-group btn-group-sm">
+                                                                @if (item.ApprovalRequestId.HasValue)
+                                                                {
+                                                                    <a href="javascript:void(0)"
+                                                                       class="btn btn-outline-secondary open-modal"
+                                                                       data-title="Overtime Request Logs"
+                                                                       data-url="@Url.Action("Review", "OvertimeRequest", new { id = item.Id })"
+                                                                       data-modal-type="view"
+                                                                       data-size="modal-xl">
+                                                                        <i class="fas fa-history"></i>
+                                                                    </a>
+                                                                }
+                                                                <a href="@Url.Action("Print", "OvertimeRequest", new { id = item.Id })"
+                                                                   target="_blank"
+                                                                   class="btn btn-outline-primary"
+                                                                   title="Print">
+                                                                    <i class="fas fa-print"></i>
+                                                                </a>
+                                                            </div>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                                index++;
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/approval-queue-list.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,166 @@
+@model RateTypeViewModel
+
+<style>
+    .section-header-container {
+        position: relative;
+    }
+
+    .section-header {
+        color: #2c3e50;
+        font-weight: 600;
+        position: relative;
+        display: inline-block;
+        padding-right: 1rem;
+        background: white;
+        z-index: 1;
+    }
+
+    .section-divider {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        height: 1px;
+        background-color: #e0e0e0;
+        z-index: 0;
+    }
+
+    .section-divider-wide {
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+    }
+</style>
+
+<form asp-action="EditRateType" method="post" asp-antiforgery="true" id="rateTypeForm">
+    <input type="hidden" asp-for="Id" />
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+
+            <!-- Basic Information -->
+            <div class="section-header-container mb-4">
+                <h6 class="section-header">Basic Information</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <span asp-validation-summary="All" class="text-danger"></span>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <input asp-for="Name" type="text" class="form-control floating-input" required placeholder=" ">
+                    <label asp-for="Name" class="floating-label">Rate Type Name <span class="text-danger">*</span></label>
+                </div>
+                <span asp-validation-for="Name" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <input asp-for="Code" type="text" class="form-control floating-input" placeholder=" ">
+                    <label asp-for="Code" class="floating-label">Code</label>
+                </div>
+                <span asp-validation-for="Code" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <textarea asp-for="Description" class="form-control floating-input" placeholder=" "></textarea>
+                    <label asp-for="Description" class="floating-label">Description</label>
+                </div>
+                <span asp-validation-for="Description" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="section-divider-wide my-4"></div>
+
+            <!-- Rate Details -->
+            <div class="section-header-container mb-4">
+                <h6 class="section-header">Rate Details</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <select asp-for="RateBasis" asp-items="Html.GetEnumSelectList<RateBasis>()" class="form-control floating-input select2 general-select" required>
+                        <option value="" selected disabled hidden>-- Select Rate Basis --</option>
+                    </select>
+                    <label asp-for="RateBasis" class="floating-label">Rate Basis <span class="text-danger">*</span></label>
+                </div>
+                <span asp-validation-for="RateBasis" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input asp-for="MonthlySalary" type="number" step="0.01" class="form-control floating-input" placeholder=" ">
+                            <label asp-for="MonthlySalary" class="floating-label">Monthly Salary</label>
+                        </div>
+                        <span asp-validation-for="MonthlySalary" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input asp-for="DailyRate" type="number" step="0.01" class="form-control floating-input" placeholder=" ">
+                            <label asp-for="DailyRate" class="floating-label">Daily Rate</label>
+                        </div>
+                        <span asp-validation-for="DailyRate" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input asp-for="HourlyRate" type="number" step="0.01" class="form-control floating-input" placeholder=" ">
+                            <label asp-for="HourlyRate" class="floating-label">Hourly Rate</label>
+                        </div>
+                        <span asp-validation-for="HourlyRate" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider-wide my-4"></div>
+
+            <!-- Effectivity -->
+            <div class="section-header-container mb-4">
+                <h6 class="section-header">Effectivity</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input asp-for="EffectiveStartDate" type="date" class="form-control floating-input" placeholder=" ">
+                            <label asp-for="EffectiveStartDate" class="floating-label">Effective Start Date</label>
+                        </div>
+                        <span asp-validation-for="EffectiveStartDate" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input asp-for="EffectiveEndDate" type="date" class="form-control floating-input" placeholder=" ">
+                            <label asp-for="EffectiveEndDate" class="floating-label">Effective End Date</label>
+                        </div>
+                        <span asp-validation-for="EffectiveEndDate" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider-wide my-4"></div>
+
+            <!-- Settings -->
+            <div class="section-header-container mb-4">
+                <h6 class="section-header">Settings</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <div class="custom-control custom-switch">
+                        <input class="custom-control-input" asp-for="IsActive" id="editIsActive" />
+                        <label class="custom-control-label" for="editIsActive">Active</label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</form>

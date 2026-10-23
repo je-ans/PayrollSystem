@@ -1,0 +1,74 @@
+@model IEnumerable<AssignRolePermission>
+
+
+@{
+    ViewData["Title"] = "Assign Permissions";
+    ViewBag.ActiveMenu = "SystemSetting";
+    ViewBag.ActiveLink = "AssignRolePermission";
+}
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header">
+        <h3 class="card-title">User Role Profile</h3>
+        <div class="card-tools">
+            <a href="javascript:void(0)" class="btn btn-flat btn-primary open-modal" data-title="Add New"
+               data-url="/AssignRolePermission/Create">
+                <span class="fas fa-plus"></span> Add New
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="container-fluid">
+            <table class="table table-hover table-striped table-bordered" id="myTable" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>No.</th>
+                        <th>Task</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        var index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@index</td>
+                                <td>@item.Task?.ParentId @item.Task?.TaskName</td>
+                                <td>@item.Role</td>
+                                <td align="center">
+                                    <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                        Action
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu" role="menu">
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal" data-title="Assigned User Rights" data-url="/AssignRolePermission/UserRights/@item.Id">
+                                            <span class="fa fa-eye text-dark"></span> Assigned Rights
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal" data-title="User Role Profile" data-url="/AssignRolePermission/View/@item.Id">
+                                            <span class="fa fa-eye text-dark"></span> View
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal" data-title="Edit Delete User Role" data-url="/AssignRolePermission/Edit/@item.Id">
+                                            <span class="fa fa-edit text-primary"></span> Edit
+                                        </a>
+
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal" data-title="Delete User Role" data-url="/AssignRolePermission/Delete/@item.Id">
+                                            <span class="fa fa-trash text-danger"></span> Delete
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    }
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

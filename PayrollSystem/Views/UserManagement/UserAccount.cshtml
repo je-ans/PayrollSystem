@@ -1,0 +1,157 @@
+﻿@model IEnumerable<ApplicationUser>
+
+@{
+	ViewData["Title"] = "Users Management";
+	ViewBag.ActiveMenu = "UserManagement";
+	ViewBag.ActiveLink = "UserAccount";
+}
+
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+	<div class="card-header d-flex align-items-center">
+		<div class="flex-grow-1 d-flex justify-content-start">
+			<h3 class="card-title m-0">Users List</h3>
+		</div>
+		<div class="card-tools d-flex align-items-center">
+			<a href="javascript:void(0)" class="btn btn-primary open-modal"
+			   data-title="Add New User"
+			   data-url="/UserManagement/CreateUser"
+			   data-modal-type="create"
+			   data-toogle="tooltip"
+			   title="Add New User">
+				<i class="fas fa-plus"></i>
+				<span class="d-none d-lg-inline">Add New User</span>
+			</a>
+		</div>
+	</div>
+
+	<div class="card-body">
+		<div class="container-fluid">
+			<table class="table table-hover table-striped table-bordered" id="myTable" width="100%">
+				<thead>
+					<tr class="text-center">
+						<th>Full Name</th>
+						<th>Email</th>
+						<th>Department</th>
+						<th>Designation</th>
+						<th>Role</th>
+						<th>Status</th>
+						<th>Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					@if (Model != null && Model.Any())
+					{
+						foreach (var item in Model)
+						{
+							var hasRestrictions = item.Role?.Name == "Admin" || ViewBag.UsersWithRestrictions?.Contains(item.Id) == true;
+							<tr>
+								<td class="align-middle">
+									<div class="d-flex align-items-center gap-3">
+										<img src="@(string.IsNullOrEmpty(item.ProfilePicture) ? Url.Content("~/image/default_user.png") : Url.Content("~/uploads/" + item.ProfilePicture))"
+											 alt="Profile"
+											 class="img-fluid rounded-circle shadow-sm border border-3 border-light-subtle"
+											 style="width: 45px; height: 45px; object-fit: cover; background-color: #f8f9fa; padding: 3px;">
+
+
+										<div class="d-flex flex-column pl-2">
+											<span class="fw-bold text-dark">@item.FullName</span>
+											<small class="text-muted">@item.UserName</small>
+										</div>
+									</div>
+								</td>
+								<td class="align-middle">@item.Email</td>
+								<td class="align-middle">@item.Department?.DepartmentName</td>
+								<td class="align-middle">@item.Designation?.DesignationName</td>
+								<td class="align-middle">@item.Role?.Name</td>
+								<td class="align-middle">
+									<span class="badge @(item.IsActive ? "bg-success" : "bg-danger")">
+										<i class="@(item.IsActive ? "fa fa-check-circle text-white" : "fa fa-times-circle text-white")"></i>
+										@(item.IsActive ? "Active" : "Inactive")
+									</span>
+								</td>
+								<td class="align-middle"  align="center">
+									<button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+										Action
+										<span class="sr-only">Toggle Dropdown</span>
+									</button>
+									<div class="dropdown-menu" role="menu">
+										<a href="javascript:void(0)" class="dropdown-item open-modal"
+										   data-title="User Details" 
+										   data-url="/UserManagement/ViewUser/@item.Id" 
+										   data-modal-type="view">
+											<i class="fa fa-eye mr-2 text-dark"></i>
+											<span>View User</span>
+										</a>
+										<div class="dropdown-divider"></div>
+										<a href="javascript:void(0)" class="dropdown-item open-modal"
+										   data-title="Edit User" 
+										   data-url="/UserManagement/EditUser/@item.Id" 
+										   data-modal-type="edit">
+											<i class="fa fa-edit mr-2 text-primary"></i>
+											<span>Edit User</span>
+										</a>
+
+										<div class="dropdown-divider"></div>
+										<a href="javascript:void(0)" class="dropdown-item open-modal"
+										   data-title="Delete User" 
+										   data-url="/UserManagement/DeleteUser/@item.Id" 
+										   data-modal-type="@(hasRestrictions ? "view" : "delete_data")"
+										   data-size="@(hasRestrictions ? "modal-lg" : "")">
+											<i class="fa fa-trash mr-2 text-danger"></i>
+											<span>Delete User</span>
+										</a>
+									</div>
+								</td>
+							</tr>
+						}
+					}
+
+				</tbody>
+			</table>
+		</div>
+	</div>
+</div>
+
+
+
+
+<script>
+	$(document).ready(function () {
+		$(".editUserModal").click(function () {
+			var url = $(this).data("url"); // Get the edit URL
+			console.log("Fetching edit form from:", url);
+
+			$.get(url, function (data) {
+				$("#editUserModal #modalContentBody").html(data); // Load form into modalContentBody
+				$("#editUserModal").modal("show"); // Show modal
+			}).fail(function () {
+				alert("Failed to load user data.");
+			});
+		});
+
+		// Submit form via AJAX
+		$(document).on("submit", "#editUserForm", function (e) {
+			e.preventDefault();
+			var form = $(this);
+			var formData = new FormData(this);
+
+			$.ajax({
+				url: form.attr("action"),
+				type: form.attr("method"),
+				data: formData,
+				contentType: false,
+				processData: false,
+				success: function (response) {
+					console.log("Response:", response);
+					$("#editUserModal").modal("hide"); // Close modal on success
+					location.reload(); // Refresh the page (or update UI dynamically)
+				},
+				error: function (xhr) {
+					console.log("Error:", xhr.responseText);
+					alert("Failed to update user.");
+				}
+			});
+		});
+	});
+</script>

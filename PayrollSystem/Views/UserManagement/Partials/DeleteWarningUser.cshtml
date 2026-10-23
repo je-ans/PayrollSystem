@@ -1,0 +1,161 @@
+@model UserViewModel
+
+<style>
+    .bg-light-warning {
+        background-color: rgba(255, 193, 7, 0.08);
+    }
+
+    .restriction-item:hover {
+        background-color: rgba(255, 193, 7, 0.12);
+        transition: background-color 0.2s ease;
+    }
+
+    .rounded-3 {
+        border-radius: 0.3rem !important;
+    }
+
+    .rounded-2 {
+        border-radius: 0.2rem !important;
+    }
+
+    .badge-pill {
+        padding-right: 0.6em;
+        padding-left: 0.6em;
+        border-radius: 10rem;
+    }
+</style>
+
+<div class="container-fluid p-0">
+    <div class="alert alert-warning border-0 mb-4 rounded-0" style="background: linear-gradient(to right, #fff8e1, #ffecb3);">
+        <div class="d-flex align-items-center p-3">
+            <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+            </div>
+            <div class="flex-grow-1 ml-3">
+                <h4 class="alert-heading mb-2 font-weight-bold text-dark">Deletion Restricted</h4>
+                <p class="mb-0 text-dark">
+                    @if (ViewBag.IsLastAdmin)
+                    {
+                        <span>This user cannot be deleted because it is the last admin user in the system.</span>
+                    }
+                    else if (ViewBag.HasReferences)
+                    {
+                        <span>This user cannot be deleted because it has active dependencies in the system.</span>
+                    }
+                </p>
+                <hr class="my-2 border-warning">
+                <p class="small mb-0 text-dark">Please review and resolve all restrictions listed below before attempting deletion.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Card -->
+    <div class="card border-0 shadow-lg rounded overflow-hidden">
+        <div class="card-header bg-white border-bottom border-warning py-3" style="border-bottom-width: 3px !important;">
+            <div class="d-flex align-items-center justify-content-between">
+                <h5 class="mb-0 text-dark font-weight-bold">
+                    <i class="fas fa-lock mr-2 text-warning"></i>
+                    Active Restrictions
+                </h5>
+                <span class="badge badge-warning text-dark">
+                    @((ViewBag.IsLastAdmin ? 1 : 0) + (ViewBag.HasReferences ? 1 : 0)) Active
+                </span>
+            </div>
+        </div>
+
+        <!-- Card Body -->
+        <div class="card-body p-4">
+            <!-- Admin Restriction -->
+            @if (ViewBag.IsLastAdmin)
+            {
+                <div class="restriction-item mb-4 p-3 bg-light-warning rounded">
+                    <div class="d-flex align-items-start">
+                        <div class="flex-shrink-0 pt-1">
+                            <i class="fas fa-user-shield fa-lg text-danger"></i>
+                        </div>
+                        <div class="flex-grow-1 ml-3">
+                            <div class="d-flex align-items-center mb-1">
+                                <h6 class="mb-0 text-danger font-weight-bold mr-2">Last Admin User</h6>
+                            </div>
+                            <p class="mb-2 text-muted">This user is the last administrator in the system.</p>
+                            <div class="bg-white p-2 rounded border">
+                                <p class="small mb-0">
+                                    <i class="fas fa-info-circle text-info mr-1"></i>
+                                    To proceed with deletion, please first create another admin user or promote an existing user to admin role.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- User References Restriction -->
+            @if (ViewBag.HasReferences)
+            {
+                <div class="restriction-item mb-4 p-3 bg-light-warning rounded">
+                    <div class="d-flex align-items-start">
+                        <div class="flex-shrink-0 pt-1">
+                            <i class="fas fa-link fa-lg text-danger"></i>
+                        </div>
+                        <div class="flex-grow-1 ml-3">
+                            <div class="d-flex align-items-center mb-1">
+                                <h6 class="mb-0 text-danger font-weight-bold mr-2">Active References</h6>
+                            </div>
+                            <p class="mb-2 text-muted">This user is referenced in the following parts of the system:</p>
+                            <div class="bg-white p-3 rounded border">
+                                <div class="row">
+                                    @foreach (var reference in ViewBag.References)
+                                    {
+                                        if (reference.Value)
+                                        {
+                                            <div class="col-12 col-sm-12 col-lg-6 mb-3">
+                                                <div class="d-flex align-items-center p-2 bg-light rounded">
+                                                    <div class="flex-shrink-0">
+                                                        <i class="fas fa-circle text-danger" style="font-size: 0.5rem;"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1 ml-3">
+                                                        <div class="d-flex align-items-center">
+                                                            <span class="font-weight-bold text-dark">@reference.Key</span>
+                                                            <span class="badge badge-danger badge-pill ml-2">Active</span>
+                                                        </div>
+                                                        <small class="text-muted d-block mt-1">
+                                                            @switch (reference.Key)
+                                                            {
+                                                                case "Signatories":
+                                                                    <span>User is assigned as a signatory or created/updated signatory records</span>
+                                                                    break;
+                                                                case "Departments":
+                                                                    <span>User created or updated department records</span>
+                                                                    break;
+                                                                case "Designations":
+                                                                    <span>User created or updated designation records</span>
+                                                                    break;
+                                                                case "SubClassifications":
+                                                                    <span>User created or updated sub-classification records</span>
+                                                                    break;
+                                                                case "SubObjectCodes":
+                                                                    <span>User created or updated sub-object code records</span>
+                                                                    break;
+                                                                default:
+                                                                    <span>User has active references in this module</span>
+                                                                    break;
+                                                            }
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                                <div class="alert alert-info mt-3 mb-0">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    To proceed with deletion, please first reassign or remove all references to this user in the above modules.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,66 @@
+@using PayrollSystem.Utility
+@model SalaryHistory
+
+<input type="hidden" asp-for="Id" />
+
+<div class="alert alert-danger" role="alert">
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>Danger!</strong> You are about to delete a salary history record. This action cannot be undone and may affect payroll calculations and audit trails.
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label fw-bold">Employee</label>
+            <p class="form-control-plaintext">@Model.Employee?.FullName</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label fw-bold">Change Type</label>
+            <p class="form-control-plaintext">@PayrollSystem.Utility.EnumHelper.GetDisplayName(Model.ChangeType)</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label fw-bold">Previous Salary</label>
+            <p class="form-control-plaintext">@Model.PreviousBasicSalary.ToString("N2")</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label fw-bold">New Salary</label>
+            <p class="form-control-plaintext">@Model.NewBasicSalary.ToString("N2")</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label fw-bold">Effective Date</label>
+            <p class="form-control-plaintext">@Model.EffectiveDate.ToString("MMM dd, yyyy")</p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="mb-3">
+            <label class="form-label fw-bold">Approved By</label>
+            <p class="form-control-plaintext">@Model.ApprovedBy?.UserName</p>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(Model.Reason))
+{
+    <div class="mb-3">
+        <label class="form-label fw-bold">Reason</label>
+        <p class="form-control-plaintext">@Model.Reason</p>
+    </div>
+}
+
+<div class="alert alert-warning" role="alert">
+    <strong>Are you sure?</strong> Deleting this salary history record will permanently remove this change from the employee's salary history.
+</div>

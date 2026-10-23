@@ -1,0 +1,33 @@
+@model PayrollRunViewModel
+
+<form asp-action="Create" method="post" id="createPayrollRunForm">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group">
+                <div class="input-container">
+                    <input asp-for="Name" type="text" class="form-control floating-input" required placeholder=" ">
+                    <label asp-for="Name" class="floating-label">Name</label>
+                </div>
+                <span asp-validation-for="Name" class="text-danger validation-message"></span>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="form-group">
+                <div class="input-container">
+                    <select asp-for="PayrollPeriodId" class="form-control floating-input" required placeholder=" " asp-items="ViewBag.PayrollPeriods">
+                        <option value="">Select Payroll Period</option>
+                    </select>
+                    <label asp-for="PayrollPeriodId" class="floating-label">Payroll Period</label>
+                </div>
+                <span asp-validation-for="PayrollPeriodId" class="text-danger validation-message"></span>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="input-container">
+            <textarea asp-for="Description" class="form-control floating-input" rows="3" placeholder=" "></textarea>
+            <label asp-for="Description" class="floating-label">Description</label>
+        </div>
+        <span asp-validation-for="Description" class="text-danger validation-message"></span>
+    </div>
+</form>

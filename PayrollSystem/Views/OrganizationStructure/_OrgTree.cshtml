@@ -1,0 +1,88 @@
+@model List<OrganizationStructureTreeNodeViewModel>
+
+@foreach (var item in Model)
+{
+    var accent = OrganizationStructureDisplayHelper.GetLevelAccentClass(item.Node.Level);
+    var icon = OrganizationStructureDisplayHelper.GetLevelIcon(item.Node.Level);
+
+    <div class="org-tree-node" data-search="@($"{item.Node.Name} {item.Node.Code} {item.Node.LevelDisplayName}".ToLowerInvariant())">
+        <div class="org-tree-row">
+            @if (item.HasChildren)
+            {
+                <button type="button" class="org-tree-toggle" aria-label="Toggle children" aria-expanded="true">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            }
+            else
+            {
+                <span class="org-tree-spacer"></span>
+            }
+
+            <div class="org-tree-icon @accent">
+                <i class="fas @icon"></i>
+            </div>
+
+            <div class="org-tree-content">
+                <a class="org-tree-title" href="@Url.Action("Unit", new { id = item.Node.Id })">@item.Node.Name</a>
+                <div class="org-tree-meta">
+                    <span class="org-tree-code">@item.Node.Code</span>
+                    <span class="org-tree-level">@item.Node.LevelDisplayName</span>
+                    <span class="badge badge-sm @(item.Node.IsActive ? "badge-success" : "badge-secondary")">
+                        @(item.Node.IsActive ? "Active" : "Inactive")
+                    </span>
+                    @if (item.HasEmployeeAssignments || item.HasRoleAssignments)
+                    {
+                        <span class="org-tree-indicators ml-1">
+                            @if (item.HasEmployeeAssignments)
+                            {
+                                <span class="org-tree-dot staff" title="Has staff assignments"></span>
+                            }
+                            @if (item.HasRoleAssignments)
+                            {
+                                <span class="org-tree-dot roles" title="Has role assignments"></span>
+                            }
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <div class="org-tree-actions">
+                <a href="@Url.Action("Unit", new { id = item.Node.Id })" class="btn btn-xs btn-primary" title="Manage unit">
+                    <i class="fas fa-sliders-h mr-1"></i> Manage
+                </a>
+                <a href="javascript:void(0)" class="btn btn-xs btn-outline-success open-modal"
+                   data-title="Add Child Unit"
+                   data-url="@Url.Action("Create", new { parentId = item.Node.Id })"
+                   data-modal-type="create"
+                   asp-permission="ORGANIZATIONSTRUCTURE_VIEW"
+                   title="Add child">
+                    <i class="fas fa-plus"></i>
+                </a>
+                <a href="javascript:void(0)" class="btn btn-xs btn-outline-secondary open-modal"
+                   data-title="Edit Unit"
+                   data-url="@Url.Action("Edit", new { id = item.Node.Id })"
+                   data-modal-type="edit"
+                   asp-permission="ORGANIZATIONSTRUCTURE_VIEW"
+                   title="Edit">
+                    <i class="fas fa-edit"></i>
+                </a>
+                <a href="javascript:void(0)" class="btn btn-xs btn-outline-danger open-modal"
+                   data-title="Delete Unit"
+                   data-url="@Url.Action("Delete", new { id = item.Node.Id })"
+                   data-modal-type="@(item.CanDelete ? "delete_data" : "view")"
+                   data-size="@(item.CanDelete ? "" : "modal-lg")"
+                   asp-permission="ORGANIZATIONSTRUCTURE_VIEW"
+                   title="@(item.CanDelete ? "Delete" : "Cannot delete — has dependencies")">
+                    <i class="fas fa-trash"></i>
+                </a>
+            </div>
+        </div>
+
+        @if (item.Children.Any())
+        {
+            <div class="org-tree-children">
+                @await Html.PartialAsync("_OrgTree", item.Children)
+            </div>
+        }
+    </div>
+}

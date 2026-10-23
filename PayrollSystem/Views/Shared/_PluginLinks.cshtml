@@ -1,0 +1,99 @@
+﻿<!-- _PluginLinks.cshtml -->
+<!-- Google Font: Source Sans Pro -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="~/plugins/fontawesome-free/css/all.min.css">
+
+<!-- icheck bootstrap -->
+<link rel="stylesheet" href="~/plugins/icheck-bootstrap/icheck-bootstrap.min.css">
+
+<!-- Ionicons -->
+<link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+
+<!-- Tempusdominus Bootstrap 4 -->
+<link rel="stylesheet" href="~/plugins/tempusdominus-bootstrap-4/css/tempusdominus-bootstrap-4.min.css">
+
+<!-- JQVMap -->
+<link rel="stylesheet" href="~/plugins/jqvmap/jqvmap.min.css">
+
+<!-- overlayScrollbars -->
+<link rel="stylesheet" href="~/plugins/overlayScrollbars/css/OverlayScrollbars.min.css">
+
+<!-- Daterange picker -->
+<link rel="stylesheet" href="~/plugins/daterangepicker/daterangepicker.css">
+
+<!-- summernote -->
+<link rel="stylesheet" href="~/plugins/summernote/summernote-bs4.min.css">
+
+<!-- SweetAlert2 -->
+<link rel="stylesheet" href="~/plugins/sweetalert2/sweetalert2.min.css">
+
+<!-- Select2 -->
+<link rel="stylesheet" href="~/plugins/select2/css/select2.min.css">
+<link rel="stylesheet" href="~/plugins/select2-bootstrap4-theme/select2-bootstrap4.min.css">
+
+<!-- Theme style -->
+<link rel="stylesheet" href="~/dist/css/adminlte.min.css">
+
+<!-- Custom CSS -->
+<link rel="stylesheet" href="~/css/style.css" asp-append-version="true">
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="~/plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
+<link rel="stylesheet" href="~/plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
+<link rel="stylesheet" href="~/plugins/datatables-fixedheader/css/fixedHeader.bootstrap4.min.css">
+
+<!-- Load jQuery First -->
+<script src="~/plugins/jquery/jquery.min.js"></script>
+<!-- Moment.js for date formatting -->
+<script src="~/plugins/moment/moment.min.js"></script>
+
+<!-- Bootstrap JS -->
+<script src="~/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- Select2 JS -->
+<script src="~/plugins/select2/js/select2.full.min.js"></script>
+
+<!-- SweetAlert2 -->
+<script src="~/plugins/sweetalert2/sweetalert2.min.js"></script>
+
+<!-- Toastr -->
+<script src="~/plugins/toastr/toastr.min.js"></script>
+<script src="~/plugins/inputmask/jquery.inputmask.min.js"></script>
+<!-- DataTables JS -->
+<script src="~/plugins/datatables/jquery.dataTables.min.js"></script>
+<script src="~/plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
+<script src="~/plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
+<script src="~/plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
+<script src="~/plugins/datatables-fixedheader/js/dataTables.fixedHeader.min.js"></script>
+<script src="~/plugins/datatables-fixedheader/js/fixedHeader.bootstrap4.min.js"></script>
+
+<!-- AdminLTE JS -->
+<script src="~/dist/js/adminlte.min.js"></script>
+
+<!-- Custom JS -->
+<script src="~/js/site.js" asp-append-version="true"></script>
+
+<script>
+
+    //For Table Layout
+    $(document).ready(function () {
+        $('#myTable').DataTable({
+            responsive: true,
+            searching: true, // Enable search (default is true)
+            ordering: true,  // Enable column ordering (default is true)
+            paging: true,    // Enable pagination (default is true)
+            info: true,      // Show information summary (default is true)
+            fixedHeader: true, // Make table header sticky
+            // columnDefs: [
+            //     { orderable: false, targets: [0] } // Adjust column index as needed
+            // ],
+            order: [[0, 'asc']],
+            language: {
+                emptyTable: "No data available." // Custom message
+            }
+        });
+    });
+
+</script>
+

@@ -1,0 +1,80 @@
+@model List<OrganizationStructureTreeNodeViewModel>
+@{
+    var depth = ViewData["Depth"] as int? ?? 0;
+}
+
+@foreach (var item in Model)
+{
+    var indent = depth * 24;
+    var icon = depth == 0 ? "fa-building" : (item.HasChildren ? "fa-folder-open" : "fa-folder");
+    <tr>
+        <td style="padding-left: @(indent + 12)px;">
+            <i class="fas @icon text-muted mr-1"></i>
+            <strong>@item.Node.Name</strong>
+            @if (!string.IsNullOrEmpty(item.Node.ParentName))
+            {
+                <br />
+                <small class="text-muted">Under: @item.Node.ParentName</small>
+            }
+        </td>
+        <td class="text-center">@item.Node.Code</td>
+        <td class="text-center">@item.Node.LevelDisplayName</td>
+        <td class="text-center">
+            <span class="badge @(item.Node.IsActive ? "bg-success" : "bg-danger")">
+                @(item.Node.IsActive ? "Active" : "Inactive")
+            </span>
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                Action
+            </button>
+            <div class="dropdown-menu" role="menu">
+                <a href="javascript:void(0)" class="dropdown-item open-modal"
+                   data-title="Unit Details"
+                   data-url="/OrganizationStructure/ViewUnit/@item.Node.Id"
+                   data-modal-type="view">
+                    <i class="fa fa-eye mr-2 text-dark"></i> View
+                </a>
+                <a href="javascript:void(0)" class="dropdown-item open-modal"
+                   data-title="Staff Structure — @item.Node.Name"
+                   data-url="/OrganizationStructure/Staff/@item.Node.Id"
+                   data-modal-type="view"
+                   data-size="modal-lg">
+                    <i class="fa fa-users mr-2 text-info"></i> Staff Structure
+                    @if (item.HasEmployeeAssignments || item.HasRoleAssignments)
+                    {
+                        <span class="badge badge-info ml-1">●</span>
+                    }
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="javascript:void(0)" class="dropdown-item open-modal"
+                   data-title="Add Child Unit"
+                   data-url="/OrganizationStructure/Create?parentId=@item.Node.Id"
+                   data-modal-type="create">
+                    <i class="fa fa-plus mr-2 text-success"></i> Add Child
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="javascript:void(0)" class="dropdown-item open-modal"
+                   data-title="Edit Unit"
+                   data-url="/OrganizationStructure/Edit/@item.Node.Id"
+                   data-modal-type="edit">
+                    <i class="fa fa-edit mr-2 text-primary"></i> Edit
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="javascript:void(0)" class="dropdown-item open-modal"
+                   data-title="Delete Unit"
+                   data-url="/OrganizationStructure/Delete/@item.Node.Id"
+                   data-modal-type="@(item.CanDelete ? "delete_data" : "view")"
+                   data-size="@(item.CanDelete ? "" : "modal-lg")">
+                    <i class="fa fa-trash mr-2 text-danger"></i> Delete
+                </a>
+            </div>
+        </td>
+    </tr>
+    @if (item.Children.Any())
+    {
+        var childViewData = new ViewDataDictionary(ViewData);
+        childViewData["Depth"] = depth + 1;
+        @await Html.PartialAsync("_TreeRows", item.Children, childViewData)
+    }
+}

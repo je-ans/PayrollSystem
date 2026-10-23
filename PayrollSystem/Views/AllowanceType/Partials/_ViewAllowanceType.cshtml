@@ -1,0 +1,31 @@
+@model AllowanceTypeViewModel
+
+<div class="container">
+    <table class="table table-bordered table-hover">
+        <tr>
+            <th class="bg-light">Name</th>
+            <td>@Model.Name</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Code</th>
+            <td>@(string.IsNullOrWhiteSpace(Model.Code) ? "—" : Model.Code)</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Description</th>
+            <td>@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Is Active</th>
+            <td>
+                @if (Model.IsActive)
+                {
+                    <span class="badge badge-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge badge-danger">Inactive</span>
+                }
+            </td>
+        </tr>
+    </table>
+</div>

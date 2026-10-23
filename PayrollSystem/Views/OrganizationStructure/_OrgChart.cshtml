@@ -1,0 +1,45 @@
+@model OrganizationStructureTreeNodeViewModel
+
+@{
+    var accent = OrganizationStructureDisplayHelper.GetLevelAccentClass(Model.Node.Level);
+    var icon = OrganizationStructureDisplayHelper.GetLevelIcon(Model.Node.Level);
+}
+
+<li class="org-chart-item @(Model.Node.IsActive ? "" : "is-inactive")"
+    data-id="@Model.Node.Id"
+    data-parent-id="@(Model.Node.ParentId?.ToString() ?? "")"
+    data-name="@Model.Node.Name">
+    <div class="org-chart-card @accent"
+         draggable="true"
+         data-id="@Model.Node.Id"
+         data-parent-id="@(Model.Node.ParentId?.ToString() ?? "")"
+         data-name="@Model.Node.Name"
+         title="Drag onto another unit to change parent">
+        <div class="org-chart-card-icon">
+            <i class="fas @icon"></i>
+        </div>
+        <div class="org-chart-card-body">
+            <div class="org-chart-card-name">@Model.Node.Name</div>
+            <div class="org-chart-card-meta">
+                <span>@Model.Node.Code</span>
+                <span>·</span>
+                <span>@Model.Node.LevelDisplayName</span>
+            </div>
+            @if (!Model.Node.IsActive)
+            {
+                <span class="org-chart-inactive-badge">Inactive</span>
+            }
+        </div>
+        <span class="org-chart-drag-handle no-print" aria-hidden="true"><i class="fas fa-grip-vertical"></i></span>
+    </div>
+
+    @if (Model.Children.Any())
+    {
+        <ul class="org-chart-tree">
+            @foreach (var child in Model.Children)
+            {
+                @await Html.PartialAsync("_OrgChart", child)
+            }
+        </ul>
+    }
+</li>

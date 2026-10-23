@@ -1,0 +1,58 @@
+@model ApprovalWorkflowStepApproverViewModel
+
+<div class="container-fluid">
+    <form asp-action="EditApprover" method="post" asp-antiforgery="true" id="approverForm">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="WorkflowStepId" />
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="Priority" type="number" min="1" class="form-control floating-input" required placeholder=" " />
+                <label asp-for="Priority" class="floating-label">Priority <span class="text-danger">*</span></label>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="input-container">
+                <select asp-for="SourceType" class="form-control floating-input general-select" required
+                        asp-items="ViewBag.SourceTypes" id="sourceTypeSelect"></select>
+                <label asp-for="SourceType" class="floating-label">Source Type <span class="text-danger">*</span></label>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="input-container">
+                <select asp-for="OrganizationLevel" class="form-control floating-input general-select" required
+                        asp-items="ViewBag.OrganizationLevels"></select>
+                <label asp-for="OrganizationLevel" class="floating-label">Organization Level <span class="text-danger">*</span></label>
+            </div>
+        </div>
+        <div class="form-group" id="leadershipRoleGroup">
+            <div class="input-container">
+                <select asp-for="LeadershipRole" class="form-control floating-input general-select"
+                        asp-items="ViewBag.LeadershipRoles">
+                    <option value="">— Select —</option>
+                </select>
+                <label asp-for="LeadershipRole" class="floating-label">Leadership Role</label>
+            </div>
+        </div>
+        <div class="form-group" id="functionalRoleGroup">
+            <div class="input-container">
+                <select asp-for="FunctionalRole" class="form-control floating-input general-select"
+                        asp-items="ViewBag.FunctionalRoles">
+                    <option value="">— Select —</option>
+                </select>
+                <label asp-for="FunctionalRole" class="floating-label">Functional Role</label>
+            </div>
+        </div>
+    </form>
+</div>
+<script>
+    (function () {
+        function toggleRoleFields() {
+            var source = parseInt($('#sourceTypeSelect').val(), 10);
+            var isLeadership = source === 1;
+            $('#leadershipRoleGroup').toggle(isLeadership);
+            $('#functionalRoleGroup').toggle(!isLeadership);
+        }
+        $('#sourceTypeSelect').on('change', toggleRoleFields);
+        toggleRoleFields();
+    })();
+</script>

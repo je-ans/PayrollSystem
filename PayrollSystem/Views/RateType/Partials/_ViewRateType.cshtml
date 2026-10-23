@@ -1,0 +1,55 @@
+﻿@model RateTypeViewModel
+
+<div class="container">
+    <table class="table table-bordered table-hover">
+        <tr>
+            <th class="bg-light">Rate Type Name</th>
+            <td>@Model.Name</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Code</th>
+            <td>@(string.IsNullOrEmpty(Model.Code) ? "—" : Model.Code)</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Description</th>
+            <td>@(string.IsNullOrEmpty(Model.Description) ? "—" : Model.Description)</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Rate Basis</th>
+            <td>@Model.RateBasis</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Monthly Salary</th>
+            <td>@(Model.MonthlySalary.HasValue ? "₱" + Model.MonthlySalary.Value.ToString("N2") : "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Daily Rate</th>
+            <td>@(Model.DailyRate.HasValue ? "₱" + Model.DailyRate.Value.ToString("N2") : "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Hourly Rate</th>
+            <td>@(Model.HourlyRate.HasValue ? "₱" + Model.HourlyRate.Value.ToString("N2") : "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Effective Start Date</th>
+            <td>@(Model.EffectiveStartDate.HasValue ? Model.EffectiveStartDate.Value.ToString("MMMM dd, yyyy") : "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Effective End Date</th>
+            <td>@(Model.EffectiveEndDate.HasValue ? Model.EffectiveEndDate.Value.ToString("MMMM dd, yyyy") : "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Status</th>
+            <td>
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Inactive</span>
+                }
+            </td>
+        </tr>
+    </table>
+</div>

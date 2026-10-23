@@ -1,0 +1,116 @@
+@using PayrollSystem.Utility
+@model IEnumerable<SalaryHistory>
+
+@{
+    ViewData["Title"] = "Salary History";
+    ViewBag.ActiveMenu = "SalaryHistory";
+    ViewBag.ActiveLink = "SalaryHistory";
+    ViewBag.ActiveMainMenu = "";
+}
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center">
+        <div class="flex-grow-1 d-flex justify-content-start">
+            <h3 class="card-title m-0">Salary History</h3>
+        </div>
+        <div class="card-tools d-flex align-items-center">
+            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+               data-title="Add Salary History"
+               data-url="/SalaryHistory/Create"
+               data-modal-type="create"
+               data-toggle="tooltip"
+               title="Add Salary History">
+                <i class="fas fa-plus"></i>
+                <span class="d-none d-lg-inline">Add History</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+            <table class="table table-hover table-striped table-bordered" id="myTable" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>No.</th>
+                        <th>Employee</th>
+                        <th>Change Type</th>
+                        <th>Previous Salary</th>
+                        <th>New Salary</th>
+                        <th>Change Amount</th>
+                        <th>Effective Date</th>
+                        <th>Approved By</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        var index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@index</td>
+                                <td>@item.Employee?.FullName</td>
+                                <td class="text-center">
+                                    <span class="badge @(item.ChangeType == SalaryChangeType.Increase ? "bg-success" : item.ChangeType == SalaryChangeType.Decrease ? "bg-danger" : "bg-warning")">
+                                        @PayrollSystem.Utility.EnumHelper.GetDisplayName(item.ChangeType)
+                                    </span>
+                                </td>
+                                <td class="text-right">@item.PreviousBasicSalary.ToString("N2")</td>
+                                <td class="text-right">@item.NewBasicSalary.ToString("N2")</td>
+                                <td class="text-center">
+                                    <span class="@(item.NewBasicSalary > item.PreviousBasicSalary ? "text-success fw-bold" : item.NewBasicSalary < item.PreviousBasicSalary ? "text-danger fw-bold" : "text-muted")">
+                                        @(item.NewBasicSalary > item.PreviousBasicSalary ? "+" : item.NewBasicSalary < item.PreviousBasicSalary ? "-" : "")
+                                        @Math.Abs(item.NewBasicSalary - item.PreviousBasicSalary).ToString("N2")
+                                    </span>
+                                </td>
+                                <td class="text-center">@item.EffectiveDate.ToString("MMM dd, yyyy")</td>
+                                <td>@item.ApprovedBy?.UserName</td>
+                                <td align="center">
+                                    <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                        Action
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu" role="menu">
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="History Details"
+                                           data-url="/SalaryHistory/Details/@item.Id"
+                                           data-modal-type="view">
+                                            <i class="fa fa-eye mr-2 text-dark"></i>
+                                            <span>View Details</span>
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Edit History"
+                                           data-url="/SalaryHistory/Edit/@item.Id"
+                                           data-modal-type="edit">
+                                            <i class="fa fa-edit mr-2 text-primary"></i>
+                                            <span>Edit History</span>
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Delete History"
+                                           data-url="/SalaryHistory/Delete/@item.Id"
+                                           data-modal-type="delete_data">
+                                            <i class="fa fa-trash mr-2 text-danger"></i>
+                                            <span>Delete History</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="9" class="text-center text-muted">
+                                <i class="fas fa-info-circle"></i> No salary history records found.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

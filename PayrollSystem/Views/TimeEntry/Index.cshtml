@@ -1,0 +1,153 @@
+@model IEnumerable<TimeEntry>
+
+@{
+    ViewData["Title"] = "Time Entry Management";
+    ViewBag.ActiveMenu = "AttendanceMonitoring";
+    ViewBag.ActiveLink = "TimeEntry";
+    ViewBag.ActiveMainMenu = "AttendanceMonitoring";
+}
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center">
+        <div class="flex-grow-1 d-flex justify-content-start">
+            <h3 class="card-title m-0">Time Entry List</h3>
+        </div>
+        <div class="card-tools d-flex align-items-center">
+            <a href="javascript:void(0)" class="btn btn-success open-modal mr-1"
+               data-title="Import Biometric Data"
+               data-url="/TimeEntry/ImportBiometricData"
+               data-modal-type="create"
+               data-toggle="tooltip"
+               title="Import Biometric Data">
+                <i class="fas fa-upload"></i>
+                <span class="d-none d-lg-inline">Import Biometric</span>
+            </a>
+            @* <a href="javascript:void(0)" class="btn btn-info open-modal mr-1" *@
+            @*    data-title="Import Time Entries" *@
+            @*    data-url="/TimeEntry/ImportTimeEntries" *@
+            @*    data-modal-type="create" *@
+            @*    data-toggle="tooltip" *@
+            @*    title="Import Time Entries"> *@
+            @*     <i class="fas fa-file-import"></i> *@
+            @*     <span class="d-none d-lg-inline">Import Entries</span> *@
+            @* </a> *@
+            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+               data-title="Manual Time Entry"
+               data-url="/TimeEntry/CreateTimeEntry"
+               data-modal-type="create"
+               data-toggle="tooltip"
+               title="Manual Time Entry">
+                <i class="fas fa-plus"></i>
+                <span class="d-none d-lg-inline">Manual Entry</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+            <!-- Filters -->
+            <form method="get" class="mb-3">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="startDate">Start Date</label>
+                        <input type="date" id="startDate" name="startDate" class="form-control"
+                               value="@ViewBag.StartDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate" name="endDate" class="form-control"
+                               value="@ViewBag.EndDate?.ToString("yyyy-MM-dd")" />
+                    </div>
+                    <div class="col-md-3">
+                        <label for="employeeId">Employee</label>
+                        <select id="employeeId" name="employeeId" class="form-control">
+                            <option value="">All Employees</option>
+                            @foreach (var employee in ViewBag.Employees)
+                            {
+                                <option value="@employee.Id" selected="@(ViewBag.EmployeeId == employee.Id)">
+                                    @employee.Name
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>&nbsp;</label>
+                        <div>
+                            <button type="submit" class="btn btn-outline-primary btn-block">
+                                <i class="fas fa-search"></i> Filter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <table class="table table-hover table-striped table-bordered" id="myTable" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>No.</th>
+                        <th>Employee</th>
+                        <th>Entry Type</th>
+                        <th>Date & Time</th>
+                        <th>Device</th>
+                        <th>Location</th>
+                        <th>Source</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var counter = 1;
+                    }
+                    @foreach (var entry in Model)
+                    {
+                        <tr>
+                            <td class="text-center">@counter</td>
+                            <td>
+                                @entry.Employee.FirstName @entry.Employee.Surname<br>
+                                <small class="text-muted">@entry.Employee.EmployeeIdNumber</small>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge badge-info">@entry.EntryType</span>
+                            </td>
+                            <td>
+                                @entry.EntryDateTime.ToString("MMM dd, yyyy")<br>
+                                <small class="text-muted">@entry.EntryDateTime.ToString("hh:mm:ss tt")</small>
+                            </td>
+                            <td>@(entry.BiometricDeviceId ?? "N/A")</td>
+                            <td>@(entry.Location ?? "N/A")</td>
+                            <td class="text-center">
+                                @if (entry.IsManualEntry)
+                                {
+                                    <span class="badge badge-warning">Manual</span>
+                                }
+                                else
+                                {
+                                    <span class="badge badge-success">Biometric</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="javascript:void(0)" class="btn btn-warning open-modal"
+                                       data-title="Edit Time Entry"
+                                       data-url="/TimeEntry/EditTimeEntry/@entry.Id"
+                                       data-modal-type="edit"
+                                       title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="javascript:void(0)" class="btn btn-danger open-modal"
+                                       data-title="Delete Time Entry"
+                                       data-url="/TimeEntry/DeleteTimeEntry/@entry.Id"
+                                       data-modal-type="delete"
+                                       title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        counter++;
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,55 @@
+@model DayTypeViewModel
+
+<div class="container">
+    <table class="table table-bordered table-hover">
+        <tr>
+            <th class="bg-light">Day Type Name</th>
+            <td>@Model.Name</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Code</th>
+            <td>@Model.Code</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Description</th>
+            <td>@(string.IsNullOrEmpty(Model.Description) ? "—" : Model.Description)</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Basic Multiplier</th>
+            <td>@Model.BasicMultiplier.ToString("N4")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Overtime Multiplier</th>
+            <td>@Model.OvertimeMultiplier.ToString("N4")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Night Differential Multiplier</th>
+            <td>@Model.NightDifferentialMultiplier.ToString("N4")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Night Differential OT Multiplier</th>
+            <td>@Model.NightDifferentialOvertimeMultiplier.ToString("N4")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Effective From</th>
+            <td>@Model.EffectiveFrom.ToString("yyyy-MM-dd")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Effective To</th>
+            <td>@(Model.EffectiveTo.HasValue ? Model.EffectiveTo.Value.ToString("yyyy-MM-dd") : "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Status</th>
+            <td>
+                @if (Model.IsActive)
+                {
+                    <span class="badge bg-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Inactive</span>
+                }
+            </td>
+        </tr>
+    </table>
+</div>

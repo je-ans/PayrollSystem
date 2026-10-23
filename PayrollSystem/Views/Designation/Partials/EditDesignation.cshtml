@@ -1,0 +1,30 @@
+﻿@model DesignationViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="EditDesignation" id="designationForm">
+        <input type="hidden" asp-for="Id" />
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="DesignationName" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="DesignationName" class="floating-label">Designation</label>
+            </div>
+            <span asp-validation-for="DesignationName" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="DesignationDescription" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="DesignationDescription" class="floating-label">Description</label>
+            </div>
+            <span asp-validation-for="DesignationDescription" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="custom-control custom-switch">
+                <input asp-for="IsActive" type="checkbox" class="custom-control-input" id="statusSwitch">
+                <label class="custom-control-label" for="statusSwitch">Active</label>
+            </div>
+        </div>
+    </form>
+</div>

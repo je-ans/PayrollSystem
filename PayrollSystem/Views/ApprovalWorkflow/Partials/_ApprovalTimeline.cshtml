@@ -1,0 +1,83 @@
+@model ApprovalRequestTimelineViewModel
+
+@{
+    string StatusClass(ApprovalStepStatus status) => status switch
+    {
+        ApprovalStepStatus.Approved => "approved",
+        ApprovalStepStatus.Rejected => "rejected",
+        ApprovalStepStatus.Pending => "pending",
+        _ => "waiting"
+    };
+
+    string DotClass(ApprovalStepStatus status) => status switch
+    {
+        ApprovalStepStatus.Approved => "is-approved",
+        ApprovalStepStatus.Rejected => "is-rejected",
+        ApprovalStepStatus.Pending => "is-pending",
+        _ => "is-waiting"
+    };
+}
+
+<div class="aw-timeline">
+    <div class="aw-timeline-header">
+        <div class="aw-timeline-status">
+            <i class="fas fa-route text-muted"></i>
+            Approval progress
+        </div>
+        <span class="aw-timeline-badge @StatusClass(Model.Status == ApprovalRequestStatus.Approved ? ApprovalStepStatus.Approved : Model.Status == ApprovalRequestStatus.Rejected ? ApprovalStepStatus.Rejected : ApprovalStepStatus.Pending)">
+            @Model.StatusDisplay
+        </span>
+    </div>
+
+    <div class="aw-timeline-steps">
+        @foreach (var step in Model.Steps)
+        {
+            <div class="aw-timeline-step @(step.IsCurrent ? "is-current" : "")">
+                <div class="aw-timeline-rail">
+                    <div class="aw-timeline-dot @DotClass(step.Status)">
+                        <i class="fas @WorkflowDisplayHelper.GetStepStatusIcon(step.Status)"></i>
+                    </div>
+                    <div class="aw-timeline-connector"></div>
+                </div>
+                <div class="aw-timeline-body">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-1">
+                        <div>
+                            <p class="aw-timeline-step-title">
+                                Step @step.DisplayStepNumber — @step.StepName
+                                @if (step.IsCurrent)
+                                {
+                                    <span class="badge badge-warning ml-1">Awaiting action</span>
+                                }
+                            </p>
+                            @if (!string.IsNullOrEmpty(step.ApproverName))
+                            {
+                                <div class="aw-timeline-step-meta">
+                                    <i class="fas fa-user mr-1"></i>@step.ApproverName
+                                    @if (!string.IsNullOrEmpty(step.OrganizationName))
+                                    {
+                                        <span class="text-muted"> · @step.OrganizationName</span>
+                                    }
+                                </div>
+                            }
+                            else if (step.Status == ApprovalStepStatus.Waiting)
+                            {
+                                <div class="aw-timeline-step-meta text-muted">Upcoming</div>
+                            }
+                            @if (!string.IsNullOrEmpty(step.Remarks))
+                            {
+                                <div class="aw-timeline-step-remarks">@step.Remarks</div>
+                            }
+                            @if (step.ActionDate.HasValue)
+                            {
+                                <div class="aw-timeline-step-date">
+                                    @step.ActionDate.Value.ToString("MMM d, yyyy h:mm tt")
+                                </div>
+                            }
+                        </div>
+                        <span class="aw-timeline-badge @StatusClass(step.Status)">@step.StatusDisplay</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

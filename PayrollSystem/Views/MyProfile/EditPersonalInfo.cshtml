@@ -1,0 +1,93 @@
+@model PayrollSystem.Controllers.PersonalInfoViewModel
+
+@{
+    ViewData["Title"] = "Edit Personal Information";
+    ViewBag.ActiveMenu = "MyProfile";
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Edit Personal Information</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="EditPersonalInfo" method="post" asp-antiforgery="true">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="TelephoneNo" class="form-label">Telephone Number</label>
+                                    <input asp-for="TelephoneNo" type="tel" class="form-control" />
+                                    <span asp-validation-for="TelephoneNo" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="MobileNo" class="form-label">Mobile Number</label>
+                                    <input asp-for="MobileNo" type="tel" class="form-control" />
+                                    <span asp-validation-for="MobileNo" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label asp-for="EmailAddress" class="form-label">Email Address</label>
+                            <input asp-for="EmailAddress" type="email" class="form-control" />
+                            <span asp-validation-for="EmailAddress" class="text-danger"></span>
+                        </div>
+
+                        <hr class="my-4">
+                        <h6 class="text-muted mb-3">Emergency Contact Information</h6>
+
+                        <div class="form-group">
+                            <label asp-for="EmergencyContactName" class="form-label">Emergency Contact Name</label>
+                            <input asp-for="EmergencyContactName" type="text" class="form-control" />
+                            <span asp-validation-for="EmergencyContactName" class="text-danger"></span>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="EmergencyContactRelationship" class="form-label">Relationship</label>
+                                    <input asp-for="EmergencyContactRelationship" type="text" class="form-control"
+                                           placeholder="e.g., Spouse, Parent, Sibling" />
+                                    <span asp-validation-for="EmergencyContactRelationship" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label asp-for="EmergencyContactNumber" class="form-label">Contact Number</label>
+                                    <input asp-for="EmergencyContactNumber" type="tel" class="form-control" />
+                                    <span asp-validation-for="EmergencyContactNumber" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+                        <h6 class="text-muted mb-3">Address Information</h6>
+
+                        <div class="form-group">
+                            <label asp-for="Address" class="form-label">Residential Address</label>
+                            <textarea asp-for="Address" class="form-control" rows="3"
+                                      placeholder="Enter your complete residential address"></textarea>
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            <strong>Note:</strong> Changes to your personal information will be reviewed by HR before being approved.
+                        </div>
+
+                        <div class="form-group text-right">
+                            <a href="@Url.Action("Index", "MyProfile")" class="btn btn-secondary mr-2">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save mr-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

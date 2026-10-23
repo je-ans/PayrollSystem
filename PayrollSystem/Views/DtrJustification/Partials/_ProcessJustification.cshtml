@@ -1,0 +1,86 @@
+@using PayrollSystem.Utility
+@model DtrJustificationProcessViewModel
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+
+<form id="processJustificationForm" method="post" asp-action="Process" asp-controller="DtrJustification">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="ReviewAction" />
+
+    <div class="dm-modal">
+        <div class="dm-process-header">
+            <div>
+                <h6>@EnumHelper.GetDisplayName(Model.ReviewAction) time log justification</h6>
+                <small>@Model.DateDisplay</small>
+            </div>
+            <span class="dm-status @(Model.ReviewAction == JustificationStatus.Approved ? "dm-status--approved" : "dm-status--rejected")">
+                @Model.ReviewAction
+            </span>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header">
+                <i class="fas fa-user"></i>
+                Request summary
+            </div>
+            <div class="dm-section-body">
+                @await Html.PartialAsync("~/Views/Shared/Partials/_ProcessRequestSummary.cshtml", Model.Summary)
+
+                <div class="dm-detail-grid dm-detail-grid--compact mt-3">
+                    <div class="dm-detail-item dm-detail-item--full">
+                        <span class="dm-detail-label">Date covered</span>
+                        <span class="dm-detail-value">@Model.DateDisplay</span>
+                    </div>
+                    <div class="dm-detail-item dm-detail-item--full">
+                        <span class="dm-detail-label">Requested times</span>
+                        <span class="dm-detail-value dm-detail-value--muted">@Model.RequestedTimes</span>
+                    </div>
+                    @if (Model.BiometricLogs.Any())
+                    {
+                        <div class="dm-detail-item dm-detail-item--full">
+                            <span class="dm-detail-label">Biometric logs</span>
+                            <span class="dm-detail-value dm-detail-value--muted">@string.Join(" · ", Model.BiometricLogs)</span>
+                        </div>
+                    }
+                </div>
+
+                <div class="mt-3">
+                    <span class="dm-detail-label d-block mb-1">Justification</span>
+                    <p class="dm-reason-box mb-0">@Model.Justification</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header">
+                <i class="fas fa-sticky-note"></i>
+                Reviewer notes
+            </div>
+            <div class="dm-section-body">
+                @if (Model.ReviewAction == JustificationStatus.Rejected)
+                {
+                    <div class="dm-alert-banner dm-alert-banner--warning mb-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>Please provide a reason when rejecting this request.</div>
+                    </div>
+                    <label asp-for="ReviewNotes" class="dm-form-label">Rejection notes</label>
+                    <textarea asp-for="ReviewNotes"
+                              class="form-control dm-form-control"
+                              rows="3"
+                              required
+                              placeholder="Enter reason for rejection…"></textarea>
+                    <span asp-validation-for="ReviewNotes" class="text-danger validation-message"></span>
+                }
+                else
+                {
+                    <label asp-for="ReviewNotes" class="dm-form-label">Notes (optional)</label>
+                    <textarea asp-for="ReviewNotes"
+                              class="form-control dm-form-control"
+                              rows="2"
+                              placeholder="Optional internal notes…"></textarea>
+                }
+            </div>
+        </div>
+    </div>
+</form>

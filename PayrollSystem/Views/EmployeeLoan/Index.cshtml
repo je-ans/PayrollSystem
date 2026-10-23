@@ -1,0 +1,417 @@
+@{
+    ViewData["Title"] = "Employee Loans";
+    ViewBag.ActiveMenu = "EmployeeManagement";
+    ViewBag.ActiveLink = "EmployeeLoan";
+    ViewBag.ActiveMainMenu = "EmployeeManagement";
+}
+
+<link rel="stylesheet" href="~/css/filter.css" />
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center">
+        <div class="flex-grow-1 d-flex justify-content-start">
+            <h3 class="card-title m-0">Employee Loan Management</h3>
+        </div>
+        <div class="card-tools d-flex align-items-center">
+            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+               data-title="Add Employee Loan"
+               data-url="/EmployeeLoan/Create"
+               data-modal-type="create"
+               data-toggle="tooltip"
+               title="Add Employee Loan">
+                <i class="fas fa-plus"></i>
+                <span class="d-none d-lg-inline">Add Employee Loan</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+
+            <div class="filter-section collapsed" id="filterSection">
+                <div class="filter-header" id="filterHeader">
+                    <div>
+                        <i class="fas fa-filter mr-2"></i>
+                        <span class="font-weight-bold">Advanced Filters</span>
+                    </div>
+                    <button type="button" class="filter-toggle" id="filterToggle">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="filter-body" id="filterBody">
+                    <div class="row">
+                        <div class="filter-group col-12 col-sm-6 col-md-4 col-lg-2">
+                            <label class="filter-label">Employee ID</label>
+                            <input type="text" class="form-control filter-input" id="employeeIdFilter" placeholder="Employee ID" autocomplete="off" />
+                        </div>
+                        <div class="filter-group col-12 col-sm-6 col-md-4 col-lg-3">
+                            <label class="filter-label">Employee Name</label>
+                            <select class="form-control filter-input select2" id="fullNameFilter">
+                                <option value="">-- All --</option>
+                                @if (ViewBag.Employees != null)
+                                {
+                                    foreach (var emp in ViewBag.Employees)
+                                    {
+                                        <option value="@emp.FullName">@emp.FullName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="filter-group col-12 col-sm-6 col-md-4 col-lg-2">
+                            <label class="filter-label">Designation</label>
+                            <select class="form-control filter-input select2" id="designationFilter">
+                                <option value="">-- All --</option>
+                                @if (ViewBag.Designations != null)
+                                {
+                                    foreach (var d in ViewBag.Designations)
+                                    {
+                                        <option value="@d.Id">@d.DesignationName</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="filter-group col-12 col-sm-6 col-md-4 col-lg-2">
+                            <label class="filter-label">Organization Unit</label>
+                            <select class="form-control filter-input select2" id="organizationStructureFilter">
+                                <option value="">-- All --</option>
+                                @if (ViewBag.OrganizationUnits != null)
+                                {
+                                    foreach (var d in ViewBag.OrganizationUnits)
+                                    {
+                                        <option value="@d.Id">@d.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="filter-group col-12 col-sm-6 col-md-4 col-lg-2">
+                            <label class="filter-label">Loan Status</label>
+                            <select class="form-control filter-input select2" id="loanStatusFilter">
+                                <option value="">-- All --</option>
+                                <option value="Active">Active</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap flex-md-nowrap gap-2 justify-content-end align-items-center responsive-btn-group">
+                                <button type="button" class="btn btn-outline-secondary mb-2 mb-md-0" id="clearFilters">
+                                    <i class="fas fa-times mr-2"></i>Clear Filters
+                                </button>
+                                <button type="button" class="btn btn-primary mb-2 mb-md-0 me-md-2" id="applyFilters">
+                                    <i class="fas fa-filter mr-2"></i>Apply Filters
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="active-filters" id="activeFilters" style="display: none;">
+                <div class="no-filters">No active filters</div>
+            </div>
+
+            <table class="table table-hover table-striped table-bordered" id="employeeLoansTable" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>No.</th>
+                        <th>Employee ID</th>
+                        <th>Full Name</th>
+                        <th>Loan</th>
+                        <th>Principal</th>
+                        <th>Total To Repay</th>
+                        <th>Installment</th>
+                        <th>Paid</th>
+                        <th>Balance</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let dataTable;
+        let activeFilters = {};
+
+        $(document).ready(function () {
+            loadFiltersFromLocalStorage();
+            initializeDataTable();
+            initializeFilterSystem();
+            initializeSelect2();
+        });
+
+        function initializeSelect2() {
+            $('.select2').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                allowClear: true,
+                placeholder: '-- All --'
+            });
+        }
+
+        function initializeDataTable() {
+            if ($.fn.DataTable.isDataTable('#employeeLoansTable')) {
+                dataTable = $('#employeeLoansTable').DataTable();
+                return;
+            }
+
+            dataTable = $('#employeeLoansTable').DataTable({
+                responsive: true,
+                lengthChange: true,
+                autoWidth: false,
+                pageLength: 25,
+                processing: true,
+                serverSide: true,
+                order: [[2, 'asc']],
+                ajax: {
+                    url: '@Url.Action("GetEmployeeLoansJson", "EmployeeLoan")',
+                    type: 'POST',
+                    data: function (d) {
+                        d.employeeId = activeFilters.employeeId || '';
+                        d.fullName = activeFilters.fullName || '';
+                        d.designationId = activeFilters.designationId || '';
+                        d.organizationStructureId = activeFilters.organizationStructureId || '';
+                        d.loanStatus = activeFilters.loanStatus || '';
+                    }
+                },
+                columns: [
+                    {
+                        data: null,
+                        render: function (data, type, row, meta) {
+                            return meta.row + meta.settings._iDisplayStart + 1;
+                        },
+                        className: 'text-center',
+                        orderable: false
+                    },
+                    { data: 'employeeIdNumber', defaultContent: '' },
+                    { data: 'employeeName', defaultContent: '' },
+                    { data: 'loanName', defaultContent: '' },
+                    {
+                        data: 'principalAmount',
+                        className: 'text-right',
+                        render: function (data) {
+                            return '₱' + parseFloat(data).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                        }
+                    },
+                    {
+                        data: 'totalAmountToRepay',
+                        className: 'text-right',
+                        render: function (data) {
+                            return '₱' + parseFloat(data).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                        }
+                    },
+                    {
+                        data: 'installmentAmount',
+                        className: 'text-right',
+                        render: function (data) {
+                            return '₱' + parseFloat(data).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                        }
+                    },
+                    {
+                        data: 'installmentsPaid',
+                        className: 'text-center',
+                        render: function (data, type, row) {
+                            return row.installmentsPaid + ' / ' + row.totalInstallments;
+                        }
+                    },
+                    {
+                        data: 'remainingBalance',
+                        className: 'text-right',
+                        render: function (data) {
+                            return '₱' + parseFloat(data).toLocaleString('en-US', { minimumFractionDigits: 2 });
+                        }
+                    },
+                    {
+                        data: 'status',
+                        className: 'text-center',
+                        render: function (data) {
+                            var badgeClass = 'bg-secondary';
+                            if (data === 'Active') badgeClass = 'bg-success';
+                            else if (data === 'Completed') badgeClass = 'bg-primary';
+                            else if (data === 'Cancelled') badgeClass = 'bg-danger';
+                            return '<span class="badge ' + badgeClass + '">' + data + '</span>';
+                        }
+                    },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-center',
+                        render: function (data) {
+                            return `
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                        Action <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-right" role="menu">
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="View Employee Loan"
+                                           data-url="/EmployeeLoan/Details/${data}"
+                                           data-modal-type="view">
+                                            <i class="fa fa-eye mr-2 text-dark"></i> View Details
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Edit Employee Loan"
+                                           data-url="/EmployeeLoan/Edit/${data}"
+                                           data-modal-type="edit">
+                                            <i class="fa fa-edit mr-2 text-primary"></i> Edit Loan
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Delete Employee Loan"
+                                           data-url="/EmployeeLoan/Delete/${data}"
+                                           data-modal-type="delete_data">
+                                            <i class="fa fa-trash mr-2 text-danger"></i> Delete Loan
+                                        </a>
+                                    </div>
+                                </div>`;
+                        }
+                    }
+                ],
+                language: {
+                    search: 'Quick Search:',
+                    lengthMenu: 'Show _MENU_ entries per page',
+                    info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+                    infoEmpty: 'Showing 0 to 0 of 0 entries',
+                    infoFiltered: '(filtered from _MAX_ total entries)',
+                    zeroRecords: 'No matching records found',
+                    processing: "<i class='fas fa-spinner fa-spin'></i> Loading..."
+                }
+            });
+        }
+
+        function initializeFilterSystem() {
+            $('#filterHeader').on('click', function () {
+                $('#filterSection').toggleClass('collapsed');
+                $('#filterToggle').toggleClass('rotated');
+                if (!$('#filterSection').hasClass('collapsed')) {
+                    setTimeout(function () { $('#employeeIdFilter').focus(); }, 300);
+                }
+            });
+
+            $('#applyFilters').on('click', function () { applyFilters(); });
+            $('#clearFilters').on('click', function () { clearAllFilters(); });
+
+            $('.filter-input').on('keypress', function (e) {
+                if (e.which === 13) applyFilters();
+            });
+
+            updateActiveFiltersDisplay();
+        }
+
+        function loadFiltersFromLocalStorage() {
+            var saved = JSON.parse(localStorage.getItem('employeeLoanFilters') || '{}');
+            activeFilters = saved;
+
+            if ($('#employeeIdFilter').length) $('#employeeIdFilter').val(saved.employeeId || '');
+            if ($('#fullNameFilter').length) $('#fullNameFilter').val(saved.fullName || '').trigger('change');
+            if ($('#designationFilter').length) $('#designationFilter').val(saved.designationId || '').trigger('change');
+            if ($('#organizationStructureFilter').length) $('#organizationStructureFilter').val(saved.organizationStructureId || '').trigger('change');
+            if ($('#loanStatusFilter').length) $('#loanStatusFilter').val(saved.loanStatus || '').trigger('change');
+
+            if ($('#activeFilters').length) updateActiveFiltersDisplay();
+
+            if (Object.keys(saved).length > 0 && $('#filterSection').length) {
+                $('#filterSection').removeClass('collapsed');
+                $('#filterToggle').addClass('rotated');
+            }
+        }
+
+        function applyFilters() {
+            var filters = {
+                employeeId: $('#employeeIdFilter').val().trim(),
+                fullName: $('#fullNameFilter').val(),
+                designationId: $('#designationFilter').val(),
+                organizationStructureId: $('#organizationStructureFilter').val(),
+                loanStatus: $('#loanStatusFilter').val()
+            };
+
+            activeFilters = {};
+            Object.keys(filters).forEach(function (key) {
+                if (filters[key]) activeFilters[key] = filters[key];
+            });
+
+            localStorage.setItem('employeeLoanFilters', JSON.stringify(activeFilters));
+            if (dataTable) dataTable.ajax.reload();
+            updateActiveFiltersDisplay();
+        }
+
+        function clearAllFilters() {
+            $('#employeeIdFilter').val('');
+            $('.select2').val(null).trigger('change');
+            activeFilters = {};
+            localStorage.removeItem('employeeLoanFilters');
+            if (dataTable) dataTable.ajax.reload();
+            updateActiveFiltersDisplay();
+        }
+
+        function updateActiveFiltersDisplay() {
+            var container = $('#activeFilters');
+            var noFiltersDiv = container.find('.no-filters');
+
+            if (Object.keys(activeFilters).length === 0) {
+                container.hide();
+                return;
+            }
+
+            container.find('.filter-badge').remove();
+
+            Object.keys(activeFilters).forEach(function (key) {
+                var badge = $('<div class="filter-badge"><span></span><button type="button" class="remove-filter" data-filter="' + key + '"><i class="fas fa-times"></i></button></div>');
+                badge.find('span').text(getFilterLabel(key));
+                container.append(badge);
+            });
+
+            noFiltersDiv.hide();
+            container.show();
+        }
+
+        function getFilterLabel(key) {
+            var labels = {
+                employeeId: 'Employee ID',
+                fullName: 'Employee Name',
+                designationId: 'Designation',
+                organizationStructureId: 'Organization Unit',
+                loanStatus: 'Loan Status'
+            };
+
+            var label = labels[key] || key;
+            var value = activeFilters[key];
+
+            if (key === 'fullName') value = $('#fullNameFilter option:selected').text();
+            if (key === 'designationId') value = $('#designationFilter option:selected').text();
+            if (key === 'organizationStructureId') value = $('#organizationStructureFilter option:selected').text();
+            if (key === 'loanStatus') value = $('#loanStatusFilter option:selected').text();
+
+            return label + ': ' + value;
+        }
+
+        $(document).on('click', '.remove-filter', function () {
+            var filterKey = $(this).data('filter');
+            delete activeFilters[filterKey];
+
+            var inputMap = {
+                employeeId: 'employeeIdFilter',
+                fullName: 'fullNameFilter',
+                designationId: 'designationFilter',
+                organizationStructureId: 'organizationStructureFilter',
+                loanStatus: 'loanStatusFilter'
+            };
+
+            var inputId = '#' + inputMap[filterKey];
+            var el = $(inputId);
+            if (el.hasClass('select2')) el.val(null).trigger('change');
+            else el.val('');
+
+            localStorage.setItem('employeeLoanFilters', JSON.stringify(activeFilters));
+            if (dataTable) dataTable.ajax.reload();
+            updateActiveFiltersDisplay();
+        });
+    </script>
+}

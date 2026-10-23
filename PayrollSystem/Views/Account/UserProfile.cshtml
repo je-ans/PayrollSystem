@@ -1,0 +1,329 @@
+@model UserProfileAndChangePasswordViewModel
+
+@{
+    ViewBag.Title = "User Profile";
+    ViewBag.ActiveMenu = "Account";
+}
+
+<style>
+.image-area {
+position: relative;
+display: inline-block;
+}
+
+.upload-label {
+position: relative;
+display: block;
+cursor: pointer;
+}
+
+.profile-user-img {
+width: 150px;
+height: 150px;
+object-fit: cover;
+border: 4px solid #e9ecef;
+border-radius: 50%;
+transition: filter 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+/* 🟢 Blur effect when hovered */
+.upload-label:hover .profile-user-img {
+filter: blur(1px);
+opacity: 0.9;
+}
+
+.upload-icon {
+position: absolute;
+bottom: 50%;
+left: 50%;
+transform: translate(-50%, 50%);
+background: rgba(0, 0, 0, 0.6);
+color: white;
+border-radius: 50%;
+width: 40px;
+height: 40px;
+display: flex;
+justify-content: center;
+align-items: center;
+font-size: 18px;
+transition: opacity 0.3s ease-in-out;
+opacity: 0;
+}
+
+/* 🟢 Show icon when hovered */
+.upload-label:hover .upload-icon {
+opacity: 1;
+}
+
+
+/*----------------------------------------Nav Tab-------------------------------------------*/
+/* Tab Navigation Styling */
+.nav-tabs {
+border-bottom: 2px solid #ddd;
+position: relative;
+}
+
+.nav-tabs .nav-item .nav-link {
+color: #495057;
+font-weight: 500;
+border: none;
+padding: 10px 15px;
+transition: all 0.3s;
+}
+
+.nav-tabs .nav-item .nav-link:hover {
+color: #007bff;
+}
+
+.nav-tabs .nav-item .nav-link.active {
+color: #007bff;
+position: relative;
+}
+
+/* Bottom Line Indicator for Active Tab */
+.nav-tabs .nav-item .nav-link.active::after {
+content: "";
+position: absolute;
+bottom: 0;
+left: 0;
+width: 100%;
+height: 3px;
+background-color: #007bff;
+}
+
+/* Tab Content Padding */
+.tab-content {
+padding: 20px;
+border-radius: 5px;
+}
+
+</style>
+
+<!-- Main Container -->
+<div id="main-content" class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-lg-4 col-md-4 col-sm-12">
+            <div class="card card-outline rounded border-0 shadow">
+                <div class="card-body text-center">
+                    <!-- Profile Image -->
+                    <div class="image-area mb-3 position-relative">
+                        <form id="uploadProfileForm" asp-action="UploadProfilePicture" asp-controller="Account" method="post" enctype="multipart/form-data">
+                            <label for="profilePictureInput" class="upload-label">
+                                <img id="profileImage" class="profile-user-img img-fluid rounded-circle shadow-sm"
+                                     src="@(string.IsNullOrEmpty(Model.UserProfile.ProfilePicture) ?
+                                        Url.Content("~/image/default_user.png") :
+                                        Url.Content("~/uploads/" + Model.UserProfile.ProfilePicture))"
+                                                                 alt="User profile picture">
+                                <!-- Camera Icon -->
+                                <div class="upload-icon">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                            </label>
+                            <input type="file" id="profilePictureInput" name="profilePicture" style="display: none;">
+                        </form>
+                    </div>
+
+
+
+                    <div class="">
+                        <h5 class="font-weight-bold mb-1">@Model.UserProfile.FirstName @Model.UserProfile.LastName</h5>
+                        <p class="text-muted mb-3">@Model.UserProfile.DesignationName</p>
+                        <!-- Additional Info -->
+                        <div class="content-area text-center bg-light rounded p-3 shadow-sm">
+                            <div class="info-item border-bottom pb-2">
+                                <p class="text-muted small mb-1">Username</p>
+                                <h6 class="mb-0">
+                                    <i class="fas fa-user text-secondary me-1"></i> @Model.UserProfile.UserName
+                                </h6>
+                            </div>
+                            <div class="info-item border-bottom pb-2 pt-3">
+                                <p class="text-muted small mb-1">Email</p>
+                                <h6 class="mb-0">
+                                    <i class="fas fa-envelope text-secondary me-1"></i> @Model.UserProfile.Email
+                                </h6>
+                            </div>
+                            <div class="info-item pt-3">
+                                <p class="text-muted small mb-1">Phone Number</p>
+                                <h6 class="mb-0">
+                                    <i class="fas fa-phone-alt text-secondary me-1"></i> @Model.UserProfile.PhoneNumber
+                                </h6>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area (Tabs and Forms) -->
+        <div class="col-lg-8 col-md-8 col-sm-12">
+            <!-- Navigation Tabs -->
+            <div class="card card-outline rounded border-0 shadow">
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="profileTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="settings-tab" data-toggle="tab" href="#settings" role="tab">Profile Settings</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="password-tab" data-toggle="tab" href="#password" role="tab">Change Password</a>
+                        </li>
+                    </ul>
+
+                    <!-- Tab Content -->
+                    <div class="tab-content mt-3">
+                        <!-- Profile Settings -->
+                        <div class="tab-pane fade show active" id="settings" role="tabpanel">
+                            <partial name="Partials/ProfileSettings" model="Model" />
+
+
+                        </div>
+
+                        <!-- Change Password -->
+                        <div class="tab-pane fade" id="password" role="tabpanel">
+                            <partial name="Partials/ChangePassword" model="Model" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    $('#profileForm').on('submit', function (e) {
+        e.preventDefault();
+        $.ajax({
+            url: '/Account/EditUserProfile',
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function (response) {
+                console.log("Server response:", response);
+
+                if (response.success) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "<strong style='font-size: 34px;'>Success</strong>",
+                        html: `<p style="font-size: 20px;">${response.message}</p>`,
+                        showConfirmButton: false,
+                        timer: 3000
+                    }).then(() => {
+                        location.reload();  // Reload after success message
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: "<strong style='font-size: 34px; color: red;'>Oops...</strong>",
+                        html: `<p style="font-size: 20px;">${response.message}</p>`,
+                        showConfirmButton: true
+                    });
+                }
+
+            },
+            error: function (xhr, status, error) {
+                console.error("AJAX Error:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'An error occurred',
+                    text: 'Please check the console for details.',
+                    showConfirmButton: true
+                });
+            },
+            complete: function () {
+                $('.submitButton').prop('disabled', false);  // Re-enable button after request
+            }
+        });
+    });
+
+    $('#passwordForm').on('submit', function (e) {
+        e.preventDefault();
+        $.ajax({
+            url: '/Account/ChangePassword',
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function (response) {
+                console.log("Server response:", response);
+
+                if (response.success) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "<strong style='font-size: 34px;'>Success</strong>",
+                        html: `<p style="font-size: 20px;">${response.message}</p>`,
+                        showConfirmButton: false,
+                        timer: 3000
+                    }).then(() => {
+                        location.reload();  // Reload after success message
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: "<strong style='font-size: 34px; color: red;'>Oops...</strong>",
+                        html: `<p style="font-size: 20px;">${response.message}</p>`,
+                        showConfirmButton: true
+                    });
+                }
+
+            },
+            error: function (xhr, status, error) {
+                console.error("AJAX Error:", error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'An error occurred',
+                    text: 'Please check the console for details.',
+                    showConfirmButton: true
+                });
+            },
+            complete: function () {
+                $('.submitButton').prop('disabled', false);  // Re-enable button after request
+            }
+        });
+    });
+
+
+    $(document).ready(function () {
+        $("#profilePictureInput").change(function () {
+            var formData = new FormData($("#uploadProfileForm")[0]);
+
+            $.ajax({
+                url: $("#uploadProfileForm").attr("action"),
+                type: "POST",
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (response) {
+                    if (response.success) {
+                        Swal.fire({
+                            icon: "success",
+                            title: "<strong style='font-size: 24px;'>Success</strong>",
+                            html: `<p style="font-size: 18px;">${response.message}</p>`,
+                            showConfirmButton: false,
+                            timer: 2000
+                        }).then(() => {
+                            // Update profile picture without reloading
+                            $("#profileImage").attr("src", "/uploads/" + response.newFileName);
+                             location.reload();  // Reload after success message
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: "error",
+                            title: "<strong style='font-size: 24px; color: red;'>Oops...</strong>",
+                            html: `<p style="font-size: 18px;">${response.message}</p>`,
+                            showConfirmButton: true
+                        });
+                    }
+                },
+                error: function () {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Upload Failed",
+                        text: "Something went wrong. Please try again.",
+                        showConfirmButton: true
+                    });
+                }
+            });
+        });
+    });
+</script>

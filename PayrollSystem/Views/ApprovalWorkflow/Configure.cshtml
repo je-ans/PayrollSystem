@@ -1,0 +1,170 @@
+@model ApprovalWorkflowConfigureViewModel
+
+@{
+    ViewData["Title"] = $"Configure — {Model.Name}";
+    var accent = WorkflowDisplayHelper.GetProcessAccentClass(Model.ProcessType);
+    var icon = WorkflowDisplayHelper.GetProcessIcon(Model.ProcessType);
+}
+
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<section class="content aw-page">
+    <div class="container-fluid">
+        <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+            <div class="card-body">
+                <div class="aw-config-header">
+                    <div>
+                        <a asp-action="Index" class="btn btn-sm btn-link text-muted pl-0 mb-1">
+                            <i class="fas fa-arrow-left mr-1"></i> All Workflows
+                        </a>
+                        <h1 class="aw-config-title">
+                            <span class="aw-process-icon @accent"><i class="fas @icon"></i></span>
+                            @Model.Name
+                        </h1>
+                        <div class="aw-config-badges">
+                            <span class="aw-config-badge">
+                                <i class="fas fa-tag"></i> @Model.ProcessTypeDisplay
+                            </span>
+                            <span class="aw-config-badge">
+                                <i class="fas fa-list-ol"></i> @Model.Steps.Count step@(Model.Steps.Count == 1 ? "" : "s")
+                            </span>
+                            @if (Model.IsActive)
+                            {
+                                <span class="aw-config-badge" style="background:#dcfce7;border-color:#86efac;color:#15803d;">
+                                    <i class="fas fa-check-circle"></i> Active
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="aw-config-badge">
+                                    <i class="fas fa-pause-circle"></i> Inactive
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <div class="aw-config-actions" asp-permission="APPROVAL_WORKFLOW_VIEW">
+                        <a href="javascript:void(0)" class="btn btn-outline-secondary btn-sm open-modal"
+                           data-title="Edit Workflow"
+                           data-url="@Url.Action("Edit", new { id = Model.Id })"
+                           data-modal-type="edit">
+                            <i class="fas fa-cog mr-1"></i> Workflow Settings
+                        </a>
+                        <a href="javascript:void(0)" class="btn btn-primary btn-sm open-modal"
+                           data-title="Add Step"
+                           data-url="@Url.Action("CreateStep", new { workflowId = Model.Id })"
+                           data-modal-type="create">
+                            <i class="fas fa-plus mr-1"></i> Add Step
+                        </a>
+                    </div>
+                </div>
+
+                <div class="aw-info-banner">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        Each step resolves an approver from your organization structure.
+                        Steps without a matching role assignment are <strong>skipped automatically</strong> at submit time.
+                        Use <strong>priority fallbacks</strong> (e.g. Schedule Approver, then Department Head) within a step.
+                    </div>
+                </div>
+
+                @if (Model.Steps.Count == 0)
+                {
+                    <div class="aw-empty-state">
+                        <div><i class="fas fa-stream d-block"></i></div>
+                        <h5>No approval steps yet</h5>
+                        <p class="mb-3">Add steps to define who approves this process and in what order.</p>
+                        <a href="javascript:void(0)" class="btn btn-primary open-modal"
+                           data-title="Add Step"
+                           data-url="@Url.Action("CreateStep", new { workflowId = Model.Id })"
+                           data-modal-type="create"
+                           asp-permission="APPROVAL_WORKFLOW_VIEW">
+                            <i class="fas fa-plus mr-1"></i> Add First Step
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="aw-pipeline">
+                        @foreach (var step in Model.Steps.OrderBy(s => s.StepOrder))
+                        {
+                            <div class="aw-pipeline-step" data-step-id="@step.Id">
+                                <div class="aw-pipeline-rail">
+                                    <div class="aw-pipeline-node">@step.StepOrder</div>
+                                    <div class="aw-pipeline-line"></div>
+                                </div>
+                                <div class="aw-pipeline-body">
+                                    <div class="aw-pipeline-step-header">
+                                        <h3 class="aw-pipeline-step-name">@step.Name</h3>
+                                        <div class="aw-pipeline-step-actions" asp-permission="APPROVAL_WORKFLOW_VIEW">
+                                            <a href="javascript:void(0)" class="btn btn-xs btn-outline-primary open-modal"
+                                               data-title="Add Fallback Approver"
+                                               data-url="@Url.Action("CreateApprover", new { stepId = step.Id })"
+                                               data-modal-type="create">
+                                                <i class="fas fa-user-plus mr-1"></i> Add Approver
+                                            </a>
+                                            <a href="javascript:void(0)" class="btn btn-xs btn-outline-secondary open-modal"
+                                               data-title="Edit Step"
+                                               data-url="@Url.Action("EditStep", new { id = step.Id })"
+                                               data-modal-type="edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-xs btn-outline-danger aw-delete-step"
+                                                    data-step-id="@step.Id"
+                                                    data-step-name="@step.Name">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    @if (step.Approvers.Count == 0)
+                                    {
+                                        <p class="aw-no-approvers mb-0">
+                                            No approver rules — this step will be skipped until you add one.
+                                        </p>
+                                    }
+                                    else
+                                    {
+                                        <div class="aw-approver-list">
+                                            @foreach (var approver in step.Approvers.OrderBy(a => a.Priority))
+                                            {
+                                                var typeLabel = approver.SourceType == PayrollSystem.Models.ApproverSourceType.LeadershipRole
+                                                    ? "Leadership"
+                                                    : "Functional";
+                                                <div class="aw-approver-item">
+                                                    <div class="d-flex align-items-center gap-2" style="gap:0.65rem;flex:1;min-width:0;">
+                                                        <span class="aw-approver-priority">@approver.Priority</span>
+                                                        <div>
+                                                            <div class="aw-approver-label">@WorkflowDisplayHelper.BuildApproverSummary(approver)</div>
+                                                            <div class="aw-approver-type">@typeLabel role</div>
+                                                        </div>
+                                                    </div>
+                                                    <div asp-permission="APPROVAL_WORKFLOW_VIEW">
+                                                        <a href="javascript:void(0)" class="btn btn-xs btn-link text-secondary open-modal"
+                                                           data-title="Edit Approver"
+                                                           data-url="@Url.Action("EditApprover", new { id = approver.Id })"
+                                                           data-modal-type="edit">
+                                                            Edit
+                                                        </a>
+                                                        <button type="button" class="btn btn-xs btn-link text-danger aw-delete-approver"
+                                                                data-approver-id="@approver.Id">
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script src="~/js/approval-workflow.js" asp-append-version="true"></script>
+}

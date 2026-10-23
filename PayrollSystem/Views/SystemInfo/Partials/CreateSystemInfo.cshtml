@@ -1,0 +1,48 @@
+@model SystemInfoViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="CreateSystemInfo" method="post" asp-antiforgery="true" enctype="multipart/form-data" id="systemInfoForm">
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="SystemName" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="SystemName" class="floating-label">System Name</label>
+            </div>
+            <span asp-validation-for="SystemName" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="ShortName" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="ShortName" class="floating-label">Short Name</label>
+            </div>
+            <span asp-validation-for="ShortName" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <textarea asp-for="Description" class="form-control floating-input" required placeholder=" " rows="3"></textarea>
+                <label asp-for="Description" class="floating-label">Description</label>
+            </div>
+            <span asp-validation-for="Description" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="LogoFile" class="control-label">System Logo</label>
+            <div class="custom-file">
+                <input asp-for="LogoFile" type="file" class="custom-file-input" accept="image/*" id="logoFile">
+                <label class="custom-file-label text-truncate" for="logoFile">Choose file</label>
+            </div>
+            <span asp-validation-for="LogoFile" class="text-danger validation-message"></span>
+            <small class="form-text text-muted">Recommended: 400x400px, max 2MB</small>
+        </div>
+    </form>
+</div>
+
+<script>
+    // Update file input label with selected filename
+    document.getElementById('logoFile').addEventListener('change', function(e) {
+        var fileName = e.target.files[0]?.name || 'Choose file';
+        e.target.nextElementSibling.textContent = fileName;
+    });
+</script> 

@@ -1,0 +1,31 @@
+﻿@model AssignRolePermission
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="Create" method="post" asp-antiforgery="true" id="systemTaskForm">
+        <input type="hidden" asp-for="Id" />
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="TaskId" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="TaskId" class="floating-label">Task</label>
+            </div>
+            <span asp-validation-for="TaskId" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="RoleId" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="RoleId" class="floating-label">Role Name</label>
+            </div>
+            <span asp-validation-for="RoleId" class="text-danger validation-message"></span>
+        </div>
+        
+    </form>
+</div>
+
+

@@ -1,0 +1,95 @@
+@using PayrollSystem.Utility
+@model UndertimeProcessViewModel
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+
+<form id="undertimeProcessForm" method="post" asp-action="Process" asp-controller="UndertimeRequest">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="ReviewAction" />
+
+    <div class="dm-modal">
+        <div class="dm-process-header">
+            <div>
+                <h6>@EnumHelper.GetDisplayName(Model.ReviewAction) undertime request</h6>
+                <small>@Model.EmployeeName · @Model.DateOfUndertime.ToString("MMM dd, yyyy")</small>
+            </div>
+            <span class="dm-status @(Model.ReviewAction == JustificationStatus.Approved ? "dm-status--approved" : "dm-status--rejected")">
+                @Model.ReviewAction
+            </span>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header"><i class="fas fa-file-signature"></i> Request summary</div>
+            <div class="dm-section-body">
+                @if (Model.IsHistoricalDate)
+                {
+                    <div class="dm-alert-banner dm-alert-banner--warning mb-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>This undertime request is for a historical date.</div>
+                    </div>
+                }
+                <div class="dm-detail-grid dm-detail-grid--compact mb-3">
+                    <div class="dm-detail-item">
+                        <span class="dm-detail-label">Date filed</span>
+                        <span class="dm-detail-value">@Model.DateFiled.ToString("MMMM dd, yyyy")</span>
+                    </div>
+                    <div class="dm-detail-item">
+                        <span class="dm-detail-label">Date of undertime</span>
+                        <span class="dm-detail-value">@Model.DateOfUndertime.ToString("MMMM dd, yyyy")</span>
+                    </div>
+                    <div class="dm-detail-item">
+                        <span class="dm-detail-label">Duration</span>
+                        <span class="dm-detail-value">@Model.DurationHours.ToString("0.##") hour(s)</span>
+                    </div>
+                    <div class="dm-detail-item">
+                        <span class="dm-detail-label">Total hours</span>
+                        <span class="dm-detail-value">@Model.TotalHours.ToString("0.##") hour(s)</span>
+                    </div>
+                    @if (Model.ComputedUndertimeMinutesAtSubmit.HasValue && Model.ComputedUndertimeMinutesAtSubmit.Value > 0)
+                    {
+                        <div class="dm-detail-item dm-detail-item--full">
+                            <span class="dm-detail-label">DTR undertime at submit</span>
+                            <span class="dm-detail-value dm-detail-value--muted">
+                                @(Model.ComputedUndertimeMinutesAtSubmit.Value / 60)h @(Model.ComputedUndertimeMinutesAtSubmit.Value % 60)m (informational)
+                            </span>
+                        </div>
+                    }
+                </div>
+                <div>
+                    <span class="dm-detail-label d-block mb-1">Purpose</span>
+                    <p class="dm-reason-box mb-0">@Model.Purpose</p>
+                </div>
+                @if (Model.ReviewAction == JustificationStatus.Approved)
+                {
+                    <div class="dm-alert-banner dm-alert-banner--info mt-3 mb-0">
+                        <i class="fas fa-info-circle"></i>
+                        <div>Approving documents authorized undertime only. DTR computed undertime and payroll are unchanged.</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header"><i class="fas fa-sticky-note"></i> Reviewer notes</div>
+            <div class="dm-section-body">
+                @if (Model.ReviewAction == JustificationStatus.Rejected)
+                {
+                    <div class="dm-alert-banner dm-alert-banner--warning mb-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>Please provide a reason when rejecting this request.</div>
+                    </div>
+                    <label asp-for="ReviewNotes" class="dm-form-label">Rejection notes</label>
+                    <textarea asp-for="ReviewNotes" class="form-control dm-form-control" rows="3" required
+                              placeholder="Enter reason for rejection…"></textarea>
+                }
+                else
+                {
+                    <label asp-for="ReviewNotes" class="dm-form-label">Notes (optional)</label>
+                    <textarea asp-for="ReviewNotes" class="form-control dm-form-control" rows="2"
+                              placeholder="Optional internal notes…"></textarea>
+                }
+            </div>
+        </div>
+    </div>
+</form>

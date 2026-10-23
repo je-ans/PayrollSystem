@@ -1,0 +1,19 @@
+@model DeductionListItemViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="Delete" method="post" id="deleteEmployeeDeductionForm">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+        <div class="text-center my-3">
+            <i class="fa fa-exclamation-triangle text-danger fa-3x"></i>
+        </div>
+        <h5 class="text-center mb-3">Are you sure you want to delete this deduction?</h5>
+        <h5 class="font-weight-bold text-danger text-center">
+            <strong>@Model.DeductionName</strong>
+        </h5>
+        <p class="text-muted text-center">
+            This will remove the deduction for <strong>@Model.EmployeeCount</strong> assigned employee(s). This action cannot be undone.
+        </p>
+    </form>
+</div>

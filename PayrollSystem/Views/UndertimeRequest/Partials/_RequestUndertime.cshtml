@@ -1,0 +1,167 @@
+@model UndertimeRequestFormViewModel
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+
+@if (Model.HasExistingRequest)
+{
+    <div class="dm-modal">
+        <div class="dm-alert-banner dm-alert-banner--warning mb-0">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>@(Model.StatusMessage ?? "An undertime form was already filed for this date.")</div>
+        </div>
+    </div>
+}
+else
+{
+    <form id="requestUndertimeForm" method="post" asp-action="Submit" asp-controller="UndertimeRequest">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="EmployeeId" />
+        <input type="hidden" asp-for="SuggestedMinutes" id="undertimeSuggestedMinutes" />
+
+        <div class="dm-modal">
+            <div class="dm-process-header">
+                <div>
+                    <h6>Request undertime</h6>
+                    <small>@Model.EmployeeName</small>
+                </div>
+                <span class="dm-status dm-status--pending">New</span>
+            </div>
+
+            <div class="dm-section">
+                <div class="dm-section-header">
+                    <i class="fas fa-file-signature"></i>
+                    Undertime details
+                </div>
+                <div class="dm-section-body">
+                    <div class="dm-alert-banner dm-alert-banner--info mb-3">
+                        <i class="fas fa-info-circle"></i>
+                        <div>
+                            File a formal undertime request for leaving early. Approval documents authorization only — it does not change DTR computed undertime or payroll.
+                            @if (Model.RequiresApproval)
+                            {
+                                <span class="d-block mt-1">This request will be routed for approval before the form can be printed as approved.</span>
+                            }
+                            <span id="undertimeSuggestedHint"
+                                  class="@(Model.SuggestedHours.HasValue && Model.SuggestedHours.Value > 0 ? "d-block mt-1" : "d-none mt-1")">
+                                @if (Model.SuggestedHours.HasValue && Model.SuggestedHours.Value > 0)
+                                {
+                                    @:DTR shows @Model.SuggestedHours.Value.ToString("0.##") hour(s) undertime for this date. Adjust the values below if needed.
+                                }
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="dm-form-label">Name</label>
+                                <input class="form-control dm-form-control" value="@Model.EmployeeName" disabled />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="dm-form-label">ID Number</label>
+                                <input class="form-control dm-form-control" value="@Model.EmployeeIdNumber" disabled />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="DateFiled" class="dm-form-label"></label>
+                                <input asp-for="DateFiled" class="form-control dm-form-control" type="date" />
+                                <span asp-validation-for="DateFiled" class="text-danger validation-message"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="DateOfUndertime" class="dm-form-label"></label>
+                                <input asp-for="DateOfUndertime" class="form-control dm-form-control" type="date" />
+                                <span asp-validation-for="DateOfUndertime" class="text-danger validation-message"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="DurationHours" class="dm-form-label"></label>
+                                <input asp-for="DurationHours" class="form-control dm-form-control" type="number" step="0.01" min="0.01" max="24" placeholder="e.g. 1.25" />
+                                <span asp-validation-for="DurationHours" class="text-danger validation-message"></span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label asp-for="TotalHours" class="dm-form-label"></label>
+                                <input asp-for="TotalHours" class="form-control dm-form-control" type="number" step="0.01" min="0.01" max="24" placeholder="e.g. 1.25" />
+                                <span asp-validation-for="TotalHours" class="text-danger validation-message"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label asp-for="Purpose" class="dm-form-label"></label>
+                        <textarea asp-for="Purpose"
+                                  class="form-control dm-form-control"
+                                  rows="3"
+                                  required
+                                  placeholder="Purpose of undertime…"></textarea>
+                        <span asp-validation-for="Purpose" class="text-danger validation-message"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <script>
+        (function () {
+            var $form = $('#requestUndertimeForm');
+            if (!$form.length) return;
+
+            var employeeId = $form.find('[name="EmployeeId"]').val();
+            var suggestedUrl = '@Url.Action("SuggestedHours", "UndertimeRequest")';
+            var $dateInput = $form.find('[name="DateOfUndertime"]');
+            var $duration = $form.find('[name="DurationHours"]');
+            var $total = $form.find('[name="TotalHours"]');
+            var $hint = $('#undertimeSuggestedHint');
+
+            function formatHours(hours) {
+                var value = Number(hours);
+                if (!Number.isFinite(value) || value <= 0) return '';
+                return (Math.round(value * 100) / 100).toString();
+            }
+
+            function applySuggested(hours, minutes) {
+                var formatted = formatHours(hours);
+                if (!formatted) {
+                    $hint.addClass('d-none').text('');
+                    $('#undertimeSuggestedMinutes').val('');
+                    return;
+                }
+
+                $duration.val(formatted);
+                $total.val(formatted);
+                $('#undertimeSuggestedMinutes').val(minutes || Math.round(Number(hours) * 60));
+                $hint
+                    .removeClass('d-none')
+                    .text('DTR shows ' + formatted + ' hour(s) undertime for this date. Adjust the values below if needed.');
+            }
+
+            $dateInput.on('change', function () {
+                var date = $(this).val();
+                if (!date || !employeeId) return;
+
+                $.get(suggestedUrl, { employeeId: employeeId, date: date })
+                    .done(function (data) {
+                        if (data && data.success && data.hours > 0) {
+                            applySuggested(data.hours, data.minutes);
+                        } else {
+                            $hint.addClass('d-none').text('');
+                            $('#undertimeSuggestedMinutes').val('');
+                        }
+                    });
+            });
+        })();
+    </script>
+}

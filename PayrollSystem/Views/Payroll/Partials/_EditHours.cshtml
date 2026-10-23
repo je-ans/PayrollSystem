@@ -1,0 +1,63 @@
+@model PayrollHoursEditViewModel
+
+<div class="modal-header">
+    <h5 class="modal-title">Edit Hours by Organization Unit - @Model.PayrollRunName</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<div class="modal-body">
+    <div class="container-fluid">
+        <form id="editHoursForm">
+            <input type="hidden" asp-for="PayrollRunId" />
+            <div class="form-row mb-3">
+                <div class="col-md-6">
+                    <label for="organizationStructureFilter">Organization Unit</label>
+                    <select asp-for="SelectedOrganizationStructureId"
+                            asp-items="Model.OrganizationUnits"
+                            class="form-control"
+                            id="organizationStructureFilter">
+                        <option value="">All Organization Units</option>
+                    </select>
+                </div>
+            </div>
+
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Organization Unit</th>
+                        <th class="text-right">Basic Hours</th>
+                        <th class="text-right">Overtime Hours</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.Rows.Count; i++)
+                    {
+                        <tr data-org-unit-id="@Model.Rows[i].OrganizationStructureId">
+                            <td>
+                                @Model.Rows[i].EmployeeName
+                                <input type="hidden" asp-for="Rows[i].PayrollEntryId" />
+                            </td>
+                            <td>@Model.Rows[i].OrganizationUnitName</td>
+                            <td>
+                                <input asp-for="Rows[i].RegularHours"
+                                       class="form-control form-control-sm text-right"
+                                       type="number" step="0.01" min="0" />
+                            </td>
+                            <td>
+                                <input asp-for="Rows[i].OvertimeHours"
+                                       class="form-control form-control-sm text-right"
+                                       type="number" step="0.01" min="0" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </form>
+    </div>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+    <button type="button" class="btn btn-primary" onclick="saveHours()">Save Changes</button>
+</div>

@@ -1,0 +1,181 @@
+@model Employee
+
+@{
+    ViewData["Title"] = "My Profile";
+    ViewBag.ActiveMenu = "MyProfile";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Profile Overview -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="mb-3">
+                        @if (!string.IsNullOrEmpty(Model?.ApplicationUser?.ProfilePicture))
+                        {
+                            <img src="@Url.Content("~/uploads/" + Model.ApplicationUser.ProfilePicture)"
+                                 alt="Profile Picture" class="rounded-circle" width="120" height="120">
+                        }
+                        else
+                        {
+                            <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center"
+                                 style="width: 120px; height: 120px;">
+                                <i class="fas fa-user fa-3x text-white"></i>
+                            </div>
+                        }
+                    </div>
+                    <h4 class="mb-1">@Model?.FullName</h4>
+                    <p class="text-muted mb-2">@Model?.Designations.FirstOrDefault(d => d.EffectiveTo == null)?.Designation?.DesignationName</p>
+                    <p class="text-muted mb-3">@(ViewBag.OrganizationUnitsDisplay ?? "—")</p>
+                    <div class="d-grid gap-2">
+                        <a href="@Url.Action("EditPersonalInfo", "MyProfile")" class="btn btn-primary btn-sm">
+                            <i class="fas fa-edit mr-1"></i>Edit Profile
+                        </a>
+                        <a href="@Url.Action("ChangePassword", "MyProfile")" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-key mr-1"></i>Change Password
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personal Information -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Personal Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Basic Information</h6>
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td width="140" class="text-muted">Employee ID:</td>
+                                    <td>@Model?.EmployeeIdNumber</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Full Name:</td>
+                                    <td>@Model?.FullName</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Date of Birth:</td>
+                                    <td>@Model?.DateOfBirth?.ToString("MMM dd, yyyy")</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Sex:</td>
+                                    <td>@Model?.Sex</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Date Hired:</td>
+                                    <td>@Model?.DateHired?.ToString("MMM dd, yyyy")</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Contact Information</h6>
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td width="140" class="text-muted">Email:</td>
+                                    <td>@Model?.EmailAddress</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Telephone:</td>
+                                    <td>@Model?.TelephoneNo</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Mobile:</td>
+                                    <td>@Model?.MobileNo</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    @if (Model?.PersonalInformation != null)
+                    {
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <h6 class="text-muted mb-3">Emergency Contact</h6>
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <td width="140" class="text-muted">Contact Name:</td>
+                                        <td>@Model.PersonalInformation.EmergencyContactName</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Relationship:</td>
+                                        <td>@Model.PersonalInformation.EmergencyContactRelationship</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-muted">Contact Number:</td>
+                                        <td>@Model.PersonalInformation.EmergencyContactNumber</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Current Compensation Information -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h4 class="card-title mb-0">Current Compensation</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td width="140" class="text-muted">Rate Type:</td>
+                                    <td>@Model?.DefaultRateType?.Name</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Basic Salary:</td>
+                                    <td>₱@Model?.BasicSalary.ToString("N2")</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Monthly Rate:</td>
+                                    <td>₱@Model?.MonthlyRate.ToString("N2")</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Daily Rate:</td>
+                                    <td>₱@Model?.DailyRate.ToString("N2")</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Hourly Rate:</td>
+                                    <td>₱@Model?.HourlyRate.ToString("N2")</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td width="140" class="text-muted">Total Monthly Comp:</td>
+                                    <td><strong>₱@Model?.TotalMonthlyCompensation.ToString("N2")</strong></td>
+                                </tr>
+                            </table>
+                            <h6 class="text-muted mt-4 mb-2">Allowances</h6>
+                            @if (Model?.Allowances != null && Model.Allowances.Any())
+                            {
+                                <ul class="list-group list-group-flush">
+                                    @foreach (var allowance in Model.Allowances.Where(a => a.IsActive && a.Allowance != null && a.Allowance.IsActive))
+                                    {
+                                        <li class="list-group-item d-flex justify-content-between align-items-center py-1">
+                                            @allowance.Allowance!.AllowanceName (@allowance.Allowance.Frequency.GetDisplayName())
+                                            <span class="badge bg-info rounded-pill">₱@allowance.Allowance.Amount.ToString("N2")</span>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <p class="text-muted">No active allowances.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

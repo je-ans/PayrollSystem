@@ -1,0 +1,111 @@
+@model PayrollPeriodViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="Create" method="post" id="createPayrollPeriodForm">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Name" type="text" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="Name" class="floating-label">Period Name <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="Name" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PeriodStartDate" type="date" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="PeriodStartDate" class="floating-label">Start Date <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="PeriodStartDate" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="PeriodEndDate" type="date" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="PeriodEndDate" class="floating-label">End Date <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="PeriodEndDate" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="PayDate" type="date" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="PayDate" class="floating-label">Pay Date <span class="text-danger">*</span></label>
+            </div>
+            <span asp-validation-for="PayDate" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <textarea asp-for="Description" class="form-control floating-input" rows="3" placeholder=" "></textarea>
+                <label asp-for="Description" class="floating-label">Description (Optional)</label>
+            </div>
+            <span asp-validation-for="Description" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="aw-info-banner" id="frequencyInfo" style="display:none;">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Detected Period Type:</strong> <span id="frequencyDisplay"></span>
+                <div class="mt-1">
+                    <small><span id="halfInfo"></span> This is automatically determined from the date range.</small>
+                </div>
+            </div>
+        </div>
+
+        <input type="hidden" asp-for="IsActive" value="true" />
+    </form>
+</div>
+
+<script>
+    $(document).ready(function() {
+        function calculatePeriodInfo() {
+            var startDate = $('#PeriodStartDate').val();
+            var endDate = $('#PeriodEndDate').val();
+
+            if (startDate && endDate) {
+                var start = new Date(startDate);
+                var end = new Date(endDate);
+                var diffTime = Math.abs(end - start);
+                var diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                var startDay = start.getDate();
+                var endDay = end.getDate();
+
+                var periodType = '';
+                if (diffDays === 7) periodType = 'Weekly';
+                else if (diffDays === 14) periodType = 'Bi-Weekly';
+                else if (diffDays >= 15 && diffDays <= 16) periodType = 'Semi-Monthly';
+                else if (diffDays >= 28 && diffDays <= 31) periodType = 'Monthly';
+                else periodType = 'Custom (' + diffDays + ' days)';
+
+                var halfInfo = '';
+                if (startDay <= 15 && endDay <= 15) {
+                    halfInfo = 'First half of month (1st-15th).';
+                } else if (startDay >= 16 && endDay >= 16) {
+                    halfInfo = 'Second half of month (16th-end).';
+                } else {
+                    halfInfo = 'Cross-month period.';
+                }
+
+                $('#frequencyDisplay').text(periodType);
+                $('#halfInfo').text(halfInfo);
+                $('#frequencyInfo').show();
+            } else {
+                $('#frequencyInfo').hide();
+            }
+        }
+
+        $('#PeriodStartDate, #PeriodEndDate').on('change input', calculatePeriodInfo);
+        calculatePeriodInfo();
+    });
+</script>

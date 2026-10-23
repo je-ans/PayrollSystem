@@ -1,0 +1,101 @@
+﻿@model IEnumerable<RateType>
+
+@{
+    ViewData["Title"] = "Rate Type";
+    ViewBag.ActiveMenu = "RateType";
+    ViewBag.ActiveLink = "RateType";
+    ViewBag.ActiveMainMenu = "";
+}
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center">
+        <div class="flex-grow-1 d-flex justify-content-start">
+            <h3 class="card-title m-0">Rate Type List</h3>
+        </div>
+        <div class="card-tools d-flex align-items-center">
+            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+               data-title="Add Rate Type"
+               data-url="/RateType/CreateRateType"
+               data-modal-type="create"
+               data-toogle="tooltip"
+               title="Add Rate Type">
+                <i class="fas fa-plus"></i>
+                <span class="d-none d-lg-inline">Add Rate Type</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+            <table class="table table-hover table-striped table-bordered" id="myTable" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>No.</th>
+                        <th>Rate Type Name</th>
+                        <th>Code</th>
+                        <th>Description</th>
+                        <th>Rate Basis</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        var index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@index</td>
+                                <td>@item.Name</td>
+                                <td>@item.Code</td>
+                                <td>@item.Description</td>
+                                <td>@item.RateBasis</td>
+                                <td class="text-center">
+                                    <span class="badge @(item.IsActive ? "bg-success" : "bg-danger")">
+                                        <i class="@(item.IsActive ? "fa fa-check-circle text-white" : "fa fa-times-circle text-white")"></i>
+                                        @(item.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td align="center">
+                                    <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                        Action
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu" role="menu">
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Rate Type Details"
+                                           data-url="/RateType/ViewRateType/@item.Id"
+                                           data-modal-type="view">
+                                            <i class="fa fa-eye mr-2 text-dark"></i>
+                                            <span>View Rate Type</span>
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Edit Rate Type"
+                                           data-url="/RateType/EditRateType/@item.Id"
+                                           data-modal-type="edit">
+                                            <i class="fa fa-edit mr-2 text-primary"></i>
+                                            <span>Edit Rate Type</span>
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Delete Rate Type"
+                                           data-url="/RateType/DeleteRateType/@item.Id"
+                                           data-modal-type="@(ViewBag.RateTypesWithEmployees?.Contains(item.Id) == true ? "view" : "delete_data")"
+                                           data-size="@(ViewBag.RateTypesWithEmployees?.Contains(item.Id) == true ? "modal-lg" : "")">
+                                            <i class="fa fa-trash mr-2 text-danger"></i>
+                                            <span>Delete Rate Type</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    }
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

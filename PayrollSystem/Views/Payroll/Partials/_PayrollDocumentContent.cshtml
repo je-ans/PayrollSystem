@@ -1,0 +1,320 @@
+@model PayrollSummaryViewModel
+
+@{
+    var documentTitle = ViewData["PreviewTitle"]?.ToString() ?? "Payroll Document";
+
+    // Build address string helper — only non-empty parts
+    var addressParts = new[]
+    {
+        Model?.CompanyAddress
+    }.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+}
+
+<!-- ===== COMPANY HEADER ===== -->
+<div style="text-align:center; margin-bottom:20px; border-bottom:2px solid #000; padding-bottom:12px;">
+
+    @* Logo — only rendered if a path is set *@
+    @if (!string.IsNullOrWhiteSpace(Model?.CompanyLogoPath))
+    {
+        <div style="margin-bottom:8px;">
+            <img src="@Model.CompanyLogoPath"
+                 alt="@Model.CompanyName"
+                 style="max-height:70px; max-width:200px; object-fit:contain;" />
+        </div>
+    }
+
+    @* Company Name *@
+    <div style="font-size:16px; font-weight:bold; text-transform:uppercase;">
+        @(Model?.CompanyName ?? "COMPANY NAME")
+        @if (!string.IsNullOrWhiteSpace(Model?.CompanyShortName))
+        {
+            <span style="font-size:12px; font-weight:normal; text-transform:none;">
+                (@Model.CompanyShortName)
+            </span>
+        }
+    </div>
+
+    @* Address *@
+    @if (!string.IsNullOrWhiteSpace(Model?.CompanyAddress))
+    {
+        <div style="font-size:11px; margin-top:2px;">@Model.CompanyAddress</div>
+    }
+
+    @* Contact details — shown inline if any are present *@
+    @{
+        var contactParts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(Model?.CompanyContactNumber))
+            contactParts.Add("Tel: " + Model.CompanyContactNumber);
+        if (!string.IsNullOrWhiteSpace(Model?.CompanyEmail))
+            contactParts.Add(Model.CompanyEmail);
+        if (!string.IsNullOrWhiteSpace(Model?.CompanyWebsite))
+            contactParts.Add(Model.CompanyWebsite);
+    }
+    @if (contactParts.Any())
+    {
+        <div style="font-size:10px; color:#555; margin-top:2px;">
+            @string.Join("  |  ", contactParts)
+        </div>
+    }
+
+    @* Document title / payroll period *@
+    <div style="font-size:13px; font-weight:bold; text-decoration:underline; margin-top:10px;">
+        PAYROLL SUMMARY
+    </div>
+    <div style="font-size:12px; margin-top:4px;">
+        Payroll Period: <strong>@(Model?.PayrollPeriodName ?? "N/A")</strong>
+        &nbsp;(@(Model?.PeriodStartDate.ToString("MMM dd, yyyy")) &ndash; @(Model?.PeriodEndDate.ToString("MMM dd, yyyy")))
+    </div>
+</div>
+
+@if (Model != null && Model.Rows != null && Model.Rows.Any())
+{
+    var dayTypeCols = Model.DayTypeColumns ?? Enumerable.Empty<DayTypeColumnInfo>();
+    int dayTypeColSpan = dayTypeCols.Sum(dt => dt.IsRegularDay ? 2 : 4);
+    int allowanceColSpan = Model.AllowanceColumns?.Count ?? 0;
+    int deductionColSpan = Model.DeductionColumns?.Count ?? 0;
+    int govtColSpan = Model.GovtContribColumns?.Count ?? 0;
+    int addAdjSpan = allowanceColSpan + 1;
+    int govtDedSpan = govtColSpan + deductionColSpan + 1;
+
+    <div class="table-responsive mb-5">
+        <table id="reportTable" class="table table-bordered" style="font-size:5pt; white-space:nowrap;">
+            <thead>
+
+                @* ═══ ROW 1 — Group header labels ═══ *@
+                <tr>
+                    <th rowspan="2" class="text-center align-middle">Emp. ID No.</th>
+                    <th rowspan="2" class="text-center align-middle">Full Name</th>
+                    <th rowspan="2" class="text-center align-middle">Status</th>
+                    <th rowspan="2" class="text-center align-middle">Position</th>
+                    <th rowspan="2" class="text-center align-middle">Department</th>
+                    <th rowspan="2" class="text-center align-middle">Date From</th>
+                    <th rowspan="2" class="text-center align-middle">Date To</th>
+                    <th colspan="3" class="text-center align-middle">PAYROLL CUT-OFF</th>
+                    <th rowspan="2" class="text-center align-middle">Hours Worked</th>
+                    <th rowspan="2" class="text-center align-middle">Total Reg. Wage</th>
+                    @if (dayTypeColSpan > 0)
+                    {
+                        <th colspan="@dayTypeColSpan" class="text-center align-middle">SPECIAL / OVERTIME PAY</th>
+                    }
+                    <th rowspan="2" class="text-center align-middle">GROSS SALARIES</th>
+                    @if (addAdjSpan > 0)
+                    {
+                        <th colspan="@addAdjSpan" class="text-center align-middle">Additions / Adjustments</th>
+                    }
+                    <th colspan="2" class="text-center align-middle">Absences</th>
+                    <th colspan="2" class="text-center align-middle">Late / UT</th>
+                    @if (govtDedSpan > 0)
+                    {
+                        <th colspan="@govtDedSpan" class="text-center align-middle">GOVT DEDUCTIONS AND LOANS</th>
+                    }
+                    <th rowspan="2" class="text-center align-middle">NET PAY</th>
+                </tr>
+
+                @* ═══ ROW 2 — Sub-column headers ═══ *@
+                <tr>
+                    <th class="text-center align-middle">SEMI-MONTHLY</th>
+                    <th class="text-center align-middle">Daily</th>
+                    <th class="text-center align-middle">Hourly</th>
+
+                    @foreach (var dt in dayTypeCols)
+                    {
+                        if (dt.IsRegularDay)
+                        {
+                            <th class="text-center align-middle">@dt.DayTypeName OT Hrs</th>
+                            <th class="text-center align-middle">@dt.DayTypeName OT Amt.</th>
+                        }
+                        else
+                        {
+                            <th class="text-center align-middle">@dt.DayTypeName Hrs.</th>
+                            <th class="text-center align-middle">@dt.DayTypeName Amt.</th>
+                            <th class="text-center align-middle">@dt.DayTypeName OT Hrs.</th>
+                            <th class="text-center align-middle">@dt.DayTypeName OT Amt.</th>
+                        }
+                    }
+
+                    @foreach (var col in Model.AllowanceColumns ?? Enumerable.Empty<string>())
+                    {
+                        <th class="text-center align-middle">@col</th>
+                    }
+                    <th class="text-center align-middle">GROSS PAY</th>
+
+                    <th class="text-center align-middle">Absences (Days)</th>
+                    <th class="text-center align-middle">Absences Amt.</th>
+
+                    <th class="text-center align-middle">Late/UT Mins.</th>
+                    <th class="text-center align-middle">Late/UT Amt.</th>
+
+                    @foreach (var col in Model.GovtContribColumns ?? Enumerable.Empty<string>())
+                    {
+                        <th class="text-center align-middle">@col</th>
+                    }
+
+                    @foreach (var col in Model.DeductionColumns ?? Enumerable.Empty<string>())
+                    {
+                        <th class="text-center align-middle">@col</th>
+                    }
+
+                    <th class="text-center align-middle font-weight-bold">GROSS DEDUCTIONS</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    var absenceDeductionAmt = row.DeductionBreakdown.ContainsKey("Absence Deductions")
+                    ? row.DeductionBreakdown["Absence Deductions"] : 0M;
+                    var lateUTDeductionAmt = row.DeductionBreakdown.ContainsKey("Late/Undertime Deductions")
+                    ? row.DeductionBreakdown["Late/Undertime Deductions"] : 0M;
+                    var absenceDays = row.DailyRate > 0
+                    ? Math.Round(absenceDeductionAmt / row.DailyRate, 2) : 0M;
+
+                    <tr>
+                        <td class="text-center align-middle">@row.EmployeeIdNumber</td>
+                        <td class="align-middle">@row.EmployeeName</td>
+                        <td class="text-center align-middle">@row.EmploymentStatus</td>
+                        <td class="text-center align-middle">@row.Position</td>
+                        <td class="text-center align-middle">@row.OrganizationUnit</td>
+                        <td class="text-center align-middle">@row.DateFrom.ToString("MM/dd/yyyy")</td>
+                        <td class="text-center align-middle">@row.DateTo.ToString("MM/dd/yyyy")</td>
+
+                        <td class="align-middle" style="text-align:right">₱@row.SemiMonthlyRate.ToString("N2")</td>
+                        <td class="align-middle" style="text-align:right">₱@row.DailyRate.ToString("N2")</td>
+                        <td class="align-middle" style="text-align:right">₱@row.HourlyRate.ToString("N2")</td>
+
+                        <td class="align-middle" style="text-align:right">@row.RegularHours.ToString("N2")</td>
+                        <td class="align-middle" style="text-align:right">₱@row.RegularPay.ToString("N2")</td>
+
+                        @foreach (var dt in dayTypeCols)
+                        {
+                            var bd = row.DayTypeBreakdown.ContainsKey(dt.DayTypeId)
+                            ? row.DayTypeBreakdown[dt.DayTypeId] : null;
+                            if (dt.IsRegularDay)
+                            {
+                                <td class="align-middle" style="text-align:right">@(bd?.OvertimeHours.ToString("N2") ?? "0.00")</td>
+                                <td class="align-middle" style="text-align:right">₱@(bd?.OvertimeAmount.ToString("N2") ?? "0.00")</td>
+                            }
+                            else
+                            {
+                                <td class="align-middle" style="text-align:right">@(bd?.Hours.ToString("N2") ?? "0.00")</td>
+                                <td class="align-middle" style="text-align:right">₱@(bd?.Amount.ToString("N2") ?? "0.00")</td>
+                                <td class="align-middle" style="text-align:right">@(bd?.OvertimeHours.ToString("N2") ?? "0.00")</td>
+                                <td class="align-middle" style="text-align:right">₱@(bd?.OvertimeAmount.ToString("N2") ?? "0.00")</td>
+                            }
+                        }
+
+                        <td class="align-middle font-weight-bold" style="text-align:right">₱@row.GrossPay.ToString("N2")</td>
+
+                        @foreach (var col in Model.AllowanceColumns ?? Enumerable.Empty<string>())
+                        {
+                            var val = row.AllowanceBreakdown.ContainsKey(col) ? row.AllowanceBreakdown[col] : 0M;
+                            <td class="align-middle" style="text-align:right">₱@val.ToString("N2")</td>
+                        }
+
+                        <td class="align-middle font-weight-bold" style="text-align:right">₱@row.GrossWithBenefits.ToString("N2")</td>
+
+                        <td class="align-middle" style="text-align:right">@(absenceDays > 0 ? absenceDays.ToString("N2") : "-")</td>
+                        <td class="align-middle" style="text-align:right">@(absenceDeductionAmt > 0 ? "₱" + absenceDeductionAmt.ToString("N2") : "-")</td>
+
+                        <td class="align-middle" style="text-align:right">@(row.LateUndertimeMinutes > 0 ? row.LateUndertimeMinutes.ToString() : "-")</td>
+                        <td class="align-middle" style="text-align:right">@(lateUTDeductionAmt > 0 ? "₱" + lateUTDeductionAmt.ToString("N2") : "-")</td>
+
+                        @foreach (var col in Model.GovtContribColumns ?? Enumerable.Empty<string>())
+                        {
+                            var val = row.GovtContributionBreakdown != null && row.GovtContributionBreakdown.ContainsKey(col)
+                            ? row.GovtContributionBreakdown[col] : 0M;
+                            <td class="align-middle" style="text-align:right">₱@val.ToString("N2")</td>
+                        }
+
+                        @foreach (var col in Model.DeductionColumns ?? Enumerable.Empty<string>())
+                        {
+                            var val = row.DeductionBreakdown.ContainsKey(col) ? row.DeductionBreakdown[col] : 0M;
+                            <td class="align-middle" style="text-align:right">@(val > 0 ? "₱" + val.ToString("N2") : "-")</td>
+                        }
+
+                        <td class="align-middle font-weight-bold" style="text-align:right">₱@row.TotalDeductions.ToString("N2")</td>
+                        <td class="align-middle font-weight-bold" style="text-align:right">₱@row.NetPay.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+
+            <tfoot>
+                <tr>
+                    @{
+                        var totalAbsenceAmt = Model.Rows.Sum(r =>
+                        r.DeductionBreakdown.ContainsKey("Absence Deductions") ? r.DeductionBreakdown["Absence Deductions"] : 0M);
+                        var totalAbsDays = Model.Rows.Sum(r =>
+                        r.DailyRate > 0
+                        ? Math.Round((r.DeductionBreakdown.ContainsKey("Absence Deductions") ? r.DeductionBreakdown["Absence Deductions"] : 0M) / r.DailyRate, 2)
+                        : 0M);
+                        var totalLateUTAmt = Model.Rows.Sum(r =>
+                        r.DeductionBreakdown.ContainsKey("Late/Undertime Deductions") ? r.DeductionBreakdown["Late/Undertime Deductions"] : 0M);
+                    }
+
+                    <td colspan="7" class="font-weight-bold text-right align-middle">TOTALS:</td>
+
+                    <td class="align-middle font-weight-bold" style="text-align:right">-</td>
+                    <td class="align-middle font-weight-bold" style="text-align:right">-</td>
+                    <td class="align-middle font-weight-bold" style="text-align:right">-</td>
+
+                    <td class="align-middle font-weight-bold" style="text-align:right">@Model.Rows.Sum(r => r.RegularHours).ToString("N2")</td>
+                    <td class="align-middle font-weight-bold" style="text-align:right">₱@Model.Rows.Sum(r => r.RegularPay).ToString("N2")</td>
+
+                    @foreach (var dt in dayTypeCols)
+                    {
+                        if (dt.IsRegularDay)
+                        {
+                            <td class="align-middle font-weight-bold" style="text-align:right">@Model.Rows.Sum(r => r.DayTypeBreakdown.ContainsKey(dt.DayTypeId) ? r.DayTypeBreakdown[dt.DayTypeId].OvertimeHours : 0M).ToString("N2")</td>
+                            <td class="align-middle font-weight-bold" style="text-align:right">₱@Model.Rows.Sum(r => r.DayTypeBreakdown.ContainsKey(dt.DayTypeId) ? r.DayTypeBreakdown[dt.DayTypeId].OvertimeAmount : 0M).ToString("N2")</td>
+                        }
+                        else
+                        {
+                            <td class="align-middle font-weight-bold" style="text-align:right">@Model.Rows.Sum(r => r.DayTypeBreakdown.ContainsKey(dt.DayTypeId) ? r.DayTypeBreakdown[dt.DayTypeId].Hours : 0M).ToString("N2")</td>
+                            <td class="align-middle font-weight-bold" style="text-align:right">₱@Model.Rows.Sum(r => r.DayTypeBreakdown.ContainsKey(dt.DayTypeId) ? r.DayTypeBreakdown[dt.DayTypeId].Amount : 0M).ToString("N2")</td>
+                            <td class="align-middle font-weight-bold" style="text-align:right">@Model.Rows.Sum(r => r.DayTypeBreakdown.ContainsKey(dt.DayTypeId) ? r.DayTypeBreakdown[dt.DayTypeId].OvertimeHours : 0M).ToString("N2")</td>
+                            <td class="align-middle font-weight-bold" style="text-align:right">₱@Model.Rows.Sum(r => r.DayTypeBreakdown.ContainsKey(dt.DayTypeId) ? r.DayTypeBreakdown[dt.DayTypeId].OvertimeAmount : 0M).ToString("N2")</td>
+                        }
+                    }
+
+                    <td class="align-middle font-weight-bold" style="text-align:right">₱@Model.Rows.Sum(r => r.GrossPay).ToString("N2")</td>
+
+                    @foreach (var col in Model.AllowanceColumns ?? Enumerable.Empty<string>())
+                    {
+                        var total = Model.Rows.Sum(r => r.AllowanceBreakdown.ContainsKey(col) ? r.AllowanceBreakdown[col] : 0M);
+                        <td class="align-middle font-weight-bold" style="text-align:right">₱@total.ToString("N2")</td>
+                    }
+
+                    <td class="align-middle font-weight-bold" style="text-align:right">₱@Model.Rows.Sum(r => r.GrossWithBenefits).ToString("N2")</td>
+
+                    <td class="align-middle font-weight-bold" style="text-align:right">@totalAbsDays.ToString("N2")</td>
+                    <td class="align-middle font-weight-bold" style="text-align:right">₱@totalAbsenceAmt.ToString("N2")</td>
+
+                    <td class="align-middle font-weight-bold" style="text-align:right">@Model.Rows.Sum(r => r.LateUndertimeMinutes).ToString()</td>
+                    <td class="align-middle font-weight-bold" style="text-align:right">₱@totalLateUTAmt.ToString("N2")</td>
+
+                    @foreach (var col in Model.GovtContribColumns ?? Enumerable.Empty<string>())
+                    {
+                        var total = Model.Rows.Sum(r =>
+                        r.GovtContributionBreakdown != null && r.GovtContributionBreakdown.ContainsKey(col)
+                        ? r.GovtContributionBreakdown[col] : 0M);
+                        <td class="align-middle font-weight-bold" style="text-align:right">₱@total.ToString("N2")</td>
+                    }
+
+                    @foreach (var col in Model.DeductionColumns ?? Enumerable.Empty<string>())
+                    {
+                        var total = Model.Rows.Sum(r => r.DeductionBreakdown.ContainsKey(col) ? r.DeductionBreakdown[col] : 0M);
+                        <td class="align-middle font-weight-bold" style="text-align:right">₱@total.ToString("N2")</td>
+                    }
+
+                    <td class="align-middle font-weight-bold" style="text-align:right">₱@Model.Rows.Sum(r => r.TotalDeductions).ToString("N2")</td>
+                    <td class="align-middle font-weight-bold" style="text-align:right">₱@Model.Rows.Sum(r => r.NetPay).ToString("N2")</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+}
+
+@if (Model == null || Model.Rows == null || !Model.Rows.Any())
+{
+    <p>No payroll data found for this period.</p>
+}

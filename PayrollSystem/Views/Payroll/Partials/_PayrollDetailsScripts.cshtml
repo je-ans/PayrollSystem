@@ -1,0 +1,100 @@
+@*
+    This partial view contains the Javascript for the Payroll Details page,
+    which includes DataTable initialization and AJAX calls for processing
+    and finalizing payroll runs.
+*@
+
+<script>
+    $(document).ready(function () {
+        // Initialize DataTable
+        $('#payrollEntriesTable').DataTable({
+            responsive: true,
+            lengthChange: true,
+            autoWidth: false
+        });
+    });
+
+    function viewPayrollEntry(id) {
+        // This would need to be implemented to show detailed payroll entry information
+        $('#payrollEntryModal').modal('show');
+    }
+
+    function openHoursEditor(runId) {
+        $.get('@Url.Action("EditHours", "Payroll")', { id: runId })
+            .done(function (html) {
+                $('#payrollEntryContent').html(html);
+                $('#payrollEntryModalLabel').text('Edit Hours by Organization Unit');
+                $('#payrollEntryModal').modal('show');
+
+                // simple client-side organization unit filter
+                $('#organizationStructureFilter').on('change', function () {
+                    var orgUnitId = $(this).val();
+                    $('table tbody tr', '#editHoursForm').each(function () {
+                        var rowOrgUnit = $(this).data('org-unit-id')?.toString();
+                        if (!orgUnitId || orgUnitId === '' || rowOrgUnit === orgUnitId) {
+                            $(this).show();
+                        } else {
+                            $(this).hide();
+                        }
+                    });
+                });
+            })
+            .fail(function () {
+                toastr.error('Failed to load hours editor.');
+            });
+    }
+
+    function saveHours() {
+        var form = $('#editHoursForm');
+        var data = form.serialize();
+        $.post('@Url.Action("SaveHours", "Payroll")', data)
+            .done(function (res) {
+                if (res.success) {
+                    toastr.success(res.message || 'Hours updated.');
+                    $('#payrollEntryModal').modal('hide');
+                    location.reload();
+                } else {
+                    toastr.error(res.message || 'Failed to update hours.');
+                }
+            })
+            .fail(function () {
+                toastr.error('Failed to update hours.');
+            });
+    }
+
+    function processPayroll(id) {
+        if (confirm('Are you sure you want to process this payroll run?')) {
+            $.post('@Url.Action("ProcessPayroll", "Payroll")', { id: id })
+                .done(function (response) {
+                    if (response.success) {
+                        toastr.success(response.message || 'Payroll processed successfully');
+                        location.reload();
+                    } else {
+                        toastr.error(response.message || 'An error occurred');
+                    }
+                })
+                .fail(function (xhr) {
+                    var response = xhr.responseJSON;
+                    toastr.error(response?.message || 'An error occurred while processing payroll');
+                });
+        }
+    }
+
+    function finalizePayroll(id) {
+        if (confirm('Are you sure you want to finalize this payroll run? This action cannot be undone.')) {
+            $.post('@Url.Action("FinalizePayroll", "Payroll")', { id: id })
+                .done(function (response) {
+                    if (response.success) {
+                        toastr.success(response.message || 'Payroll finalized successfully');
+                        location.reload();
+                    } else {
+                        toastr.error(response.message || 'An error occurred');
+                    }
+                })
+                .fail(function (xhr) {
+                    var response = xhr.responseJSON;
+                    toastr.error(response?.message || 'An error occurred while finalizing payroll');
+                });
+        }
+    }
+</script>

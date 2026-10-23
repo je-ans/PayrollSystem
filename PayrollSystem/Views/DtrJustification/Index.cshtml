@@ -1,0 +1,207 @@
+@using PayrollSystem.Utility
+@model IEnumerable<DtrJustificationListViewModel>
+
+@{
+    ViewData["Title"] = "Time Log Justifications";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.ActiveMenu = "AttendanceMonitoring";
+    ViewBag.ActiveLink = "DtrJustification";
+
+    var filterStatus = ViewBag.FilterStatus as JustificationStatus?;
+    var pendingCount = (int)(ViewBag.PendingCount ?? 0);
+    var approvedCount = (int)(ViewBag.ApprovedCount ?? 0);
+    var rejectedCount = (int)(ViewBag.RejectedCount ?? 0);
+    var totalCount = (int)(ViewBag.TotalCount ?? 0);
+    var hasItems = Model != null && Model.Any();
+}
+
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<section class="content aw-page aw-queue-page">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+                    <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                        <div class="flex-grow-1">
+                            <h3 class="card-title m-0">Time Log Justifications</h3>
+                            <p class="aw-intro mt-1 mb-0">
+                                Review employee requests to correct or justify missing or incorrect time logs.
+                            </p>
+                        </div>
+                        @if (pendingCount > 0)
+                        {
+                            <span class="badge badge-warning badge-pill px-3 py-2">
+                                @pendingCount pending
+                            </span>
+                        }
+                    </div>
+
+                    <div class="card-body">
+                        @if (!hasItems)
+                        {
+                            <div class="aw-empty-state">
+                                <i class="fas fa-clipboard-check d-block"></i>
+                                <h5>No justification requests</h5>
+                                <p class="mb-0">
+                                    @if (filterStatus.HasValue)
+                                    {
+                                        @:No @EnumHelper.GetDisplayName(filterStatus.Value).ToLower() requests found.
+                                    }
+                                    else
+                                    {
+                                        @:There are no time log justification requests yet.
+                                    }
+                                </p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="aw-pending-toolbar aw-pending-toolbar--row">
+                                <div class="aw-pending-search">
+                                    <i class="fas fa-search"></i>
+                                    <input type="search"
+                                           id="approvalQueueSearch"
+                                           class="form-control form-control-sm"
+                                           placeholder="Search employee, ID, date, status…"
+                                           autocomplete="off" />
+                                </div>
+                                <div class="aw-pending-filters">
+                                    <a asp-action="Index"
+                                       asp-route-status="@((int?)JustificationStatus.Pending)"
+                                       class="aw-filter-pill @(filterStatus == JustificationStatus.Pending ? "is-active" : "")">
+                                        Pending <span class="aw-filter-count">@pendingCount</span>
+                                    </a>
+                                    <a asp-action="Index"
+                                       asp-route-status="@((int?)JustificationStatus.Approved)"
+                                       class="aw-filter-pill @(filterStatus == JustificationStatus.Approved ? "is-active" : "")">
+                                        Approved <span class="aw-filter-count">@approvedCount</span>
+                                    </a>
+                                    <a asp-action="Index"
+                                       asp-route-status="@((int?)JustificationStatus.Rejected)"
+                                       class="aw-filter-pill @(filterStatus == JustificationStatus.Rejected ? "is-active" : "")">
+                                        Rejected <span class="aw-filter-count">@rejectedCount</span>
+                                    </a>
+                                    <a asp-action="Index"
+                                       asp-route-status=""
+                                       class="aw-filter-pill @(!filterStatus.HasValue ? "is-active" : "")">
+                                        All <span class="aw-filter-count">@totalCount</span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover table-striped table-bordered aw-pending-table" id="approvalQueueTable" width="100%">
+                                    <thead>
+                                        <tr class="text-center">
+                                            <th>No.</th>
+                                            <th>Employee</th>
+                                            <th>ID No.</th>
+                                            <th>Date</th>
+                                            <th>Requested Times</th>
+                                            <th>Status</th>
+                                            <th>Submitted</th>
+                                            <th>Reviewed By</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{
+                                            var index = 1;
+                                            foreach (var item in Model!)
+                                            {
+                                                var statusBadge = item.Status switch
+                                                {
+                                                    JustificationStatus.Pending => "badge-warning",
+                                                    JustificationStatus.Approved => "badge-success",
+                                                    JustificationStatus.Rejected => "badge-danger",
+                                                    _ => "badge-secondary"
+                                                };
+                                                var badgeText = item.Status switch
+                                                {
+                                                    JustificationStatus.Pending when item.CurrentStepOrder == 1 => "Pending (Step 1: Org Approver)",
+                                                    JustificationStatus.Pending when item.CurrentStepOrder == 2 => "Pending (Step 2: HR Approver)",
+                                                    _ => EnumHelper.GetDisplayName(item.Status)
+                                                };
+                                                <tr data-queue-row>
+                                                    <td class="text-center">@index</td>
+                                                    <td><span class="aw-queue-employee">@item.EmployeeName</span></td>
+                                                    <td class="text-center">@item.EmployeeIdNumber</td>
+                                                    <td class="text-center">@item.EntryDate.ToString("MMM dd, yyyy")</td>
+                                                    <td class="small">@item.RequestedTimes</td>
+                                                    <td class="text-center">
+                                                        <span class="badge @statusBadge">@badgeText</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <div class="small">@item.SubmittedBy</div>
+                                                        <div class="aw-queue-meta">@item.SubmittedOn.ToString("MMM dd, yyyy hh:mm tt")</div>
+                                                    </td>
+                                                    <td>
+                                                        @if (!string.IsNullOrEmpty(item.ReviewedByName))
+                                                        {
+                                                            <span>@item.ReviewedByName</span>
+                                                            @if (item.ReviewedOn.HasValue)
+                                                            {
+                                                                <div class="aw-queue-meta">@item.ReviewedOn.Value.ToString("MMM dd, yyyy")</div>
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted">—</span>
+                                                        }
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if (item.ApprovalRequestId.HasValue)
+                                                        {
+                                                            if (item.Status == JustificationStatus.Pending && item.CanReview)
+                                                            {
+                                                                <div class="btn-group btn-group-sm aw-action-group">
+                                                                    <a href="javascript:void(0)"
+                                                                       class="btn btn-success open-modal"
+                                                                       data-title="Approve Justification"
+                                                                       data-url="@Url.Action("Process", "DtrJustification", new { id = item.Id, status = JustificationStatus.Approved })"
+                                                                       data-modal-type="create"
+                                                                       data-size="modal-lg">
+                                                                        Approve
+                                                                    </a>
+                                                                    <a href="javascript:void(0)"
+                                                                       class="btn btn-outline-danger open-modal"
+                                                                       data-title="Reject Justification"
+                                                                       data-url="@Url.Action("Process", "DtrJustification", new { id = item.Id, status = JustificationStatus.Rejected })"
+                                                                       data-modal-type="create"
+                                                                       data-size="modal-lg">
+                                                                        Reject
+                                                                    </a>
+                                                                </div>
+                                                            }
+                                                            else
+                                                            {
+                                                                <a href="javascript:void(0)"
+                                                                   class="btn btn-sm btn-outline-secondary open-modal"
+                                                                   data-title="Justification Logs"
+                                                                   data-url="@Url.Action("Review", "DtrJustification", new { id = item.Id })"
+                                                                   data-modal-type="view"
+                                                                   data-size="modal-xl">
+                                                                    <i class="fas fa-history mr-1"></i> View Logs
+                                                                </a>
+                                                            }
+                                                        }
+                                                    </td>
+                                                </tr>
+                                                index++;
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="~/js/approval-queue-list.js" asp-append-version="true"></script>
+}

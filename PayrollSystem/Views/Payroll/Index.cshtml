@@ -1,0 +1,241 @@
+@model PayrollRunViewModel
+
+@{
+    ViewData["Title"] = "Payroll Processing";
+    ViewData["PreviewTitle"] = "Payroll Document Preview";
+    ViewBag.ActiveMenu = "PayrollManagement";
+    ViewBag.ActiveLink = "Payroll";
+    ViewBag.ActiveMainMenu = "PayrollManagement";
+    Layout = "_Layout";
+}
+
+<style>
+    .filter-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .filter-section h5 {
+        color: #495057;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+    .filter-section label {
+        font-weight: 500;
+        color: #495057;
+        margin-bottom: 5px;
+    }
+    @@media print {
+        .content-header, .filter-section, .card-header, .breadcrumb {
+            display: none !important;
+        }
+    }
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .loading-spinner {
+        text-align: center;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    .no-data-wrapper {
+        min-height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+</style>
+
+<section class="content">
+    <div class="container-fluid">
+        @Html.AntiForgeryToken()
+        <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+            <div class="card-header">
+                <h3 class="card-title m-0"><i class="fas fa-file-invoice-dollar mr-2"></i> Payroll Document</h3>
+            </div>
+            <div class="card-body">
+                <form id="filter-form" method="post" autocomplete="off">
+                    <!-- Filter Section -->
+                    <div class="filter-section">
+                        <h5><i class="fas fa-filter mr-2"></i> Payroll Period Selection</h5>
+                        <div class="row">
+                            <div class="form-group col-12 col-md-6 col-lg-4">
+                                <label for="payrollRunSelect">Payroll Run</label>
+                                <select id="payrollRunSelect" class="form-control select2 general-select">
+                                    <option value="">-- Select a Payroll Run --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap flex-md-nowrap gap-2 justify-content-end align-items-center responsive-btn-group">
+                                <button type="button" class="btn btn-secondary mb-2 mb-md-0" id="clearSelection">
+                                    <i class="fas fa-times mr-2"></i>Clear Selection
+                                </button>
+                                <button type="submit" class="btn btn-primary mb-2 mb-md-0" id="btnViewPayroll">
+                                    <i class="fas fa-play mr-2"></i>Generate Document
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <hr />
+
+                <!-- Document Preview Container -->
+                <div id="payrollPreviewContainer" class="container-fluid mt-4" style="display: none;">
+                    @{
+                        ViewData["ShowZoomControls"] = true;
+                        ViewData["ShowPrintButton"] = true;
+                        ViewData["ShowExportButton"] = true;
+                        ViewData["DocumentOrientation"] = "landscape";
+                        ViewData["DocumentFormat"] = "A4";
+                    }
+                    <partial name="~/Views/Shared/_DocumentPreview.cshtml" />
+                </div>
+
+                <!-- No Data / Initial message -->
+                <div id="noDataFoundMessage" class="no-data-wrapper">
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-chart-bar fa-4x mb-4 opacity-50"></i>
+                        <h5>No Payroll Document Loaded</h5>
+                        <p class="mb-0">Select a payroll run and click <strong>Generate Document</strong> to display the summary.</p>
+                        <p class="mt-2 small mb-0">Only completed payroll runs are listed. Run payroll from <strong>Payroll Periods</strong> if needed.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner">
+        <div class="spinner-grow text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <h5 class="mt-3 mb-2" style="color: #2c3e50;">Loading Payroll Document</h5>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">Please wait...</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/site.js"></script>
+    <script>
+        $(document).ready(function () {
+            loadPayrollRunsDropdown();
+
+            $('#filter-form').on('submit', function (e) {
+                e.preventDefault();
+                var payrollRunId = $('#payrollRunSelect').val();
+                if (!payrollRunId) {
+                    toastr.warning('Please select a payroll run.');
+                    return;
+                }
+                loadPayrollDocument(payrollRunId);
+            });
+
+            $('#clearSelection').on('click', function () {
+                $('#filter-form')[0].reset();
+                $('#payrollRunSelect').val('').trigger('change');
+                $('#payrollPreviewContainer').hide();
+                $('#noDataFoundMessage').show().html(
+                    '<div class="text-center py-5 text-muted">' +
+                    '<i class="fas fa-chart-bar fa-4x mb-4 opacity-50"></i>' +
+                    '<h5>No Payroll Document Loaded</h5>' +
+                    '<p class="mb-0">Select a payroll run and click <strong>Generate Document</strong> to display the summary.</p>' +
+                    '<p class="mt-2 small mb-0">Only completed payroll runs are listed. Run payroll from <strong>Payroll Periods</strong> if needed.</p>' +
+                    '</div>'
+                );
+            });
+
+            function loadPayrollRunsDropdown() {
+                $.ajax({
+                    url: '@Url.Action("GetPayrollRuns", "Payroll")',
+                    type: 'GET',
+                    success: function (response) {
+                        var select = $('#payrollRunSelect');
+                        select.empty();
+                        select.append('<option value="">-- Select a Payroll Run --</option>');
+                        if (response.success && response.data && response.data.length) {
+                            // Only show completed runs so the document has content
+                            var completed = response.data.filter(function (r) { return r.status === 'Completed'; });
+                            completed.forEach(function (r) {
+                                var periodName = r.payrollPeriodName && r.payrollPeriodName !== 'N/A' ? r.payrollPeriodName : null;
+                                var runName = r.name && r.name.trim() ? r.name.trim() : null;
+                                var label = periodName
+                                    ? periodName + ' (' + r.status + ')'
+                                    : (runName || 'Run #' + r.id);
+                                select.append($('<option></option>').val(r.id).text(label));
+                            });
+                        }
+                    },
+                    error: function () {
+                        toastr.error('Error loading payroll runs.');
+                    }
+                });
+            }
+
+            function loadPayrollDocument(payrollRunId) {
+                $('#loadingOverlay').show();
+                $('#noDataFoundMessage').hide();
+                $('#payrollPreviewContainer').hide();
+
+                $.ajax({
+                    url: '@Url.Action("GetPayrollDocument", "Payroll")',
+                    type: 'GET',
+                    data: { id: payrollRunId },
+                    success: function (data) {
+                        $('#loadingOverlay').hide();
+                        if (data && data.trim() !== '') {
+                            $('#payrollPreviewContainer').show();
+                            $('#noDataFoundMessage').hide();
+                            $('#document-content').html(data);
+                            $(document).trigger('documentContentLoaded');
+                        } else {
+                            $('#payrollPreviewContainer').hide();
+                            $('#noDataFoundMessage').show().html(
+                                '<div class="no-data-wrapper">' +
+                                '<div class="text-center py-5 text-warning">' +
+                                '<i class="fas fa-exclamation-triangle fa-3x mb-3"></i>' +
+                                '<h5>No payroll data</h5>' +
+                                '<p class="mb-0">This payroll run has no processed data to display.</p>' +
+                                '</div></div>'
+                            );
+                        }
+                    },
+                    error: function (xhr) {
+                        $('#loadingOverlay').hide();
+                        $('#payrollPreviewContainer').hide();
+                        $('#noDataFoundMessage').show();
+                        if (xhr.status === 404) {
+                            $('#noDataFoundMessage').html(
+                                '<div class="no-data-wrapper">' +
+                                '<div class="text-center py-5 text-warning">' +
+                                '<i class="fas fa-exclamation-triangle fa-3x mb-3"></i>' +
+                                '<h5>Payroll run not found</h5>' +
+                                '</div></div>'
+                            );
+                        } else {
+                            toastr.error('Error loading payroll document. Please try again.');
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}

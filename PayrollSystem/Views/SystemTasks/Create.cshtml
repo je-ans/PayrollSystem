@@ -1,0 +1,40 @@
+﻿@model SystemTask
+
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="Create" method="post" asp-antiforgery="true" id="systemTaskForm">
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="Code" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="Code" class="floating-label">Code</label>
+            </div>
+            <span asp-validation-for="Code" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="TaskName" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="TaskName" class="floating-label">Task Name</label>
+            </div>
+            <span asp-validation-for="TaskName" class="text-danger validation-message"></span>
+        </div>
+        <div class="form-group">
+            <div class="input-container">
+                <select asp-for="ParentId" id="CreateDesgId" class="form-control floating-input select2 parentId-select" asp-items="ViewBag.ParentId" value="">
+                    <option value="" selected disabled hidden>--Select Parent Name--</option>
+                </select>
+                <label asp-for="ParentId" class="floating-label">Parent</label>
+            </div>
+            <span asp-validation-for="ParentId" class="text-danger validation-message"></span>
+        </div>
+        <div class="form-group">
+            <div class="input-container">
+                <input asp-for="OrderNumber" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="OrderNumber" class="floating-label">Order Number</label>
+            </div>
+            <span asp-validation-for="OrderNumber" class="text-danger validation-message"></span>
+        </div>
+    </form>
+</div>
+

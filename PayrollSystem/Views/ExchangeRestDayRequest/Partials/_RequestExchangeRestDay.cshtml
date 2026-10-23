@@ -1,0 +1,182 @@
+@model ExchangeRestDayRequestFormViewModel
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+
+<form id="requestExchangeRestDayForm" method="post" asp-action="Submit" asp-controller="ExchangeRestDayRequest">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="FirstEmployeeId" />
+    <input type="hidden" asp-for="OrganizationStructureId" />
+    <input type="hidden" asp-for="FirstRestShiftTypeId" id="firstRestShiftTypeId" />
+    <input type="hidden" asp-for="SecondRestShiftTypeId" id="secondRestShiftTypeId" />
+    <input type="hidden" asp-for="FirstWorkShiftTypeId" id="firstWorkShiftTypeId" />
+    <input type="hidden" asp-for="SecondWorkShiftTypeId" id="secondWorkShiftTypeId" />
+
+    <div class="dm-modal">
+        <div class="dm-process-header">
+            <div>
+                <h6>Exchange rest day</h6>
+                <small>Swap rest/off days with a colleague</small>
+            </div>
+            <span class="dm-status dm-status--pending">New</span>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header"><i class="fas fa-building"></i> Request details</div>
+            <div class="dm-section-body">
+                <div class="dm-alert-banner dm-alert-banner--info mb-3">
+                    <i class="fas fa-info-circle"></i>
+                    <div>
+                        Select your rest day and your colleague’s rest day. Each must be OFF/leave for that employee and WORK for the other.
+                        @if (Model.RequiresApproval)
+                        {
+                            <span class="d-block mt-1">Routed for approval. Schedules update only after final approval.</span>
+                        }
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="dm-form-label">Department</label>
+                            <input class="form-control dm-form-control" value="@(string.IsNullOrWhiteSpace(Model.DepartmentName) ? "—" : Model.DepartmentName)" disabled />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="DateFiled" class="dm-form-label"></label>
+                            <input asp-for="DateFiled" class="form-control dm-form-control" type="date" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header"><i class="fas fa-user"></i> First employee</div>
+            <div class="dm-section-body">
+                <div class="row">
+                    <div class="col-md-8"><div class="form-group"><label class="dm-form-label">Name</label><input class="form-control dm-form-control" value="@Model.FirstEmployeeName" disabled /></div></div>
+                    <div class="col-md-4"><div class="form-group"><label class="dm-form-label">ID Number</label><input class="form-control dm-form-control" value="@Model.FirstEmployeeIdNumber" disabled /></div></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="FirstRestDate" class="dm-form-label"></label>
+                            <input asp-for="FirstRestDate" class="form-control dm-form-control" type="date" id="firstRestDate" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="dm-form-label">Rest shift</label>
+                            <input class="form-control dm-form-control" type="text" id="firstRestShiftDisplay" readonly placeholder="Must be OFF/leave…" />
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="dm-form-label">Work shift on colleague’s rest day</label>
+                    <input class="form-control dm-form-control" type="text" id="firstWorkShiftDisplay" readonly placeholder="Loaded after colleague rest day…" />
+                </div>
+            </div>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header"><i class="fas fa-user-friends"></i> Second employee</div>
+            <div class="dm-section-body">
+                <div class="form-group">
+                    <label asp-for="SecondEmployeeId" class="dm-form-label"></label>
+                    <select asp-for="SecondEmployeeId" class="form-control dm-form-control" id="secondEmployeeId">
+                        <option value="">Select colleague…</option>
+                        @foreach (var c in Model.ColleagueOptions)
+                        {
+                            <option value="@c.Id">@c.Name (@c.EmployeeIdNumber)</option>
+                        }
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label asp-for="SecondRestDate" class="dm-form-label"></label>
+                            <input asp-for="SecondRestDate" class="form-control dm-form-control" type="date" id="secondRestDate" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="dm-form-label">Rest shift</label>
+                            <input class="form-control dm-form-control" type="text" id="secondRestShiftDisplay" readonly placeholder="Must be OFF/leave…" />
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="dm-form-label">Work shift on your rest day</label>
+                    <input class="form-control dm-form-control" type="text" id="secondWorkShiftDisplay" readonly placeholder="Loaded after your rest day…" />
+                </div>
+            </div>
+        </div>
+
+        <div class="dm-form-section">
+            <label asp-for="Reason" class="dm-form-label"></label>
+            <textarea asp-for="Reason" class="form-control dm-form-control" rows="3" required placeholder="Reason for exchange of rest day…"></textarea>
+        </div>
+        <div id="erdValidationHint" class="dm-alert-banner dm-alert-banner--warning d-none mt-2 mb-0">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div id="erdValidationText"></div>
+        </div>
+    </div>
+</form>
+
+<script>
+(function () {
+    var $form = $('#requestExchangeRestDayForm');
+    if (!$form.length) return;
+    var scheduleUrl = '@Url.Action("EmployeeSchedule", "ExchangeRestDayRequest")';
+    var firstEmployeeId = $form.find('[name="FirstEmployeeId"]').val();
+
+    function showHint(msg) {
+        if (!msg) { $('#erdValidationHint').addClass('d-none'); return; }
+        $('#erdValidationText').text(msg);
+        $('#erdValidationHint').removeClass('d-none');
+    }
+
+    function load(employeeId, date) {
+        if (!employeeId || !date) return $.Deferred().resolve(null).promise();
+        return $.get(scheduleUrl, { employeeId: employeeId, date: date });
+    }
+
+    function setField(hiddenId, displayId, data) {
+        if (!data || !data.success) {
+            $('#' + hiddenId).val('');
+            $('#' + displayId).val('').attr('placeholder', 'No schedule found');
+            return null;
+        }
+        $('#' + hiddenId).val(data.shiftTypeId);
+        $('#' + displayId).val(data.display);
+        return data;
+    }
+
+    function refresh() {
+        var firstRest = $('#firstRestDate').val();
+        var secondRest = $('#secondRestDate').val();
+        var secondId = $('#secondEmployeeId').val();
+        showHint('');
+
+        return $.when(
+            load(firstEmployeeId, firstRest),
+            load(secondId, secondRest),
+            load(firstEmployeeId, secondRest),
+            load(secondId, firstRest)
+        ).done(function (a, b, c, d) {
+            var emp1Rest = setField('firstRestShiftTypeId', 'firstRestShiftDisplay', a && a[0] ? a[0] : a);
+            var emp2Rest = setField('secondRestShiftTypeId', 'secondRestShiftDisplay', b && b[0] ? b[0] : b);
+            var emp1Work = setField('firstWorkShiftTypeId', 'firstWorkShiftDisplay', c && c[0] ? c[0] : c);
+            var emp2Work = setField('secondWorkShiftTypeId', 'secondWorkShiftDisplay', d && d[0] ? d[0] : d);
+
+            if (emp1Rest && !emp1Rest.isLeave) showHint('Your selected date must be a rest/off day.');
+            else if (emp2Rest && !emp2Rest.isLeave) showHint("Colleague's selected date must be a rest/off day.");
+            else if (emp1Work && emp1Work.isLeave) showHint('You must be scheduled to work on the colleague rest day.');
+            else if (emp2Work && emp2Work.isLeave) showHint('Colleague must be scheduled to work on your rest day.');
+        });
+    }
+
+    $('#firstRestDate, #secondRestDate, #secondEmployeeId').on('change', refresh);
+    refresh();
+})();
+</script>

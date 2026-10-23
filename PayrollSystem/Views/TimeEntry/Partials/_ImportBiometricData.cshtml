@@ -1,0 +1,82 @@
+@model BiometricImportViewModel
+
+@if (Model == null)
+{
+    <div class="alert alert-danger">
+        Invalid import model.
+    </div>
+    return;
+}
+
+<div class="container-fluid">
+
+    <form asp-action="ImportBiometricData"
+          method="post"
+          asp-antiforgery="true"
+          id="biometricImportForm">
+
+        <!-- HEADER CARD -->
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="fas fa-fingerprint mr-1 text-primary"></i>
+                            Biometric Attendance Import
+                        </h5>
+                        <small class="text-muted">
+                            Paste raw attendance report for automatic parsing
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INSTRUCTIONS CARD -->
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <strong>
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Import Guidelines
+                </strong>
+            </div>
+
+            <div class="card-body">
+                <ul class="mb-0 small text-muted">
+                    <li>Copy the full attendance report including headers</li>
+                    <li>System automatically extracts employee ID, name, and logs</li>
+                    <li>Supports concatenated punches (e.g. <code>08:2208:22</code>)</li>
+                    <li>Duplicate punches are automatically removed</li>
+                    <li>Do not manually reformat the data before pasting</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- INPUT CARD -->
+        <div class="card mb-3">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <strong>
+                    <i class="fas fa-paste mr-1"></i>
+                    Raw Attendance Data
+                </strong>
+            </div>
+
+            <div class="card-body">
+                <textarea asp-for="BiometricData"
+                          id="BiometricData"
+                          class="form-control font-monospace"
+                          rows="18"
+                          placeholder="Paste the complete attendance report here..."
+                          required
+                          style="font-size:12px; line-height:1.5; resize:vertical;"></textarea>
+                <span asp-validation-for="BiometricData" class="text-danger"></span>
+
+                <small class="text-muted d-block mt-2">
+                    Tip: You can paste directly from Excel or biometric export files.
+                </small>
+
+            </div>
+        </div>
+
+    </form>
+</div>

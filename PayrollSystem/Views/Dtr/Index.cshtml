@@ -1,0 +1,206 @@
+@{
+    ViewData["Title"] = "Daily Time Record";
+    var isEmployeeOnly = ViewBag.IsEmployeeOnly as bool? ?? false;
+
+    if (isEmployeeOnly)
+    {
+        ViewBag.ActiveMenu = "DTR";
+        ViewBag.ActiveLink = "";
+        ViewBag.ActiveMainMenu = "";
+    }
+    else
+    {
+        ViewBag.ActiveMenu = "AttendanceMonitoring";
+        ViewBag.ActiveLink = "DTR";
+        ViewBag.ActiveMainMenu = "AttendanceMonitoring";
+    }
+}
+
+<link rel="stylesheet" href="~/css/dtr-management.css" asp-append-version="true" />
+
+<section class="content dtr-page">
+    <div class="container-fluid">
+        <div class="dtr-shell mx-2">
+
+            <div class="dtr-shell-header">
+                <div class="dtr-shell-header-main">
+                    <div class="dtr-header-icon">
+                        <i class="fas fa-fingerprint"></i>
+                    </div>
+                    <div>
+                        <h3 class="dtr-shell-title">DTR Management</h3>
+                        <p class="dtr-intro">
+                            @(isEmployeeOnly
+                                ? "Review your daily time logs, justify missing punches, and print your official DTR form."
+                                : "Review employee attendance, manage justifications, and generate Civil Service Form No. 48.")
+                        </p>
+                    </div>
+                </div>
+                @if (!isEmployeeOnly)
+                {
+                    <div class="dtr-shell-header-aside">
+                        <a asp-controller="TimeEntry" asp-action="Index" class="dtr-btn-ghost">
+                            <i class="fas fa-clock"></i> Time Entries
+                        </a>
+                    </div>
+                }
+            </div>
+
+            <div class="dtr-shell-body">
+                <div class="dtr-filter-panel">
+                    <form id="dtrFilterForm" class="form-row align-items-end">
+                        <div class="col-lg-2 col-md-3 col-sm-6">
+                            <div class="form-group mb-2 mb-md-0">
+                                <label for="year"><i class="fas fa-calendar mr-1"></i>Year</label>
+                                <select id="year" name="year" class="form-control select2 general-select">
+                                    @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 5; y--)
+                                    {
+                                        <option value="@y" selected="@(y == ViewBag.CurrentYear)">@y</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-4 col-sm-6">
+                            <div class="form-group mb-2 mb-md-0">
+                                <label for="month"><i class="fas fa-calendar-day mr-1"></i>Month</label>
+                                <select id="month" name="month" class="form-control select2 general-select">
+                                    @for (int m = 1; m <= 12; m++)
+                                    {
+                                        <option value="@m" selected="@(m == ViewBag.CurrentMonth)">@(new DateTime(2024, m, 1).ToString("MMMM"))</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        @if (!isEmployeeOnly)
+                        {
+                            <div class="col-lg-4 col-md-5">
+                                <div class="form-group mb-2 mb-md-0">
+                                    <label for="employeeId"><i class="fas fa-user mr-1"></i>Employee</label>
+                                    <select id="employeeId" name="employeeId" class="form-control select2 general-select" required>
+                                        <option value="">Select employee…</option>
+                                        @foreach (var emp in ViewBag.Employees ?? new List<dynamic>())
+                                        {
+                                            <option value="@emp.Id">@emp.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                        }
+                        <div class="col-lg-2 col-md-3 col-sm-6">
+                            <div class="form-group mb-0">
+                                <label class="d-none d-md-block">&nbsp;</label>
+                                <button type="submit" class="dtr-btn-primary" id="btnGenerate">
+                                    <i class="fas fa-search"></i> Load DTR
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="dtrEmptyState">
+                    <div class="dtr-empty-hero">
+                        <div><i class="fas fa-fingerprint d-block"></i></div>
+                        <h5>@(isEmployeeOnly ? "Load your DTR" : "Select an employee")</h5>
+                        <p class="mb-0 text-muted">
+                            @(isEmployeeOnly
+                                ? "Choose month and year, then click Load DTR."
+                                : "Choose employee, month, and year, then click Load DTR.")
+                        </p>
+                    </div>
+                </div>
+
+                <div id="dtrContentArea" class="dtr-content-area" style="display:none;">
+                    <div id="dtrPanelLoading" class="dtr-panel-loading" aria-hidden="true">
+                        <div class="dtr-panel-loading-inner">
+                            <div class="dtr-spinner" aria-hidden="true"></div>
+                            <p class="dtr-panel-loading-text">Loading daily logs…</p>
+                        </div>
+                    </div>
+
+                    <div class="dtr-summary-grid" id="dtrSummaryGrid" style="display:none;">
+                        <div class="dtr-stat-card dtr-stat-days">
+                            <div class="dtr-stat-icon"><i class="fas fa-calendar-check"></i></div>
+                            <div>
+                                <div class="dtr-stat-value" id="dtrStatDays">—</div>
+                                <div class="dtr-stat-label">Work Days</div>
+                            </div>
+                        </div>
+                        <div class="dtr-stat-card dtr-stat-missing">
+                            <div class="dtr-stat-icon"><i class="fas fa-exclamation-circle"></i></div>
+                            <div>
+                                <div class="dtr-stat-value" id="dtrStatMissing">—</div>
+                                <div class="dtr-stat-label">Missing Punches</div>
+                            </div>
+                        </div>
+                        <div class="dtr-stat-card dtr-stat-pending">
+                            <div class="dtr-stat-icon"><i class="fas fa-hourglass-half"></i></div>
+                            <div>
+                                <div class="dtr-stat-value" id="dtrStatPending">—</div>
+                                <div class="dtr-stat-label">Pending Review</div>
+                            </div>
+                        </div>
+                        <div class="dtr-stat-card dtr-stat-tardy">
+                            <div class="dtr-stat-icon"><i class="fas fa-clock"></i></div>
+                            <div>
+                                <div class="dtr-stat-value" id="dtrStatTardy">—</div>
+                                <div class="dtr-stat-label">Tardy Days</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ul class="nav nav-tabs dtr-content-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="dtrTabLogs" data-toggle="tab" href="#dtrLogsPanel" role="tab">
+                                <i class="fas fa-table mr-1"></i> Daily Logs
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="dtrTabForm" data-toggle="tab" href="#dtrFormPanel" role="tab">
+                                <i class="fas fa-file-alt mr-1"></i> Official Form
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content dtr-tab-panel">
+                        <div class="tab-pane fade show active" id="dtrLogsPanel" role="tabpanel">
+                            <div id="dtrManagementContainer"></div>
+                        </div>
+                        <div class="tab-pane fade" id="dtrFormPanel" role="tabpanel">
+                            <div id="dtrPreviewContainer">
+                                @{
+                                    ViewData["PreviewTitle"] = "Daily Time Record";
+                                    ViewData["ShowZoomControls"] = true;
+                                    ViewData["ShowPrintButton"] = true;
+                                    ViewData["DocumentOrientation"] = "portrait";
+                                    ViewData["DocumentFormat"] = "A4";
+                                }
+                                <partial name="~/Views/Shared/_DocumentPreview.cshtml" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div id="dtrLoadingOverlay" class="dtr-loading-overlay" aria-hidden="true">
+    <div class="dtr-loading-box">
+        <div class="dtr-spinner dtr-spinner-lg" aria-hidden="true"></div>
+        <h6 class="mb-1 mt-3">Loading DTR</h6>
+        <p class="text-muted small mb-0">Please wait…</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.DTR_INDEX_CONFIG = {
+            isEmployeeOnly: @(isEmployeeOnly ? "true" : "false"),
+            currentEmployeeId: '@(ViewBag.CurrentEmployeeId ?? "")',
+            documentUrl: '@Url.Action("GetDtrDocument", "Dtr")',
+            managementUrl: '@Url.Action("GetDtrManagementTable", "Dtr")',
+            autoLoad: @(isEmployeeOnly && ViewBag.CurrentEmployeeId != null ? "true" : "false")
+        };
+    </script>
+    <script src="~/js/dtr-index.js" asp-append-version="true"></script>
+}

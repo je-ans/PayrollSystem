@@ -1,0 +1,316 @@
+@model DtrArrangeTimeLogViewModel
+
+<link rel="stylesheet" href="~/plugins/jquery-ui/jquery-ui.min.css" />
+
+<style>
+    .arrange-time-log {
+        background: #f4f6f9;
+        padding: 12px;
+        border-radius: 10px;
+    }
+
+    .arrange-header {
+        background: #fff;
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,.05);
+    }
+
+    .arrange-title {
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+    .arrange-subtitle {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .arrange-slot-card {
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid #e9ecef;
+        padding: 10px;
+        margin-bottom: 12px;
+    }
+
+    .arrange-slot-label {
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    .arrange-slot-hint {
+        font-size: 0.75rem;
+        color: #6c757d;
+        margin-bottom: 8px;
+    }
+
+    .arrange-slot,
+    .arrange-pool {
+        min-height: 90px;
+        border-radius: 10px;
+        padding: 10px;
+    }
+
+    .arrange-slot {
+        border: 2px dashed #ced4da;
+        background: #f8f9fa;
+    }
+
+    .arrange-pool {
+        border: 2px dashed #ffc107;
+        background: #fffdf5;
+    }
+
+        .arrange-slot.ui-sortable-hover,
+        .arrange-pool.ui-sortable-hover {
+            border-color: #007bff;
+            background: #e7f1ff;
+        }
+
+    .arrange-connected {
+        position: relative;
+    }
+
+    .arrange-time-chip {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 10px;
+        margin-bottom: 6px;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        cursor: grab;
+        box-shadow: 0 1px 2px rgba(0,0,0,.06);
+        z-index: 10;
+    }
+
+        .arrange-time-chip:active {
+            cursor: grabbing;
+        }
+
+    .chip-time {
+        font-weight: 700;
+    }
+
+    .chip-meta {
+        font-size: 0.7rem;
+        color: #6c757d;
+        text-align: right;
+    }
+
+    .ui-sortable-helper {
+        transform: rotate(1deg);
+        box-shadow: 0 10px 25px rgba(0,0,0,.2);
+        z-index: 9999 !important;
+    }
+
+    .arrange-placeholder {
+        height: 50px;
+        border: 2px dashed #007bff;
+        background: #d9ecff;
+        border-radius: 8px;
+        margin-bottom: 6px;
+    }
+
+    .arrange-empty {
+        font-size: 0.8rem;
+        color: #adb5bd;
+        text-align: center;
+        padding: 20px;
+        font-style: italic;
+    }
+</style>
+
+<form id="arrangeTimeLogForm" method="post" asp-action="SaveArrangedTimeLog" asp-controller="Dtr">
+    @Html.AntiForgeryToken()
+
+    <input type="hidden" name="EmployeeId" value="@Model.EmployeeId" />
+    <input type="hidden" name="Date" value="@Model.Date.ToString("yyyy-MM-dd")" />
+
+    <input type="hidden" id="arrangeAmInEntryId" name="AmInEntryId"
+           value="@(Model.Slots.FirstOrDefault(s => s.Key == "AmIn")?.Entry?.Id)" />
+    <input type="hidden" id="arrangeAmOutEntryId" name="AmOutEntryId"
+           value="@(Model.Slots.FirstOrDefault(s => s.Key == "AmOut")?.Entry?.Id)" />
+    <input type="hidden" id="arrangePmInEntryId" name="PmInEntryId"
+           value="@(Model.Slots.FirstOrDefault(s => s.Key == "PmIn")?.Entry?.Id)" />
+    <input type="hidden" id="arrangePmOutEntryId" name="PmOutEntryId"
+           value="@(Model.Slots.FirstOrDefault(s => s.Key == "PmOut")?.Entry?.Id)" />
+
+    <div id="arrangePoolInputs"></div>
+
+    <div class="arrange-time-log">
+
+        <!-- HEADER -->
+        <div class="arrange-header">
+            <div class="arrange-title">Arrange Time Logs</div>
+            <div class="arrange-subtitle">
+                @if (Model.ArrangeLayout == "Overnight")
+                {
+                    <span>Drag logs into shift start (evening) and shift end (next-day morning) for <strong>@Model.DateDisplay</strong></span>
+                }
+                else
+                {
+                    <span>Drag logs into correct slots for <strong>@Model.DateDisplay</strong></span>
+                }
+            </div>
+        </div>
+
+        <!-- SLOTS -->
+        <div class="row">
+            @foreach (var slot in Model.Slots)
+            {
+                <div class="col-md-6">
+                    <div class="arrange-slot-card">
+
+                        <div class="arrange-slot-label">@slot.Label</div>
+                        <div class="arrange-slot-hint">@slot.Description</div>
+
+                        <ul class="list-unstyled arrange-slot arrange-connected"
+                            id="arrangeSlot_@slot.Key"
+                            data-slot-key="@slot.Key">
+
+                            @if (slot.Entry != null)
+                            {
+                                <li class="arrange-time-chip"
+                                    data-entry-id="@slot.Entry.Id">
+                                    <span class="chip-time">@slot.Entry.TimeDisplay</span>
+                                    <span class="chip-meta">
+                                        @slot.Entry.TypeDisplay<br />
+                                        @slot.Entry.SourceDisplay
+                                    </span>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="arrange-empty">Drop time here</li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- POOL -->
+        <div class="arrange-slot-label text-warning mt-2">
+            <i class="fas fa-layer-group mr-1"></i> Unassigned Entries
+        </div>
+
+        <ul class="list-unstyled arrange-pool arrange-connected" id="arrangePool">
+            @if (Model.PoolEntries.Any())
+            {
+                foreach (var entry in Model.PoolEntries)
+                {
+                    <li class="arrange-time-chip"
+                        data-entry-id="@entry.Id">
+                        <span class="chip-time">@entry.TimeDisplay</span>
+                        <span class="chip-meta">
+                            @entry.TypeDisplay<br />
+                            @entry.SourceDisplay
+                        </span>
+                    </li>
+                }
+            }
+            else
+            {
+                <li class="arrange-empty">No unassigned entries</li>
+            }
+        </ul>
+
+    </div>
+</form>
+
+<script src="~/plugins/jquery-ui/jquery-ui.min.js"></script>
+
+<script>
+    (function () {
+
+        var slotFieldMap = {
+            AmIn: '#arrangeAmInEntryId',
+            AmOut: '#arrangeAmOutEntryId',
+            PmIn: '#arrangePmInEntryId',
+            PmOut: '#arrangePmOutEntryId'
+        };
+
+        function getChipId($chip) {
+            return $chip.attr('data-entry-id') || '';
+        }
+
+        function toggleEmpty($list) {
+            var has = $list.find('.arrange-time-chip').length > 0;
+            $list.find('.arrange-empty').toggle(!has);
+        }
+
+        function syncHiddenFields() {
+            Object.keys(slotFieldMap).forEach(function (key) {
+                var $slot = $('#arrangeSlot_' + key);
+                var $chip = $slot.find('.arrange-time-chip').first();
+                $(slotFieldMap[key]).val($chip.length ? getChipId($chip) : '');
+            });
+
+            var $poolInputs = $('#arrangePoolInputs');
+            $poolInputs.empty();
+
+            $('#arrangePool .arrange-time-chip').each(function () {
+                $poolInputs.append(
+                    $('<input type="hidden" name="PoolEntryIds" />')
+                        .val(getChipId($(this)))
+                );
+            });
+        }
+
+        function enforceSingle($list, $incoming) {
+            var $others = $list.find('.arrange-time-chip').not($incoming);
+            if ($others.length) {
+                $('#arrangePool').append($others);
+            }
+        }
+
+        function initSortable() {
+
+            $('.arrange-connected').sortable({
+                connectWith: '.arrange-connected',
+                items: '> li.arrange-time-chip',
+                placeholder: 'arrange-placeholder',
+                tolerance: 'pointer',
+                forcePlaceholderSize: true,
+                cursor: 'grabbing',
+                appendTo: 'body',
+                helper: 'clone',
+                zIndex: 9999,
+
+                start: function (e, ui) {
+                    ui.helper.width(ui.item.outerWidth());
+                },
+
+                receive: function (e, ui) {
+                    var $list = $(this);
+                    if ($list.hasClass('arrange-slot')) {
+                        enforceSingle($list, ui.item);
+                    }
+                },
+
+                stop: function () {
+                    $('.arrange-slot, .arrange-pool').each(function () {
+                        toggleEmpty($(this));
+                    });
+                    syncHiddenFields();
+                }
+            }).disableSelection();
+        }
+
+        function init() {
+            $('.arrange-slot, .arrange-pool').each(function () {
+                toggleEmpty($(this));
+            });
+
+            initSortable();
+            syncHiddenFields();
+        }
+
+        $(document).ready(init);
+
+    })();
+</script>

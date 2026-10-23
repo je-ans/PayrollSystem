@@ -1,0 +1,20 @@
+@model WorkingCalendarGenerateViewModel
+
+<form id="generateCalendarForm" method="post" asp-action="Generate" asp-controller="WorkingCalendar">
+    @Html.AntiForgeryToken()
+    <div class="p-2">
+        <p class="hc-form-hint">
+            Builds or refreshes every day in the selected year from holidays, weekends, and Day Types.
+            Locked days are never overwritten. Holidays from the Holidays list are applied automatically.
+        </p>
+        <div class="form-group">
+            <label asp-for="Year"></label>
+            <input asp-for="Year" type="number" class="form-control" min="2000" max="2100" />
+            <span asp-validation-for="Year" class="text-danger"></span>
+        </div>
+        <div class="custom-control custom-checkbox">
+            <input asp-for="OverwriteUnlocked" class="custom-control-input" id="overwriteUnlocked" />
+            <label class="custom-control-label" for="overwriteUnlocked">Overwrite unlocked days</label>
+        </div>
+    </div>
+</form>

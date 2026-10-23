@@ -1,0 +1,93 @@
+@using PayrollSystem.Utility
+@model UndertimeProcessViewModel
+@{
+    string StatusClass(JustificationStatus status) => status switch
+    {
+        JustificationStatus.Pending => "dm-status--pending",
+        JustificationStatus.Approved => "dm-status--approved",
+        JustificationStatus.Rejected => "dm-status--rejected",
+        _ => "dm-status--neutral"
+    };
+}
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<div class="dm-modal">
+    <div class="dm-modal-hero">
+        <div class="dm-modal-hero-icon dm-accent-teal">
+            <i class="fas fa-file-signature"></i>
+        </div>
+        <div class="dm-modal-hero-body">
+            <h5 class="dm-modal-title">Undertime Request</h5>
+            <p class="dm-modal-subtitle">@Model.EmployeeName · @Model.DateOfUndertime.ToString("MMMM dd, yyyy")</p>
+        </div>
+        <div class="dm-modal-hero-aside">
+            <span class="dm-status @StatusClass(Model.CurrentStatus)">
+                @EnumHelper.GetDisplayName(Model.CurrentStatus)
+            </span>
+        </div>
+    </div>
+
+    <div class="dm-review-layout">
+        <div class="dm-review-main">
+            @if (Model.IsHistoricalDate)
+            {
+                <div class="dm-alert-banner dm-alert-banner--warning mb-3">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <div>This undertime request is for a historical date.</div>
+                </div>
+            }
+            <div class="dm-section">
+                <div class="dm-section-header"><i class="fas fa-info-circle"></i> Request details</div>
+                <div class="dm-section-body">
+                    <div class="dm-detail-grid mb-3">
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Date filed</span>
+                            <span class="dm-detail-value">@Model.DateFiled.ToString("MMMM dd, yyyy")</span>
+                        </div>
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Submitted by</span>
+                            <span class="dm-detail-value dm-detail-value--muted">@Model.SubmittedBy</span>
+                        </div>
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Duration</span>
+                            <span class="dm-detail-value">@Model.DurationHours.ToString("0.##") h</span>
+                        </div>
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Total hours</span>
+                            <span class="dm-detail-value">@Model.TotalHours.ToString("0.##") h</span>
+                        </div>
+                        @if (Model.ComputedUndertimeMinutesAtSubmit.HasValue && Model.ComputedUndertimeMinutesAtSubmit.Value > 0)
+                        {
+                            <div class="dm-detail-item dm-detail-item--full">
+                                <span class="dm-detail-label">DTR undertime at submit</span>
+                                <span class="dm-detail-value dm-detail-value--muted">
+                                    @(Model.ComputedUndertimeMinutesAtSubmit.Value / 60)h @(Model.ComputedUndertimeMinutesAtSubmit.Value % 60)m
+                                </span>
+                            </div>
+                        }
+                    </div>
+                    <p class="dm-reason-box">@Model.Purpose</p>
+                    @if (!string.IsNullOrWhiteSpace(Model.ReviewNotes))
+                    {
+                        <div class="mt-3">
+                            <span class="dm-detail-label d-block mb-1">Latest review notes</span>
+                            <p class="dm-reason-box mb-0">@Model.ReviewNotes</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        @if (Model.ApprovalTimeline != null)
+        {
+            <div class="dm-review-side">
+                <div class="dm-section">
+                    <div class="dm-section-body">
+                        @await Html.PartialAsync("~/Views/ApprovalWorkflow/Partials/_ApprovalTimeline.cshtml", Model.ApprovalTimeline)
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

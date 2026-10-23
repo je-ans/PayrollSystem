@@ -1,0 +1,475 @@
+@model EmployeeViewModel
+
+<style>
+    .section-header-container {
+        position: relative;
+    }
+
+    .section-header {
+        color: #2c3e50;
+        font-weight: 600;
+        position: relative;
+        display: inline-block;
+        padding-right: 1rem;
+        background: white;
+        z-index: 1;
+    }
+
+    .section-divider {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        height: 1px;
+        background-color: #e0e0e0;
+        z-index: 0;
+    }
+
+    .section-divider-wide {
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+    }
+
+    .profile-picture-container {
+        border: 2px dashed #ced4da;
+        border-radius: 4px;
+        padding: 0.5rem;
+        text-align: center;
+        transition: all 0.2s ease;
+        position: relative;
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .profile-picture-container:hover {
+            border-color: #80bdff;
+            background-color: #f8f9fa;
+        }
+
+        .profile-picture-container input[type="file"] {
+            display: none;
+        }
+
+    .profile-picture-label {
+        cursor: pointer;
+        display: block;
+        padding: 0.5rem;
+        width: 100%;
+    }
+
+    .profile-picture-icon {
+        font-size: 2rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+
+    .image-preview-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .preview-image {
+        max-width: 200px;
+        max-height: 200px;
+        object-fit: cover;
+        border-radius: 4px;
+    }
+
+    .remove-image-btn {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: #dc3545;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 12px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        transition: all 0.2s ease;
+    }
+
+        .remove-image-btn:hover {
+            background: #c82333;
+            transform: scale(1.1);
+        }
+
+    .loading-spinner {
+        display: none;
+        width: 40px;
+        height: 40px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 1rem auto;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <span asp-validation-summary="All" class="text-danger"></span>
+            <form asp-action="CreateEmployee" method="post" enctype="multipart/form-data" asp-antiforgery="true" id="employeeForm">
+
+                <!-- Account & Personal Information Row -->
+                <div class="row mb-4">
+
+                    <!-- Personal Information Section -->
+                    <div class="col-12 col-lg-6 col-md-12 col-sm-12">
+                        <div class="section-header-container mb-4">
+                            <h6 class="section-header">Personal Information</h6>
+                            <div class="section-divider"></div>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="EmployeeIdNumber" type="text" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="EmployeeIdNumber" class="floating-label">Employee ID Number <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="EmployeeIdNumber" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="FirstName" type="text" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="FirstName" class="floating-label">First Name <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="FirstName" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="MiddleName" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="MiddleName" class="floating-label">Middle Name</label>
+                            </div>
+                            <span asp-validation-for="MiddleName" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="Surname" type="text" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="Surname" class="floating-label">Surname <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="Surname" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="NameExtension" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="NameExtension" class="floating-label">Name Extension (Optional)</label>
+                            </div>
+                            <span asp-validation-for="NameExtension" class="text-danger small validation-message"></span>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information Section -->
+                    <div class="col-12 col-lg-6 col-md-12 col-sm-12">
+                        <div class="section-header-container mb-4">
+                            <h6 class="section-header">Contact Information</h6>
+                            <div class="section-divider"></div>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="DateOfBirth" type="date" class="form-control floating-input" placeholder=" " required>
+                                <label asp-for="DateOfBirth" class="floating-label">Date of Birth <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="DateOfBirth" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <select asp-for="Sex" class="form-control floating-input select2 general-select" required>
+                                    <option value="" selected disabled hidden>--Select Sex--</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                                <label asp-for="Sex" class="floating-label">Sex <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="Sex" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="EmailAddress" type="email" class="form-control floating-input" placeholder=" " required>
+                                <label asp-for="EmailAddress" class="floating-label">Email Address <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="EmailAddress" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="MobileNo" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="MobileNo" class="floating-label">Mobile No.</label>
+                            </div>
+                            <span asp-validation-for="MobileNo" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="TelephoneNo" type="text" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="TelephoneNo" class="floating-label">Telephone No.</label>
+                            </div>
+                            <span asp-validation-for="TelephoneNo" class="text-danger small validation-message"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- Contact & Employment Information Row -->
+                <div class="row mb-4">
+                    <!-- Employment Information Section -->
+                    <div class="col-12 col-lg-6 col-md-12 col-sm-12">
+                        <div class="section-header-container mb-4">
+                            <h6 class="section-header">Employment Information</h6>
+                            <div class="section-divider"></div>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <select asp-for="OrganizationStructureIds" class="form-control floating-input select2 general-select"
+                                        multiple="multiple" data-placeholder="-- Select organization unit(s) --" data-val="false">
+                                    @foreach (var unit in Model.OrganizationUnits)
+                                    {
+                                        <option value="@unit.Id">@unit.DisplayText</option>
+                                    }
+                                </select>
+                                <label asp-for="OrganizationStructureIds" class="floating-label">Organization Units <span class="text-danger">*</span></label>
+                            </div>
+                            <small class="text-muted">Select all units this employee belongs to. Roles (Head, OIC, etc.) are set per unit in <strong>Organization Structure → Staff Structure</strong>.</small>
+                            <span asp-validation-for="OrganizationStructureIds" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <select asp-for="PrimaryOrganizationStructureId" class="form-control floating-input select2 general-select"
+                                        data-placeholder="-- Primary schedule unit --">
+                                    <option value="">-- Primary schedule unit --</option>
+                                    @foreach (var unit in Model.OrganizationUnits)
+                                    {
+                                        <option value="@unit.Id">@unit.DisplayText</option>
+                                    }
+                                </select>
+                                <label asp-for="PrimaryOrganizationStructureId" class="floating-label">Primary Schedule Unit</label>
+                            </div>
+                            <small class="text-muted">Leave blank to use the first selected unit. This is the org unit whose monthly work schedule includes the employee.</small>
+                            <span asp-validation-for="PrimaryOrganizationStructureId" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <select asp-for="DesignationId" class="form-control floating-input select2 designation-select" asp-items="new SelectList(Model.DesignationOptions, nameof(Designation.Id), nameof(Designation.DesignationName))" value="">
+                                    <option value="" selected disabled hidden>--Select a Designation--</option>
+                                </select>
+                                <label asp-for="DesignationId" class="floating-label">Designation <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="DesignationId" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <select asp-for="EmploymentBasis" asp-items="Html.GetEnumSelectList<EmploymentBasis>()" class="form-control floating-input select2 general-select" required>
+                                    <option value="" selected disabled hidden>--Select Employment Basis--</option>
+                                </select>
+                                <label asp-for="EmploymentBasis" class="floating-label">Employment Basis <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="EmploymentBasis" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="BiometricId" type="text" class="form-control floating-input"
+                                       placeholder=" " maxlength="20">
+                                <label asp-for="BiometricId" class="floating-label">Biometric ID</label>
+                            </div>
+                            <small class="text-muted">ID number registered on the biometric device (e.g. 3, 4, 5)</small>
+                            <span asp-validation-for="BiometricId" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <select asp-for="DefaultRateTypeId" asp-items="new SelectList(Model.RateTypes, nameof(RateType.Id), nameof(RateType.Name))"
+                                        class="form-control floating-input select2 general-select" required>
+                                    <option value="" selected disabled hidden>--Select Rate Type--</option>
+                                </select>
+                                <label asp-for="DefaultRateTypeId" class="floating-label">Rate Type <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="DefaultRateTypeId" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="DateHired" type="date" class="form-control floating-input" placeholder=" " required>
+                                <label asp-for="DateHired" class="floating-label">Date Hired <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="DateHired" class="text-danger small validation-message"></span>
+                        </div>
+                    </div>
+
+                    <!-- Account Information Section -->
+                    <div class="col-12 col-lg-6 col-md-12 col-sm-12">
+                        <div class="section-header-container mb-4">
+                            <h6 class="section-header">Account Information</h6>
+                            <div class="section-divider"></div>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="UserName" type="text" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="UserName" class="floating-label">Username <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="UserName" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="Password" type="password" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="Password" class="floating-label">Password <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="ConfirmPassword" type="password" class="form-control floating-input" required placeholder=" ">
+                                <label asp-for="ConfirmPassword" class="floating-label">Confirm Password <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="ConfirmPassword" class="text-danger small validation-message"></span>
+                        </div>
+
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <select asp-for="RoleId" class="form-control floating-input select2 role-select" asp-items="ViewBag.RoleId" value="" required>
+                                    <option value="" selected disabled hidden>--Select a Role--</option>
+                                </select>
+                                <label asp-for="RoleId" class="floating-label">System Role <span class="text-danger">*</span></label>
+                            </div>
+                            <span asp-validation-for="RoleId" class="text-danger small validation-message"></span>
+                        </div>
+                    </div>
+                </div>
+
+                @* <div class="section-divider-wide my-4"></div>
+
+                <!-- Profile Picture Section -->
+                <div class="row">
+                    <div class="col-12 col-lg-6 col-md-12 col-sm-12 mx-auto">
+                        <div class="section-header-container mb-4">
+                            <h6 class="section-header">Profile Picture</h6>
+                            <div class="section-divider"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="profile-picture-container">
+                                <div id="imagePreview" class="image-preview-container" style="display: none;">
+                                    <div class="image-preview-wrapper">
+                                        <img id="preview" class="preview-image" src="#" alt="Profile Preview" />
+                                        <button type="button" class="remove-image-btn" onclick="removeImage()">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div id="loadingSpinner" class="loading-spinner"></div>
+                                <label class="profile-picture-label" id="uploadLabel">
+                                    <i class="fas fa-camera profile-picture-icon"></i>
+                                    <div class="mb-2">Click to upload profile picture</div>
+                                    <small class="text-muted d-block">Accepted formats: .png, .jpg, .jpeg (Max 2MB)</small>
+                                    <input type="file" accept=".png,.jpg,.jpeg" id="photo" name="profilePicture" onchange="previewImage(this);" />
+                                </label>
+                            </div>
+                            <span asp-validation-for="ProfilePicture" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div> *@
+
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function previewImage(input) {
+        const preview = document.getElementById('preview');
+        const imagePreview = document.getElementById('imagePreview');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const uploadLabel = document.getElementById('uploadLabel');
+
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+
+            // Check file size (2MB limit)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('File size exceeds 2MB limit');
+                input.value = '';
+                imagePreview.style.display = 'none';
+                uploadLabel.style.display = 'block';
+                return;
+            }
+
+            // Check file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+            if (!validTypes.includes(file.type)) {
+                alert('Invalid file type. Please upload .png, .jpg, or .jpeg files');
+                input.value = '';
+                imagePreview.style.display = 'none';
+                uploadLabel.style.display = 'block';
+                return;
+            }
+
+            // Show loading spinner
+            loadingSpinner.style.display = 'block';
+
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                loadingSpinner.style.display = 'none';
+                uploadLabel.style.display = 'none';
+            }
+
+            reader.onerror = function() {
+                loadingSpinner.style.display = 'none';
+                alert('Error loading image');
+                input.value = '';
+                imagePreview.style.display = 'none';
+                uploadLabel.style.display = 'block';
+            }
+
+            reader.readAsDataURL(file);
+        } else {
+            preview.src = '#';
+            imagePreview.style.display = 'none';
+            uploadLabel.style.display = 'block';
+        }
+    }
+
+    function removeImage() {
+        const input = document.getElementById('photo');
+        const imagePreview = document.getElementById('imagePreview');
+        const uploadLabel = document.getElementById('uploadLabel');
+
+        input.value = '';
+        imagePreview.style.display = 'none';
+        uploadLabel.style.display = 'block';
+    }
+</script>

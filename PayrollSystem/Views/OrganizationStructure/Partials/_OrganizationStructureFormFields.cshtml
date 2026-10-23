@@ -1,0 +1,125 @@
+@model OrganizationStructureFormViewModel
+
+<span asp-validation-summary="All" class="text-danger"></span>
+
+<div class="form-group">
+    <div class="input-container">
+        <input asp-for="Code" type="text" class="form-control floating-input"
+               required placeholder=" " maxlength="50" />
+        <label asp-for="Code" class="floating-label">
+            Code <span class="text-danger">*</span>
+        </label>
+    </div>
+    <span asp-validation-for="Code" class="text-danger validation-message"></span>
+</div>
+
+<div class="form-group">
+    <div class="input-container">
+        <input asp-for="Name" type="text" class="form-control floating-input"
+               required placeholder=" " maxlength="300" />
+        <label asp-for="Name" class="floating-label">
+            Name <span class="text-danger">*</span>
+        </label>
+    </div>
+    <span asp-validation-for="Name" class="text-danger validation-message"></span>
+</div>
+
+<div class="form-group">
+    <div class="input-container">
+        <select asp-for="ParentId"
+                class="form-control floating-input select2 general-select org-parent-select"
+                id="orgParentSelect"
+                data-placeholder="— None (Institution root) —">
+            <option value="">— None (Institution root) —</option>
+            @foreach (var parent in Model.ParentOptions)
+            {
+                if (Model.ParentId == parent.Id)
+                {
+                    <option value="@parent.Id" selected="selected">
+                        @parent.DisplayText
+                    </option>
+                }
+                else
+                {
+                    <option value="@parent.Id">@parent.DisplayText</option>
+                }
+            }
+        </select>
+        <label asp-for="ParentId" class="floating-label">Parent Unit</label>
+    </div>
+    <span asp-validation-for="ParentId" class="text-danger validation-message"></span>
+</div>
+
+<div class="form-group">
+    <div class="input-container">
+        <select asp-for="Level"
+                asp-items="Model.LevelOptions"
+                class="form-control floating-input select2 general-select"
+                id="orgLevelValue"
+                required>
+        </select>
+        <label asp-for="Level" class="floating-label">
+            Organization Level <span class="text-danger">*</span>
+        </label>
+    </div>
+    <span asp-validation-for="Level" class="text-danger validation-message"></span>
+    <small class="text-muted">
+        Pick any level deeper than the parent. Intermediate levels can be skipped
+        (e.g. Institution → Division → Section).
+    </small>
+</div>
+
+<div class="form-group">
+    <div class="custom-control custom-switch">
+        <input asp-for="IsActive"
+               type="checkbox"
+               class="custom-control-input"
+               id="orgIsActive" />
+        <label class="custom-control-label" for="orgIsActive">Active</label>
+    </div>
+</div>
+
+<script>
+    (function () {
+        function refreshLevelOptions() {
+            var parentId = $('#orgParentSelect').val();
+            var previousLevel = $('#orgLevelValue').val();
+
+            $.get(
+                '/OrganizationStructure/GetLevelsForParent',
+                { parentId: parentId || '' },
+                function (data) {
+                    if (data.success === false) {
+                        return;
+                    }
+
+                    var $level = $('#orgLevelValue');
+                    $level.empty();
+
+                    (data.levels || []).forEach(function (item) {
+                        $level.append(
+                            $('<option></option>')
+                                .val(item.value)
+                                .text(item.text)
+                        );
+                    });
+
+                    if (
+                        previousLevel &&
+                        $level.find('option[value="' + previousLevel + '"]').length
+                    ) {
+                        $level.val(previousLevel);
+                    } else if (data.levels && data.levels.length) {
+                        $level.val(data.levels[0].value);
+                    }
+
+                    if ($level.hasClass('select2-hidden-accessible')) {
+                        $level.trigger('change.select2');
+                    }
+                }
+            );
+        }
+
+        $('#orgParentSelect').on('change', refreshLevelOptions);
+    })();
+</script>

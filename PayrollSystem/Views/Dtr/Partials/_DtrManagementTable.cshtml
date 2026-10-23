@@ -1,0 +1,1050 @@
+@model List<DtrManagementRowViewModel>
+
+@{
+    var employeeId = ViewBag.EmployeeId;
+    var month = (int)ViewBag.Month;
+    var year = (int)ViewBag.Year;
+    var periodLabel = new DateTime(year, month, 1).ToString("MMMM yyyy");
+    var canReview = ViewBag.CanReviewJustifications == true;
+    var canReviewSchedule = ViewBag.CanReviewScheduleChanges == true;
+    var canReviewOvertime = ViewBag.CanReviewOvertime == true;
+    var hasApprovedSchedule = ViewBag.HasApprovedSchedule == true;
+    var today = DateTime.Today;
+
+    bool HasValidTime(string timeValue) =>
+        !string.IsNullOrEmpty(timeValue) &&
+        timeValue != "-" &&
+        timeValue != "—" &&
+        timeValue.Trim() != "" &&
+        !timeValue.Equals("NO LOG", StringComparison.OrdinalIgnoreCase);
+
+    bool RowHasMissingPunch(DtrManagementRowViewModel row) =>
+        row.AssessAttendance && (
+            row.IsOvernightShiftDay
+                ? !row.HasCompleteShiftPair
+                : (!HasValidTime(row.AmArrival) || !HasValidTime(row.PmDeparture) ||
+                   (row.ExpectsLunchBreak && (!HasValidTime(row.AmDeparture) || !HasValidTime(row.PmArrival)))));
+
+    bool RowHasTardiness(DtrManagementRowViewModel row)
+    {
+        int Parse(string v) => int.TryParse(v, out var n) ? n : 0;
+        return Parse(row.TardinessHrs) > 0 || Parse(row.TardinessMins) > 0 ||
+               Parse(row.UndertimeHrs) > 0 || Parse(row.UndertimeMins) > 0;
+    }
+
+    var employeeName = ViewBag.EmployeeName as string ?? "";
+    var employeeIdNumber = ViewBag.EmployeeIdNumber as string ?? "";
+
+    int ParseMetric(string v) => int.TryParse(v, out var n) ? n : 0;
+    int MetricTotalMins(string hrs, string mins) => ParseMetric(hrs) * 60 + ParseMetric(mins);
+    string FormatMetricDisplay(int hrs, int mins)
+    {
+        if (hrs <= 0 && mins <= 0) return "";
+        if (hrs > 0 && mins > 0) return $"{hrs}h {mins}m";
+        if (hrs > 0) return $"{hrs}h";
+        return $"{mins}m";
+    }
+    string FormatMetricTotal(int totalMins) => FormatMetricDisplay(totalMins / 60, totalMins % 60);
+
+    var totalTardinessMins = Model.Sum(r => MetricTotalMins(r.TardinessHrs, r.TardinessMins));
+    var totalUndertimeMins = Model.Sum(r => MetricTotalMins(r.UndertimeHrs, r.UndertimeMins));
+    var totalWorkedHours = Model.Sum(r => r.WorkedHours);
+    var totalNdHours = Model.Sum(r => r.NightDifferentialHours);
+
+    var summary = new
+    {
+        workDays = Model.Count(r => r.ShiftCode != "—"),
+        missingPunches = Model.Count(RowHasMissingPunch),
+        pendingJustifications = Model.Count(r => r.JustificationStatus == JustificationStatus.Pending),
+        pendingOvertime = Model.Count(r => r.OvertimeStatus == OvertimeStatus.Pending),
+        tardinessDays = Model.Count(RowHasTardiness)
+    };
+}
+
+<div class="dtr-table-wrapper" data-dtr-summary="@System.Text.Json.JsonSerializer.Serialize(summary)">
+
+    @if (Model.Any())
+    {
+        <div class="dtr-employee-banner">
+            <div class="dtr-employee-banner-main">
+                <div class="dtr-employee-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <div class="dtr-employee-name">@employeeName</div>
+                    @if (!string.IsNullOrWhiteSpace(employeeIdNumber))
+                    {
+                        <div class="dtr-employee-id">ID @employeeIdNumber</div>
+                    }
+                </div>
+            </div>
+            <div class="dtr-employee-banner-aside">
+                <span class="dtr-period-pill">
+                    <i class="fas fa-calendar-alt"></i> @periodLabel
+                </span>
+                <span class="dtr-logs-count">@Model.Count day@(Model.Count == 1 ? "" : "s")</span>
+            </div>
+        </div>
+
+        <div class="dtr-logs-toolbar">
+            <div class="dtr-log-search">
+                <i class="fas fa-search"></i>
+                <input type="search"
+                       id="dtrLogSearch"
+                       class="form-control form-control-sm"
+                       placeholder="Search day, shift, or remarks…" />
+            </div>
+            <div class="dtr-logs-filters" role="group" aria-label="Filter daily logs">
+                <button type="button" class="dtr-filter-chip active" data-filter="all">
+                    <i class="fas fa-list"></i> All
+                </button>
+                <button type="button" class="dtr-filter-chip" data-filter="missing">
+                    <i class="fas fa-exclamation-circle"></i> Missing
+                    @if (summary.missingPunches > 0)
+                    {
+                        <span class="dtr-filter-badge">@summary.missingPunches</span>
+                    }
+                </button>
+                <button type="button" class="dtr-filter-chip" data-filter="pending">
+                    <i class="fas fa-hourglass-half"></i> Pending
+                    @{
+                        var pendingTotal = summary.pendingJustifications + summary.pendingOvertime;
+                    }
+                    @if (pendingTotal > 0)
+                    {
+                        <span class="dtr-filter-badge">@pendingTotal</span>
+                    }
+                </button>
+                <button type="button" class="dtr-filter-chip" data-filter="tardy">
+                    <i class="fas fa-clock"></i> Tardy
+                    @if (summary.tardinessDays > 0)
+                    {
+                        <span class="dtr-filter-badge">@summary.tardinessDays</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        <ul class="dtr-legend" aria-label="Row legend">
+            <li class="dtr-legend-item">
+                <span class="dtr-legend-sample sample-today" aria-hidden="true"></span>
+                <span class="dtr-legend-text">Today</span>
+            </li>
+            <li class="dtr-legend-item">
+                <span class="dtr-legend-sample sample-weekday" aria-hidden="true"></span>
+                <span class="dtr-legend-text">Weekday</span>
+            </li>
+            <li class="dtr-legend-item">
+                <span class="dtr-legend-sample sample-weekend" aria-hidden="true"></span>
+                <span class="dtr-legend-text">Weekend</span>
+            </li>
+        </ul>
+
+        <div id="dtrLogFilterEmpty" class="dtr-filter-empty" style="display:none;">
+            <i class="fas fa-filter"></i>
+            <p class="mb-0">No rows match the current search or filter.</p>
+        </div>
+
+        <div class="table-responsive dtr-table-responsive">
+            <table class="dtr-table">
+                <thead>
+                    <tr class="dtr-thead-group">
+                        <th rowspan="2" class="col-no col-sticky-no">#</th>
+                        <th rowspan="2" class="col-day col-sticky-day">Day</th>
+                        <th colspan="2" class="group-header group-am">
+                            <i class="fas fa-sun mr-1"></i> A.M.
+                        </th>
+                        <th colspan="2" class="group-header group-pm">
+                            <i class="fas fa-cloud-sun mr-1"></i> P.M.
+                        </th>
+                        <th colspan="4" class="group-header group-tardiness">
+                            <i class="fas fa-clock mr-1"></i> Attendance
+                        </th>
+                        <th rowspan="2" class="col-schedule">Schedule</th>
+                        <th rowspan="2" class="col-justification">Schedule Change</th>
+                        <th rowspan="2" class="col-justification">Justification</th>
+                        <th rowspan="2" class="col-justification">Overtime</th>
+                        <th rowspan="2" class="col-justification">Undertime Form</th>
+                        <th rowspan="2" class="col-actions">Action</th>
+                    </tr>
+                    <tr class="dtr-thead-sub">
+                        <th>Arrival</th>
+                        <th>Departure</th>
+                        <th>Arrival</th>
+                        <th>Departure</th>
+                        <th class="sub-worked">Basic</th>
+                        <th class="sub-tardiness">Late</th>
+                        <th class="sub-undertime">Undertime</th>
+                        <th class="sub-nd">ND</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model)
+                    {
+                        var isToday = row.Date == DateOnly.FromDateTime(today);
+                        var isWeekend = row.Date.DayOfWeek == DayOfWeek.Saturday || row.Date.DayOfWeek == DayOfWeek.Sunday;
+
+                        var hasMissing = RowHasMissingPunch(row);
+                        var hasTardy = RowHasTardiness(row);
+                        var isPending = row.JustificationStatus == JustificationStatus.Pending;
+                        var isPendingOt = row.OvertimeStatus == OvertimeStatus.Pending;
+                        var needsAttention = hasMissing || isPending || isPendingOt || hasTardy;
+
+                        // Row class
+                        string rowClass = isToday ? "dtr-row row-today"
+                        : isWeekend ? "dtr-row row-weekend"
+                        : "dtr-row row-regular";
+                        if (needsAttention) rowClass += " row-needs-attention";
+                        if (hasMissing) rowClass += " row-missing-punch";
+                        if (isPending) rowClass += " row-pending-just";
+                        if (row.IsOvernightShiftDay) rowClass += " row-overnight";
+
+                        // Type badge
+                        string typeBadgeClass = isToday ? "type-badge tb-today"
+                        : isWeekend ? "type-badge tb-weekend"
+                        : "";
+                        string typeBadgeLabel = isToday ? "Today"
+                        : isWeekend ? "Weekend"
+                        : "";
+
+                        var rowTardinessMins = MetricTotalMins(row.TardinessHrs, row.TardinessMins);
+                        var rowUndertimeMins = MetricTotalMins(row.UndertimeHrs, row.UndertimeMins);
+                        var tardinessDisplay = FormatMetricDisplay(ParseMetric(row.TardinessHrs), ParseMetric(row.TardinessMins));
+                        var undertimeDisplay = FormatMetricDisplay(ParseMetric(row.UndertimeHrs), ParseMetric(row.UndertimeMins));
+
+                        string scheduleBadgeClass = row.ScheduleChangeStatus switch
+                        {
+                            JustificationStatus.Pending => "just-badge jb-pending",
+                            JustificationStatus.Approved => "just-badge jb-approved",
+                            JustificationStatus.Rejected => "just-badge jb-rejected",
+                            _ => "just-badge jb-none"
+                        };
+                        string scheduleLabel = row.ScheduleChangeStatus switch
+                        {
+                            JustificationStatus.Pending => "Pending",
+                            JustificationStatus.Approved => "Approved",
+                            JustificationStatus.Rejected => "Rejected",
+                            _ => "—"
+                        };
+                        string scheduleIcon = row.ScheduleChangeStatus switch
+                        {
+                            JustificationStatus.Pending => "fas fa-hourglass-half",
+                            JustificationStatus.Approved => "fas fa-check-circle",
+                            JustificationStatus.Rejected => "fas fa-times-circle",
+                            _ => ""
+                        };
+
+                        string justBadgeClass = row.JustificationStatus switch
+                        {
+                            JustificationStatus.Pending => "just-badge jb-pending",
+                            JustificationStatus.Approved => "just-badge jb-approved",
+                            JustificationStatus.Rejected => "just-badge jb-rejected",
+                            _ when row.JustificationRequired => "just-badge jb-required",
+                            _ => "just-badge jb-none"
+                        };
+                        string justLabel = row.JustificationStatus switch
+                        {
+                            JustificationStatus.Pending => "Pending",
+                            JustificationStatus.Approved => "Approved",
+                            JustificationStatus.Rejected => "Rejected",
+                            _ when row.JustificationRequired => "Required",
+                            _ => "—"
+                        };
+                        string justIcon = row.JustificationStatus switch
+                        {
+                            JustificationStatus.Pending => "fas fa-hourglass-half",
+                            JustificationStatus.Approved => "fas fa-check-circle",
+                            JustificationStatus.Rejected => "fas fa-times-circle",
+                            _ when row.JustificationRequired => "fas fa-exclamation-circle",
+                            _ => ""
+                        };
+
+                        string otBadgeClass = row.OvertimeStatus switch
+                        {
+                            OvertimeStatus.Pending => "just-badge jb-pending",
+                            OvertimeStatus.Approved when row.IsOvertimeProcessedToPayroll => "just-badge jb-approved",
+                            OvertimeStatus.Approved => "just-badge jb-required",
+                            OvertimeStatus.Rejected => "just-badge jb-rejected",
+                            _ => "just-badge jb-none"
+                        };
+                        string otLabel = !string.IsNullOrWhiteSpace(row.OvertimeStatusLabel) && row.OvertimeStatusLabel != "—"
+                        ? row.OvertimeStatusLabel
+                        : "—";
+                        string otIcon = row.OvertimeStatus switch
+                        {
+                            OvertimeStatus.Pending => "fas fa-hourglass-half",
+                            OvertimeStatus.Approved when row.IsOvertimeProcessedToPayroll => "fas fa-file-invoice-dollar",
+                            OvertimeStatus.Approved => "fas fa-check-circle",
+                            OvertimeStatus.Rejected => "fas fa-times-circle",
+                            _ => ""
+                        };
+
+                        var hasUndertimeForm = row.LatestUndertimeRequestId.HasValue;
+                        var isPendingUndertime = row.UndertimeStatus == JustificationStatus.Pending;
+                        string utBadgeClass = row.UndertimeStatus switch
+                        {
+                            JustificationStatus.Pending => "just-badge jb-pending",
+                            JustificationStatus.Approved => "just-badge jb-approved",
+                            JustificationStatus.Rejected => "just-badge jb-rejected",
+                            _ => "just-badge jb-none"
+                        };
+                        string utLabel = !string.IsNullOrWhiteSpace(row.UndertimeStatusLabel) && row.UndertimeStatusLabel != "—"
+                            ? row.UndertimeStatusLabel
+                            : "—";
+                        string utIcon = row.UndertimeStatus switch
+                        {
+                            JustificationStatus.Pending => "fas fa-hourglass-half",
+                            JustificationStatus.Approved => "fas fa-check-circle",
+                            JustificationStatus.Rejected => "fas fa-times-circle",
+                            _ => "fas fa-file-signature"
+                        };
+                        var suggestedUndertimeHours = rowUndertimeMins > 0
+                            ? Math.Round(rowUndertimeMins / 60m, 2)
+                            : (decimal?)null;
+
+                        var searchText = string.Join(" ", new[]
+                        {
+                row.DayNo.ToString(),
+                row.DayName,
+                row.Date.ToString("MMM dd"),
+                row.ShiftCode,
+                row.ShiftLabel,
+                row.ScheduleChangeRemarks,
+                row.TimeLogJustification,
+                row.OvertimeRemarks,
+                row.OvertimeHoursDisplay,
+                row.OvertimeStatusLabel,
+                row.UndertimeHoursDisplay,
+                row.UndertimeRemarks,
+                row.UndertimeStatusLabel,
+                scheduleLabel,
+                justLabel,
+                otLabel
+                }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+                        <tr class="@rowClass"
+                            data-missing="@(hasMissing ? 1 : 0)"
+                            data-pending="@((isPending || isPendingOt || isPendingUndertime) ? 1 : 0)"
+                            data-tardy="@(hasTardy ? 1 : 0)"
+                            data-search="@searchText">
+
+                            <!-- # -->
+                            <td class="td-no col-sticky-no">
+                                <span class="day-num">@row.DayNo</span>
+                            </td>
+
+                            <!-- Day -->
+                            <td class="td-day col-sticky-day">
+                                <div class="day-main">@row.DayName</div>
+                                <div class="day-sub">@row.Date.ToString("MMM dd")</div>
+                                <div class="day-badges">
+                                    @if (!string.IsNullOrEmpty(typeBadgeLabel))
+                                    {
+                                        <span class="@typeBadgeClass">@typeBadgeLabel</span>
+                                    }
+                                </div>
+                            </td>
+
+                            <!-- AM Arrival -->
+                            <td class="td-time">
+                                @if (HasValidTime(row.AmArrival))
+                                {
+                                    <span class="time-pill time-pill--ok" title="AM arrival logged">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        <span>@row.AmArrival</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="time-pill time-pill--missing" title="Missing AM arrival">
+                                        <i class="fas fa-minus-circle"></i>
+                                        <span>No log</span>
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- AM Departure -->
+                            <td class="td-time">
+                                @if (row.UsesOvernightLayout && row.ExpectsPreviousNightEnd)
+                                {
+                                    if (HasValidTime(row.AmDeparture))
+                                    {
+                                        <span class="time-pill time-pill--ok" title="Shift end (AM) logged">
+                                            <i class="fas fa-sign-out-alt"></i>
+                                            <span>@row.AmDeparture</span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="time-pill time-pill--missing" title="Missing AM departure">
+                                            <i class="fas fa-minus-circle"></i>
+                                            <span>No log</span>
+                                        </span>
+                                    }
+                                }
+                                else if (row.UsesOvernightLayout)
+                                {
+                                    <span class="metric-zero">—</span>
+                                }
+                                else if (!row.ExpectsLunchBreak)
+                                {
+                                    <span class="metric-zero">—</span>
+                                }
+                                else if (HasValidTime(row.AmDeparture))
+                                {
+                                    <span class="time-pill time-pill--ok" title="AM departure logged">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span>@row.AmDeparture</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="time-pill time-pill--missing" title="Missing AM departure">
+                                        <i class="fas fa-minus-circle"></i>
+                                        <span>No log</span>
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- PM Arrival -->
+                            <td class="td-time td-pm">
+                                @if (row.UsesOvernightLayout && row.ExpectsTonightStart)
+                                {
+                                    if (HasValidTime(row.PmArrival))
+                                    {
+                                        <span class="time-pill time-pill--ok time-pill--pm" title="Shift start (PM) logged">
+                                            <i class="fas fa-sign-in-alt"></i>
+                                            <span>@row.PmArrival</span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="time-pill time-pill--missing time-pill--pm" title="Missing PM arrival">
+                                            <i class="fas fa-minus-circle"></i>
+                                            <span>No log</span>
+                                        </span>
+                                    }
+                                }
+                                else if (row.UsesOvernightLayout)
+                                {
+                                    <span class="metric-zero">—</span>
+                                }
+                                else if (!row.ExpectsLunchBreak)
+                                {
+                                    <span class="metric-zero">—</span>
+                                }
+                                else if (HasValidTime(row.PmArrival))
+                                {
+                                    <span class="time-pill time-pill--ok time-pill--pm" title="PM arrival logged">
+                                        <i class="fas fa-sign-in-alt"></i>
+                                        <span>@row.PmArrival</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="time-pill time-pill--missing time-pill--pm" title="Missing PM arrival">
+                                        <i class="fas fa-minus-circle"></i>
+                                        <span>No log</span>
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- PM Departure -->
+                            <td class="td-time td-pm">
+                                @if (row.UsesOvernightLayout)
+                                {
+                                    <span class="metric-zero">—</span>
+                                }
+                                else if (HasValidTime(row.PmDeparture))
+                                {
+                                    <span class="time-pill time-pill--ok time-pill--pm" title="PM departure logged">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                        <span>@row.PmDeparture</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="time-pill time-pill--missing time-pill--pm" title="Missing PM departure">
+                                        <i class="fas fa-minus-circle"></i>
+                                        <span>No log</span>
+                                    </span>
+                                }
+                            </td>
+
+                            <!-- Basic Hours (scheduled shift hours; late/UT deducted in payroll only) -->
+                            <td class="td-metric">
+                                @if (row.WorkedHours > 0)
+                                {
+                                    var presenceTip = row.ActualPresenceHours > 0
+                                    ? $"Basic {row.WorkedHours.ToString("0.####")}h (scheduled) · Presence {row.ActualPresenceHours.ToString("0.####")}h"
+                                    : $"{row.WorkedHours.ToString("0.####")} Basic Hours (scheduled)";
+                                    <span class="mbadge-worked" title="@presenceTip">@row.WorkedHoursDisplay</span>
+                                }
+                                else
+                                {
+                                    <span class="metric-zero">—</span>
+                                }
+                            </td>
+
+                            <!-- Late -->
+                            <td class="td-metric">
+                                @if (rowTardinessMins > 0)
+                                {
+                                    <span class="mbadge-tard" title="@row.TardinessHrs hr @row.TardinessMins min">@tardinessDisplay</span>
+                                }
+                                else
+                                {
+                                    <span class="metric-zero">—</span>
+                                }
+                            </td>
+
+                            <!-- Undertime -->
+                            <td class="td-metric">
+                                @if (rowUndertimeMins > 0)
+                                {
+                                    <span class="mbadge-under" title="@row.UndertimeHrs hr @row.UndertimeMins min">@undertimeDisplay</span>
+                                }
+                                else
+                                {
+                                    <span class="metric-zero">—</span>
+                                }
+                            </td>
+
+                            <!-- ND -->
+                            <td class="td-metric">
+                                @if (row.NightDifferentialHours > 0)
+                                {
+                                    <span class="mbadge-nd" title="@row.NightDifferentialHours.ToString("0.####") ND hours (within schedule)">@row.NightDifferentialHoursDisplay</span>
+                                }
+                                else
+                                {
+                                    <span class="metric-zero">—</span>
+                                }
+                            </td>
+
+                            <!-- Schedule -->
+                            <td class="td-schedule">
+                                @if (row.ShiftCode != "—")
+                                {
+                                    <div class="dtr-schedule-cell">
+                                        <span class="dtr-schedule-code"
+                                              style="border-color: @row.ShiftColorHex; color: @row.ShiftColorHex"
+                                              title="@row.ShiftLabel">@row.ShiftCode</span>
+                                        @if (!string.IsNullOrWhiteSpace(row.ShiftLabel) && row.ShiftLabel != row.ShiftCode)
+                                        {
+                                            <span class="dtr-schedule-label" title="@row.ShiftLabel">@row.ShiftLabel</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="dtr-remark-empty">—</span>
+                                }
+                            </td>
+
+                            <!-- Change Sched Remarks -->
+                            <td class="td-remark">
+                                @if (row.ScheduleChangeStatus.HasValue ||
+                               (!string.IsNullOrWhiteSpace(row.ScheduleChangeRemarks) && row.ScheduleChangeRemarks != "-") ||
+                               row.LatestScheduleChangeRequestId.HasValue)
+                                {
+                                    <div class="dtr-remark-card">
+                                        @if (row.ScheduleChangeStatus.HasValue)
+                                        {
+                                            <span class="@scheduleBadgeClass">
+                                                @if (!string.IsNullOrEmpty(scheduleIcon))
+                                                {
+                                                    <i class="@scheduleIcon mr-1"></i>
+                                                }
+                                                @scheduleLabel
+                                            </span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(row.ScheduleChangeRemarks) && row.ScheduleChangeRemarks != "-")
+                                        {
+                                            <p class="dtr-remark-text" title="@row.ScheduleChangeRemarks">@row.ScheduleChangeRemarks</p>
+                                        }
+                                        @if (row.LatestScheduleChangeRequestId.HasValue)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dtr-remark-link open-modal"
+                                               data-title="Schedule Change Logs"
+                                               data-url="@Url.Action("Review", "ScheduleChangeRequest", new { id = row.LatestScheduleChangeRequestId.Value })"
+                                               data-modal-type="view"
+                                               data-size="modal-xl">
+                                                <i class="fas fa-history mr-1"></i>View Logs
+                                            </a>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="dtr-remark-empty">—</span>
+                                }
+                            </td>
+
+                            <!-- Time Log Justification -->
+                            <td class="td-remark">
+                                @if (row.JustificationStatus.HasValue ||
+                               row.JustificationRequired ||
+                               (!string.IsNullOrWhiteSpace(row.TimeLogJustification) &&
+                               row.TimeLogJustification != "-" &&
+                               !row.TimeLogJustification.Contains("Pending") &&
+                               !row.TimeLogJustification.Contains("Approved")))
+                                {
+                                    <div class="dtr-remark-card">
+                                        @if (row.JustificationStatus.HasValue || row.JustificationRequired)
+                                        {
+                                            <span class="@justBadgeClass">
+                                                @if (!string.IsNullOrEmpty(justIcon))
+                                                {
+                                                    <i class="@justIcon mr-1"></i>
+                                                }
+                                                @justLabel
+                                            </span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(row.TimeLogJustification) &&
+                                       row.TimeLogJustification != "-" &&
+                                       !row.TimeLogJustification.Contains("Pending") &&
+                                       !row.TimeLogJustification.Contains("Approved"))
+                                        {
+                                            <p class="dtr-remark-text" title="@row.TimeLogJustification">@row.TimeLogJustification</p>
+                                        }
+                                        @if (row.LatestJustificationRequestId.HasValue)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dtr-remark-link open-modal"
+                                               data-title="Justification Logs"
+                                               data-url="@Url.Action("Review", "DtrJustification", new { id = row.LatestJustificationRequestId.Value })"
+                                               data-modal-type="view"
+                                               data-size="modal-xl">
+                                                <i class="fas fa-history mr-1"></i>View Logs
+                                            </a>
+                                        }
+                                        @if (row.JustificationStatus == JustificationStatus.Pending && !canReview)
+                                        {
+                                            <span class="awaiting-label">
+                                                <i class="fas fa-hourglass-half"></i> Awaiting review
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="dtr-remark-empty">—</span>
+                                }
+                            </td>
+
+                            <!-- Overtime -->
+                            <td class="td-remark">
+                                @if (otLabel != "—" ||
+                               row.OvertimeStatus.HasValue ||
+                               (!string.IsNullOrWhiteSpace(row.OvertimeHoursDisplay)) ||
+                               (!string.IsNullOrWhiteSpace(row.OvertimeRemarks) && row.OvertimeRemarks != "-"))
+                                {
+                                    <div class="dtr-remark-card">
+                                        @if (otLabel != "—")
+                                        {
+                                            <span class="@otBadgeClass ot-status-badge" title="@otLabel">
+                                                @if (!string.IsNullOrEmpty(otIcon))
+                                                {
+                                                    <i class="@otIcon mr-1"></i>
+                                                }
+                                                @otLabel
+                                            </span>
+                                        }
+                                        @if (row.OvertimeStatus.HasValue && !string.IsNullOrWhiteSpace(row.OvertimeHoursDisplay))
+                                        {
+                                            <p class="dtr-remark-text" title="@row.OvertimeHoursDisplay">@row.OvertimeHoursDisplay</p>
+                                        }
+                                        @if (row.OvertimeStatus.HasValue &&
+                                       !string.IsNullOrWhiteSpace(row.OvertimeRemarks) &&
+                                       row.OvertimeRemarks != "-")
+                                        {
+                                            <p class="dtr-remark-text text-muted" title="@row.OvertimeRemarks">@row.OvertimeRemarks</p>
+                                        }
+                                        @if (row.LatestOvertimeRequestId.HasValue)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dtr-remark-link open-modal"
+                                               data-title="Overtime Request Logs"
+                                               data-url="@Url.Action("Review", "OvertimeRequest", new { id = row.LatestOvertimeRequestId.Value })"
+                                               data-modal-type="view"
+                                               data-size="modal-xl">
+                                                <i class="fas fa-history mr-1"></i>View Logs
+                                            </a>
+                                        }
+                                        @if (row.OvertimeStatus == OvertimeStatus.Pending && !canReviewOvertime)
+                                        {
+                                            <span class="awaiting-label">
+                                                <i class="fas fa-hourglass-half"></i> Awaiting review
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="dtr-remark-empty">—</span>
+                                }
+                            </td>
+
+                            <!-- Undertime Form -->
+                            <td class="td-remark">
+                                @if (hasUndertimeForm)
+                                {
+                                    <div class="dtr-remark-card">
+                                        <span class="@utBadgeClass">
+                                            @if (!string.IsNullOrEmpty(utIcon))
+                                            {
+                                                <i class="@utIcon mr-1"></i>
+                                            }
+                                            @utLabel
+                                        </span>
+                                        @if (!string.IsNullOrWhiteSpace(row.UndertimeHoursDisplay) && row.UndertimeHoursDisplay != "—")
+                                        {
+                                            <p class="dtr-remark-text" title="@row.UndertimeHoursDisplay">@row.UndertimeHoursDisplay</p>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(row.UndertimeRemarks) && row.UndertimeRemarks != "-")
+                                        {
+                                            <p class="dtr-remark-text text-muted" title="@row.UndertimeRemarks">@row.UndertimeRemarks</p>
+                                        }
+                                        @if (row.UndertimeStatus == JustificationStatus.Approved)
+                                        {
+                                            <a class="dtr-remark-link"
+                                               href="@Url.Action("Print", "UndertimeRequest", new { id = row.LatestUndertimeRequestId })"
+                                               target="_blank">
+                                                <i class="fas fa-print mr-1"></i>Print approved form
+                                            </a>
+                                        }
+                                        else if (isPendingUndertime)
+                                        {
+                                            <span class="dtr-remark-text text-muted">
+                                                <i class="fas fa-hourglass-half"></i> Awaiting approval
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else if (rowUndertimeMins > 0)
+                                {
+                                    <div class="dtr-remark-card">
+                                        <span class="just-badge jb-required">
+                                            <i class="fas fa-exclamation-circle mr-1"></i> Not filed
+                                        </span>
+                                        <p class="dtr-remark-text">@undertimeDisplay undertime recorded</p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="dtr-remark-empty">—</span>
+                                }
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="td-actions">
+                                @{
+                                    var canJustifyTimeLog = row.AssessAttendance &&
+                                        row.JustificationStatus != JustificationStatus.Pending &&
+                                        (hasMissing || row.JustificationRequired ||
+                                         row.JustificationStatus == JustificationStatus.Rejected);
+                                    var canRequestScheduleChange = hasApprovedSchedule &&
+                                        row.ScheduleChangeStatus != JustificationStatus.Pending;
+                                    var canRequestOvertime = row.OvertimeStatus != OvertimeStatus.Pending &&
+                                        row.OvertimeStatus != OvertimeStatus.Approved;
+                                    var canFileUndertime = rowUndertimeMins > 0 &&
+                                        (row.UndertimeStatus == null || row.UndertimeStatus == JustificationStatus.Rejected);
+                                    var canPrintUndertime = row.UndertimeStatus == JustificationStatus.Approved &&
+                                        row.LatestUndertimeRequestId.HasValue;
+                                    var canArrangeTimeLog = row.HasTimeEntries;
+                                    var canViewJustificationLogs = row.LatestJustificationRequestId.HasValue;
+                                    var canViewOvertimeLogs = row.LatestOvertimeRequestId.HasValue;
+                                    var canViewUndertimeLogs = row.LatestUndertimeRequestId.HasValue;
+                                    var canReviewJustification = canReview &&
+                                        row.JustificationStatus == JustificationStatus.Pending &&
+                                        row.PendingJustificationId.HasValue;
+                                    var canReviewScheduleChange = canReviewSchedule &&
+                                        row.ScheduleChangeStatus == JustificationStatus.Pending &&
+                                        row.PendingScheduleChangeId.HasValue;
+                                    var canReviewOvertimeRequest = canReviewOvertime &&
+                                        row.OvertimeStatus == OvertimeStatus.Pending &&
+                                        row.PendingOvertimeRequestId.HasValue;
+                                    var canReviewUndertimeRequest = canReview &&
+                                        row.UndertimeStatus == JustificationStatus.Pending &&
+                                        row.PendingUndertimeRequestId.HasValue;
+                                    var hasReviewerActions = canReviewJustification ||
+                                        canReviewScheduleChange ||
+                                        canReviewOvertimeRequest ||
+                                        canReviewUndertimeRequest;
+                                    var hasRequestActions = canJustifyTimeLog ||
+                                        canRequestScheduleChange ||
+                                        canRequestOvertime ||
+                                        canFileUndertime ||
+                                        canPrintUndertime ||
+                                        canArrangeTimeLog;
+                                    var hasLogActions = canViewJustificationLogs || canViewOvertimeLogs || canViewUndertimeLogs;
+                                    var hasAnyAction = hasRequestActions || hasLogActions || hasReviewerActions;
+                                }
+                                @if (hasAnyAction)
+                                {
+                                <div class="dropdown dtr-action-menu">
+                                    <button class="btn btn-sm dropdown-toggle"
+                                            type="button"
+                                            data-toggle="dropdown"
+                                            aria-haspopup="true"
+                                            aria-expanded="false"
+                                            title="Actions">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-right">
+                                        @if (canJustifyTimeLog)
+                                        {
+                                        <a href="javascript:void(0)"
+                                           class="dropdown-item open-modal"
+                                           data-title="Justify Time Log"
+                                           data-url="/Dtr/GetJustificationForm?employeeId=@employeeId&date=@row.Date.ToString("yyyy-MM-dd")"
+                                           data-modal-type="edit"
+                                           data-size="modal-lg">
+                                            <i class="fas fa-pen fa-fw mr-2 text-muted"></i>Justify time log
+                                        </a>
+                                        }
+                                        @if (canRequestScheduleChange)
+                                        {
+                                        <a href="javascript:void(0)"
+                                           class="dropdown-item open-modal"
+                                           data-title="Request Schedule Change"
+                                           data-url="/ScheduleChangeRequest/RequestForm?employeeId=@employeeId&month=@month&year=@year&day=@row.DayNo"
+                                           data-modal-type="edit"
+                                           data-size="modal-lg">
+                                            <i class="fas fa-calendar-alt fa-fw mr-2 text-muted"></i>Request schedule change
+                                        </a>
+                                        }
+                                        @if (canRequestOvertime)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item open-modal"
+                                               data-title="Request Overtime"
+                                               data-url="@Url.Action("RequestForm", "OvertimeRequest", new { employeeId, date = row.Date.ToString("yyyy-MM-dd") })"
+                                               data-modal-type="create"
+                                               data-size="modal-lg">
+                                                <i class="fas fa-business-time fa-fw mr-2 text-muted"></i>Request overtime
+                                            </a>
+                                        }
+                                        @if (canFileUndertime)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item open-modal"
+                                               data-title="Request Undertime"
+                                               data-url="@Url.Action("RequestForm", "UndertimeRequest", new { employeeId, date = row.Date.ToString("yyyy-MM-dd"), suggestedHours = suggestedUndertimeHours })"
+                                               data-modal-type="create"
+                                               data-size="modal-lg">
+                                                <i class="fas fa-file-signature fa-fw mr-2 text-muted"></i>File undertime form
+                                            </a>
+                                        }
+                                        @if (canPrintUndertime)
+                                        {
+                                            <a class="dropdown-item"
+                                               href="@Url.Action("Print", "UndertimeRequest", new { id = row.LatestUndertimeRequestId })"
+                                               target="_blank">
+                                                <i class="fas fa-print fa-fw mr-2 text-muted"></i>Print undertime form
+                                            </a>
+                                        }
+                                        @if (canArrangeTimeLog)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item open-modal"
+                                               data-title="Arrange Time Log"
+                                               data-url="/Dtr/GetArrangeTimeLogForm?employeeId=@employeeId&date=@row.Date.ToString("yyyy-MM-dd")"
+                                               data-modal-type="edit"
+                                               data-size="modal-lg">
+                                                <i class="fas fa-arrows-alt fa-fw mr-2 text-muted"></i>Arrange time log
+                                            </a>
+                                        }
+                                        @if (hasLogActions && hasRequestActions)
+                                        {
+                                            <div class="dropdown-divider"></div>
+                                        }
+                                        @if (canViewJustificationLogs)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item open-modal"
+                                               data-title="Justification Logs"
+                                               data-url="@Url.Action("Review", "DtrJustification", new { id = row.LatestJustificationRequestId.Value })"
+                                               data-modal-type="view"
+                                               data-size="modal-xl">
+                                                <i class="fas fa-history fa-fw mr-2 text-muted"></i>View justification logs
+                                            </a>
+                                        }
+                                        @if (canViewOvertimeLogs)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item open-modal"
+                                               data-title="Overtime Request Logs"
+                                               data-url="@Url.Action("Review", "OvertimeRequest", new { id = row.LatestOvertimeRequestId.Value })"
+                                               data-modal-type="view"
+                                               data-size="modal-xl">
+                                                <i class="fas fa-history fa-fw mr-2 text-muted"></i>View overtime logs
+                                            </a>
+                                        }
+                                        @if (canViewUndertimeLogs)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item open-modal"
+                                               data-title="Undertime Request"
+                                               data-url="@Url.Action("Review", "UndertimeRequest", new { id = row.LatestUndertimeRequestId!.Value })"
+                                               data-modal-type="view"
+                                               data-size="modal-xl">
+                                                <i class="fas fa-history fa-fw mr-2 text-muted"></i>View undertime request
+                                            </a>
+                                        }
+                                        @if (hasReviewerActions && (hasRequestActions || hasLogActions))
+                                        {
+                                            <div class="dropdown-divider"></div>
+                                        }
+                                        @if (canReviewJustification)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item text-success open-modal"
+                                               data-title="Approve Justification"
+                                               data-url="/DtrJustification/Process?id=@row.PendingJustificationId&status=@((int)JustificationStatus.Approved)"
+                                               data-modal-type="create"
+                                               data-size="modal-lg">
+                                                <i class="fas fa-check fa-fw mr-2"></i>Approve justification
+                                            </a>
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item text-danger open-modal"
+                                               data-title="Reject Justification"
+                                               data-url="/DtrJustification/Process?id=@row.PendingJustificationId&status=@((int)JustificationStatus.Rejected)"
+                                               data-modal-type="create"
+                                               data-size="modal-lg">
+                                                <i class="fas fa-times fa-fw mr-2"></i>Reject justification
+                                            </a>
+                                        }
+                                        @if (canReviewScheduleChange)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item text-success open-modal"
+                                               data-title="Approve Schedule Change"
+                                               data-url="/ScheduleChangeRequest/Process?id=@row.PendingScheduleChangeId&status=@((int)JustificationStatus.Approved)"
+                                               data-modal-type="create"
+                                               data-size="modal-lg">
+                                                <i class="fas fa-check-double fa-fw mr-2"></i>Approve schedule change
+                                            </a>
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item text-danger open-modal"
+                                               data-title="Reject Schedule Change"
+                                               data-url="/ScheduleChangeRequest/Process?id=@row.PendingScheduleChangeId&status=@((int)JustificationStatus.Rejected)"
+                                               data-modal-type="create"
+                                               data-size="modal-lg">
+                                                <i class="fas fa-ban fa-fw mr-2"></i>Reject schedule change
+                                            </a>
+                                        }
+                                        @if (canReviewOvertimeRequest)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item text-success open-modal"
+                                               data-title="Approve Overtime"
+                                               data-url="/OvertimeRequest/Process?id=@row.PendingOvertimeRequestId&status=@((int)OvertimeStatus.Approved)"
+                                               data-modal-type="create"
+                                               data-size="modal-lg">
+                                                <i class="fas fa-check fa-fw mr-2"></i>Approve overtime
+                                            </a>
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item text-danger open-modal"
+                                               data-title="Reject Overtime"
+                                               data-url="/OvertimeRequest/Process?id=@row.PendingOvertimeRequestId&status=@((int)OvertimeStatus.Rejected)"
+                                               data-modal-type="create"
+                                               data-size="modal-lg">
+                                                <i class="fas fa-times fa-fw mr-2"></i>Reject overtime
+                                            </a>
+                                        }
+                                        @if (canReviewUndertimeRequest)
+                                        {
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item text-success open-modal"
+                                               data-title="Approve Undertime"
+                                               data-url="/UndertimeRequest/Process?id=@row.PendingUndertimeRequestId&status=@((int)JustificationStatus.Approved)"
+                                               data-modal-type="create"
+                                               data-size="modal-lg">
+                                                <i class="fas fa-check fa-fw mr-2"></i>Approve undertime
+                                            </a>
+                                            <a href="javascript:void(0)"
+                                               class="dropdown-item text-danger open-modal"
+                                               data-title="Reject Undertime"
+                                               data-url="/UndertimeRequest/Process?id=@row.PendingUndertimeRequestId&status=@((int)JustificationStatus.Rejected)"
+                                               data-modal-type="create"
+                                               data-size="modal-lg">
+                                                <i class="fas fa-times fa-fw mr-2"></i>Reject undertime
+                                            </a>
+                                        }
+                                    </div>
+                                </div>
+                                }
+                                else
+                                {
+                                    <span class="dtr-remark-empty">—</span>
+                                }
+                            </td>
+
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="dtr-footer-row">
+                        <td colspan="2" class="dtr-footer-label">
+                            <i class="fas fa-sigma mr-1"></i> Period Total
+                        </td>
+                        <td colspan="4"></td>
+                        <td class="td-metric">
+                            @if (totalWorkedHours > 0)
+                            {
+                                <span class="mbadge-worked dtr-footer-metric">@totalWorkedHours.ToString("0.##")</span>
+                            }
+                            else
+                            {
+                                <span class="metric-zero">—</span>
+                            }
+                        </td>
+                        <td class="td-metric">
+                            @if (totalTardinessMins > 0)
+                            {
+                                <span class="mbadge-tard dtr-footer-metric">@FormatMetricTotal(totalTardinessMins)</span>
+                            }
+                            else
+                            {
+                                <span class="metric-zero">—</span>
+                            }
+                        </td>
+                        <td class="td-metric">
+                            @if (totalUndertimeMins > 0)
+                            {
+                                <span class="mbadge-under dtr-footer-metric">@FormatMetricTotal(totalUndertimeMins)</span>
+                            }
+                            else
+                            {
+                                <span class="metric-zero">—</span>
+                            }
+                        </td>
+                        <td class="td-metric">
+                            @if (totalNdHours > 0)
+                            {
+                                <span class="mbadge-nd dtr-footer-metric">@totalNdHours.ToString("0.##")</span>
+                            }
+                            else
+                            {
+                                <span class="metric-zero">—</span>
+                            }
+                        </td>
+                        <td colspan="5"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    }
+    else
+    {
+        // Empty state - show a nice message but still visible
+        <div class="dtr-empty-hero py-4">
+            <div><i class="fas fa-calendar-day d-block"></i></div>
+            <h6 class="text-muted mb-1">No DTR records for @periodLabel</h6>
+            <p class="text-muted small mb-0">No time logs or schedule data available for this period.</p>
+        </div>
+    }
+</div>

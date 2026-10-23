@@ -1,0 +1,21 @@
+@model DeductionTypeViewModel
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <p>Are you sure you want to delete this deduction type?</p>
+            <dl class="row">
+                <dt class="col-sm-4">Code:</dt>
+                <dd class="col-sm-8">@Model.Code</dd>
+
+                <dt class="col-sm-4">Name:</dt>
+                <dd class="col-sm-8">@Model.Name</dd>
+            </dl>
+
+            <form asp-action="Delete" method="post" asp-antiforgery="true" id="deductionTypeDeleteForm">
+                <input type="hidden" asp-for="Id" />
+            </form>
+        </div>
+    </div>
+</div>
+

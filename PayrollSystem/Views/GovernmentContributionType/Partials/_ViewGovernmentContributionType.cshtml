@@ -1,0 +1,65 @@
+@model GovernmentContributionTypeViewModel
+
+<div class="container-fluid">
+    <table class="table table-bordered table-hover">
+        <tr>
+            <th class="bg-light">Code</th>
+            <td>@Model.Code</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Name</th>
+            <td>@Model.Name</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Description</th>
+            <td>@Model.Description</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Is Mandatory</th>
+            <td>
+                @if (Model.IsMandatory == true)
+                {
+                    <span class="badge bg-success">Yes</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">No</span>
+                }
+            </td>
+        </tr>
+        <tr>
+            <th class="bg-light">Has Employer Share</th>
+            <td>
+                @if (Model.HasEmployerShare == true)
+                {
+                    <span class="badge bg-success">Yes</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">No</span>
+                }
+            </td>
+        </tr>
+        <tr>
+            <th class="bg-light">Calculation Method</th>
+            <td>@Model.CalculationMethod</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Display Order</th>
+            <td>@Model.DisplayOrder</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Status</th>
+            <td>
+                @if (Model.IsActive == true)
+                {
+                    <span class="badge bg-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Inactive</span>
+                }
+            </td>
+        </tr>
+    </table>
+</div>

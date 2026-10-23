@@ -1,0 +1,149 @@
+@model PayslipViewModel
+
+@{
+    ViewData["Title"] = "Payslip - " + Model.PayslipNumber;
+    ViewBag.ActiveMenu = "Payslip";
+    ViewData["PreviewTitle"] = "Payslip Document Preview";
+    Layout = "_Layout";
+}
+
+<style>
+    @@media print {
+        .content-header, .btn-group, .card-header, .breadcrumb {
+            display: none !important;
+        }
+        .card {
+            border: none !important;
+        }
+        .card-body {
+            padding: 0 !important;
+        }
+    }
+</style>
+
+<section class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>@ViewData["Title"]</h1>
+                <p class="mb-0 text-muted">@Model.EmployeeName · @Model.PayrollPeriodName</p>
+            </div>
+            <div class="col-sm-6">
+                <ol class="breadcrumb float-sm-right">
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                    <li class="breadcrumb-item"><a asp-controller="Payslip" asp-action="Index">Payslips</a></li>
+                    <li class="breadcrumb-item active">View Payslip</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline rounded-0 card-info mx-2 px-2">
+            <div class="card-header">
+                <h3 class="card-title m-0"><i class="fas fa-file-invoice-dollar mr-2"></i> Payslip</h3>
+                <div class="card-tools">
+                    <a asp-controller="Payslip" asp-action="Index" class="btn btn-tool btn-sm">
+                        <i class="fas fa-arrow-left"></i> Back to Payslips
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="payslipPreviewContainer" class="container-fluid mt-2">
+                    @{
+                        ViewData["ShowZoomControls"] = true;
+                        ViewData["ShowPrintButton"] = true;
+                        ViewData["ShowExportButton"] = false;
+                        ViewData["DocumentOrientation"] = "portrait";
+                        ViewData["DocumentFormat"] = "A4";
+                    }
+                    <partial name="~/Views/Shared/_DocumentPreview.cshtml" />
+                </div>
+
+                <div id="noDataFoundMessage" class="text-center py-5" style="display: none;">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h5 class="text-muted">Unable to load payslip</h5>
+                    <p class="text-muted">Please try again or return to <a asp-controller="Payslip" asp-action="Index">Payslips</a>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-spinner">
+        <div class="spinner-grow text-info" role="status" style="width: 3rem; height: 3rem;">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <h5 class="mt-3 mb-2" style="color: #2c3e50;">Loading Payslip</h5>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">Please wait...</p>
+    </div>
+</div>
+
+<style>
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .loading-spinner {
+        text-align: center;
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var payrollEntryId = @Model.PayrollEntryId;
+
+            function loadPayslipDocument() {
+                if (!payrollEntryId) {
+                    $('#noDataFoundMessage').show();
+                    return;
+                }
+                $('#loadingOverlay').show();
+                $('#noDataFoundMessage').hide();
+
+                $.ajax({
+                    url: '@Url.Action("GetPayslipDocument", "Payslip")',
+                    type: 'GET',
+                    data: { payrollEntryId: payrollEntryId },
+                    success: function (data) {
+                        $('#loadingOverlay').hide();
+                        if (data && data.trim() !== '') {
+                            $('#payslipPreviewContainer').show();
+                            $('#document-content').html(data);
+                            $(document).trigger('documentContentLoaded');
+                        } else {
+                            $('#noDataFoundMessage').show();
+                        }
+                    },
+                    error: function () {
+                        $('#loadingOverlay').hide();
+                        $('#noDataFoundMessage').show();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error loading payslip. Please try again.'
+                        });
+                    }
+                });
+            }
+
+            loadPayslipDocument();
+        });
+    </script>
+}

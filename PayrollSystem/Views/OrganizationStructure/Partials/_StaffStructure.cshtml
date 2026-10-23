@@ -1,0 +1,216 @@
+@model OrganizationStaffViewModel
+@{
+    var staffParentModal = ViewData["StaffParentModal"] as string;
+}
+<div class="container-fluid p-0" id="staffStructurePanel" data-unit-id="@Model.Unit.Id">
+    <div class="org-info-banner">
+        <i class="fas fa-info-circle"></i>
+        <div>
+            Assign employees to this unit on the <strong>Staff</strong> tab.
+            Set <strong>Primary schedule unit</strong> for who appears on this unit's monthly work schedule.
+            Assign leadership and functional roles (Scheduler, Schedule Approver, HR Approver, etc.) on the <strong>Roles</strong> tab — these drive approval workflows.
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs org-staff-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#staffEmployeesTab" role="tab">
+                <i class="fas fa-users mr-1"></i> Staff
+                <span class="badge badge-primary ml-1">@Model.ActiveEmployeeCount</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#staffRolesTab" role="tab">
+                <i class="fas fa-user-tag mr-1"></i> Roles
+                <span class="badge badge-info ml-1">@Model.ActiveRoleCount</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="tab-content org-staff-panel">
+        <div class="tab-pane fade show active" id="staffEmployeesTab" role="tabpanel">
+            <div class="org-section-header">
+                <h6><i class="fas fa-users mr-1 text-primary"></i> Employee assignments</h6>
+                <a href="javascript:void(0)" class="btn btn-sm btn-primary open-modal org-staff-child-modal"
+                   data-title="Assign Employee"
+                   data-url="@Url.Action("AddEmployeeAssignment", new { organizationStructureId = Model.Unit.Id })"
+                   data-modal-type="create"
+                   data-parent-modal="@staffParentModal"
+                   asp-permission="ORGANIZATIONSTRUCTURE_VIEW">
+                    <i class="fas fa-user-plus mr-1"></i> Assign Employee
+                </a>
+            </div>
+
+            @if (Model.Employees.Any())
+            {
+                <div class="org-card-list">
+                    @foreach (var row in Model.Employees)
+                    {
+                        <div class="org-person-card @(row.IsActive ? "" : "is-inactive")">
+                            <div class="d-flex align-items-start gap-2" style="gap:0.75rem;flex:1;min-width:0;">
+                                <div class="org-person-avatar"><i class="fas fa-user"></i></div>
+                                <div class="org-person-info">
+                                    <p class="org-person-name mb-0">@row.EmployeeName</p>
+                                    <div class="org-person-meta">
+                                        ID @row.EmployeeIdNumber
+                                        @if (!string.IsNullOrWhiteSpace(row.DesignationName))
+                                        {
+                                            <span> · @row.DesignationName</span>
+                                        }
+                                    </div>
+                                    <div class="org-person-meta mt-1">
+                                        @row.EffectiveFrom.ToString("MMM d, yyyy")
+                                        @if (row.EffectiveTo.HasValue)
+                                        {
+                                            <span> → @row.EffectiveTo.Value.ToString("MMM d, yyyy")</span>
+                                        }
+                                        ·
+                                        @if (row.IsPrimary)
+                                        {
+                                            <span class="badge badge-primary badge-sm">Primary schedule unit</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-light text-muted badge-sm">Secondary</span>
+                                        }
+                                        ·
+                                        <span class="badge badge-sm @(row.IsActive ? "badge-success" : "badge-secondary")">
+                                            @(row.IsActive ? "Active" : "Ended")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="org-card-actions">
+                                @if (row.IsActive)
+                                {
+                                    <a href="javascript:void(0)" class="btn btn-xs btn-outline-primary open-modal org-staff-child-modal"
+                                       data-title="Edit Assignment"
+                                       data-url="@Url.Action("EditEmployeeAssignment", new { id = row.Id })"
+                                       data-modal-type="edit"
+                                       data-parent-modal="@staffParentModal"
+                                       asp-permission="ORGANIZATIONSTRUCTURE_VIEW">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-xs btn-outline-warning org-end-assignment"
+                                            data-url="@Url.Action("EndEmployeeAssignment")"
+                                            data-id="@row.Id"
+                                            asp-permission="ORGANIZATIONSTRUCTURE_VIEW"
+                                            title="End assignment">
+                                        <i class="fas fa-calendar-times"></i>
+                                    </button>
+                                }
+                                <button type="button" class="btn btn-xs btn-outline-danger org-remove-assignment"
+                                        data-url="@Url.Action("RemoveEmployeeAssignment")"
+                                        data-id="@row.Id"
+                                        asp-permission="ORGANIZATIONSTRUCTURE_VIEW"
+                                        title="Remove">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="org-empty-state py-4">
+                    <div><i class="fas fa-user-plus d-block"></i></div>
+                    <p class="mb-0">No employees assigned to this unit yet.</p>
+                </div>
+            }
+        </div>
+
+        <div class="tab-pane fade" id="staffRolesTab" role="tabpanel">
+            <div class="org-section-header">
+                <h6><i class="fas fa-user-tag mr-1 text-info"></i> Leadership &amp; functional roles</h6>
+                <a href="javascript:void(0)" class="btn btn-sm btn-primary open-modal org-staff-child-modal"
+                   data-title="Assign Role"
+                   data-url="@Url.Action("AddRoleAssignment", new { organizationStructureId = Model.Unit.Id })"
+                   data-modal-type="create"
+                   data-parent-modal="@staffParentModal"
+                   asp-permission="ORGANIZATIONSTRUCTURE_VIEW">
+                    <i class="fas fa-user-tag mr-1"></i> Assign Role
+                </a>
+            </div>
+
+            @if (Model.Roles.Any())
+            {
+                <div class="org-card-list">
+                    @foreach (var row in Model.Roles)
+                    {
+                        <div class="org-role-card @(row.IsActive ? "" : "is-inactive")">
+                            <div class="d-flex align-items-start gap-2" style="gap:0.75rem;flex:1;min-width:0;">
+                                <div class="org-role-icon"><i class="fas fa-id-badge"></i></div>
+                                <div class="org-role-info">
+                                    <p class="org-role-name mb-0">@row.RoleDisplayName</p>
+                                    <div class="org-role-meta">@row.EmployeeName · ID @row.EmployeeIdNumber</div>
+                                    <div class="org-role-meta mt-1">
+                                        @row.EffectiveFrom.ToString("MMM d, yyyy")
+                                        @if (row.EffectiveTo.HasValue)
+                                        {
+                                            <span> → @row.EffectiveTo.Value.ToString("MMM d, yyyy")</span>
+                                        }
+                                        ·
+                                        <span class="badge badge-sm @(row.IsActive ? "badge-success" : "badge-secondary")">
+                                            @(row.IsActive ? "Active" : "Inactive")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="org-card-actions">
+                                @if (row.IsActive)
+                                {
+                                    <a href="javascript:void(0)" class="btn btn-xs btn-outline-primary open-modal org-staff-child-modal"
+                                       data-title="Edit Role"
+                                       data-url="@Url.Action("EditRoleAssignment", new { id = row.Id })"
+                                       data-modal-type="edit"
+                                       data-parent-modal="@staffParentModal"
+                                       asp-permission="ORGANIZATIONSTRUCTURE_VIEW">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-xs btn-outline-warning org-end-role"
+                                            data-url="@Url.Action("EndRoleAssignment")"
+                                            data-id="@row.Id"
+                                            asp-permission="ORGANIZATIONSTRUCTURE_VIEW"
+                                            title="End role">
+                                        <i class="fas fa-calendar-times"></i>
+                                    </button>
+                                }
+                                <button type="button" class="btn btn-xs btn-outline-danger org-remove-role"
+                                        data-url="@Url.Action("RemoveRoleAssignment")"
+                                        data-id="@row.Id"
+                                        asp-permission="ORGANIZATIONSTRUCTURE_VIEW"
+                                        title="Remove">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="org-empty-state py-4">
+                    <div><i class="fas fa-user-tag d-block"></i></div>
+                    <p class="mb-2">No roles assigned yet.</p>
+                    <p class="small text-muted mb-0">Assign Schedule Approver, HR Approver, Department Head, and other roles so approval workflows can route correctly.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var unitId = @Model.Unit.Id;
+        window.ORG_UNIT_ID = unitId;
+        window.ORG_STAFF_URL = '@Url.Action("Staff", new { id = Model.Unit.Id })';
+        if (typeof window.ORG_IS_FULL_PAGE === 'undefined') {
+            window.ORG_IS_FULL_PAGE = false;
+        }
+        var $viewModal = $('#viewModal');
+        if ($viewModal.length) {
+            $viewModal.data('self-refresh-url', window.ORG_STAFF_URL);
+        }
+    })();
+</script>

@@ -1,0 +1,35 @@
+@model PayrollRun
+
+<div class="modal-header">
+    <h5 class="modal-title" id="generatePayslipsModalLabel">Confirm Payslip Generation</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<div class="modal-body">
+    <p>Are you sure you want to generate payslips for all processed entries in payroll run <strong>@Model.Name</strong> (Period: @Model.PayrollPeriod.PeriodRange)?</p>
+    <p class="text-info">Payslips will only be generated for entries that have been successfully processed and do not already have a payslip.</p>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+    <button type="button" class="btn btn-success" onclick="confirmGeneratePayslips(@Model.Id)">Generate Payslips</button>
+</div>
+
+<script>
+    function confirmGeneratePayslips(payrollRunId) {
+        $.post('@Url.Action("GeneratePayslips", "Payslip")', { payrollRunId: payrollRunId })
+            .done(function (response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Payslips generated successfully');
+                    $('#generalModal').modal('hide'); 
+                    $('#payslipsTable').DataTable().ajax.reload(); 
+                } else {
+                    toastr.error(response.message || 'An error occurred');
+                }
+            })
+            .fail(function (xhr) {
+                var response = xhr.responseJSON;
+                toastr.error(response?.message || 'An error occurred while generating payslips');
+            });
+    }
+</script>

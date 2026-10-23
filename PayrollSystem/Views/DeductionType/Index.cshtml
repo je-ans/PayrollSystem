@@ -1,0 +1,118 @@
+@model IEnumerable<DeductionType>
+
+@{
+    ViewData["Title"] = "Deduction Types";
+    ViewBag.ActiveMenu = "DeductionType";
+    ViewBag.ActiveLink = "DeductionType";
+    ViewBag.ActiveMainMenu = "";
+}
+
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+                    <div class="card-header d-flex align-items-center">
+                        <div class="flex-grow-1 d-flex justify-content-start">
+                            <h3 class="card-title m-0">Deduction Types</h3>
+                        </div>
+                        <div class="card-tools d-flex align-items-center">
+                            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+                               data-title="Add Deduction Type"
+                               data-url="/DeductionType/Create"
+                               data-modal-type="create">
+                                <i class="fas fa-plus"></i>
+                                <span class="d-none d-lg-inline">Add Deduction Type</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table id="deductionTypesTable" class="table table-hover table-striped table-bordered" width="100%">
+                            <thead>
+                                <tr class="text-center">
+                                    <th>No.</th>
+                                    <th>Code</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>System</th>
+                                    <th>Order</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var table = $('#deductionTypesTable').DataTable({
+                ajax: {
+                    url: '@Url.Action("GetDeductionTypes", "DeductionType")',
+                    type: 'GET'
+                },
+                columns: [
+                    {
+                        data: null,
+                        render: function (data, type, row, meta) {
+                            return meta.row + 1;
+                        },
+                        className: 'text-center',
+                        orderable: false
+                    },
+                    { data: 'code' },
+                    { data: 'name' },
+                    { data: 'description' },
+                    {
+                        data: 'isSystem',
+                        render: function (data) {
+                            return data ? '<span class="badge bg-info">Yes</span>' : '<span class="badge bg-secondary">No</span>';
+                        },
+                        className: 'text-center'
+                    },
+                    { data: 'displayOrder', className: 'text-center' },
+                    {
+                        data: 'id',
+                        orderable: false,
+                        render: function (data, type, row) {
+                            return `
+                                <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                    Action
+                                    <span class="sr-only">Toggle Dropdown</span>
+                                </button>
+                                <div class="dropdown-menu" role="menu">
+                                    <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                       data-title="Edit Deduction Type"
+                                       data-url="/DeductionType/Edit/${data}"
+                                       data-modal-type="edit">
+                                        <i class="fa fa-edit mr-2 text-primary"></i>
+                                        <span>Edit</span>
+                                    </a>
+                                    <div class="dropdown-divider"></div>
+                                    <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                       data-title="Delete Deduction Type"
+                                       data-url="/DeductionType/Delete/${data}"
+                                       data-modal-type="delete_data">
+                                        <i class="fa fa-trash mr-2 text-danger"></i>
+                                        <span>Delete</span>
+                                    </a>
+                                </div>
+                            `;
+                        },
+                        className: 'text-center'
+                    }
+                ],
+                responsive: true,
+                lengthChange: true,
+                autoWidth: false
+            });
+        });
+    </script>
+}
+

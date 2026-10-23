@@ -1,0 +1,433 @@
+/* ── Holiday & Working Calendar UI ── */
+
+.hc-page .hc-intro {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+.hc-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.15rem;
+}
+
+.hc-search {
+    flex: 1;
+    min-width: 200px;
+    max-width: 320px;
+    position: relative;
+}
+
+.hc-search i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+}
+
+.hc-search input {
+    padding-left: 2.25rem;
+    border-radius: 8px;
+}
+
+.hc-year-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.hc-year-select label {
+    margin: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.hc-year-select select {
+    border-radius: 8px;
+    min-width: 5.5rem;
+}
+
+.hc-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.hc-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+.hc-stat-pill--holiday {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+    color: #047857;
+}
+
+.hc-stat-pill--rest {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #475569;
+}
+
+.hc-stat-pill--work {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.hc-empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #64748b;
+}
+
+.hc-empty-state i {
+    font-size: 2.5rem;
+    color: #cbd5e1;
+    margin-bottom: 0.75rem;
+}
+
+.hc-empty-state h5 {
+    color: #0f172a;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+}
+
+.hc-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.hc-pill--regular { background: #dcfce7; color: #15803d; }
+.hc-pill--special { background: #ffedd5; color: #c2410c; }
+.hc-pill--company { background: #e0e7ff; color: #4338ca; }
+.hc-pill--daytype { background: #eff6ff; color: #1d4ed8; }
+.hc-pill--muted { background: #f1f5f9; color: #475569; }
+.hc-pill--active { background: #dcfce7; color: #15803d; }
+.hc-pill--inactive { background: #f1f5f9; color: #64748b; }
+
+/* Compact holiday table — scales with many rows */
+.hc-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.hc-table thead th {
+    border-top: none;
+    border-bottom: 1px solid #e2e8f0;
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.55rem 0.75rem;
+    background: #f8fafc;
+    white-space: nowrap;
+}
+
+.hc-table tbody td {
+    vertical-align: middle;
+    padding: 0.7rem 0.75rem;
+    border-top: 1px solid #f1f5f9;
+    border-bottom: 1px solid #f1f5f9;
+    background: #fff;
+}
+
+.hc-table tbody tr:hover td {
+    background: #f8fafc;
+}
+
+.hc-table tbody tr.is-inactive td {
+    opacity: 0.65;
+}
+
+.hc-table tbody tr td:first-child {
+    border-left: 1px solid #e2e8f0;
+    border-radius: 8px 0 0 8px;
+}
+
+.hc-table tbody tr td:last-child {
+    border-right: 1px solid #e2e8f0;
+    border-radius: 0 8px 8px 0;
+}
+
+.hc-row-date strong {
+    display: block;
+    font-size: 0.92rem;
+    color: #0f172a;
+    line-height: 1.2;
+}
+
+.hc-row-date span {
+    display: block;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    margin-top: 0.1rem;
+}
+
+.hc-row-name {
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.95rem;
+}
+
+.hc-table .btn {
+    border-radius: 6px;
+}
+
+/* Working calendar */
+.hc-month-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.hc-month-nav .btn {
+    border-radius: 8px;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hc-month-label {
+    min-width: 9.5rem;
+    text-align: center;
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 1rem;
+}
+
+.hc-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    font-size: 0.78rem;
+    color: #64748b;
+}
+
+.hc-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.hc-legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+}
+
+.hc-legend-swatch.work { background: #fff; border-color: #e2e8f0; }
+.hc-legend-swatch.weekend { background: #f8fafc; border-color: #e2e8f0; }
+.hc-legend-swatch.rest { background: #f1f5f9; border-color: #e2e8f0; }
+.hc-legend-swatch.holiday-regular { background: #ecfdf5; border-color: #a7f3d0; }
+.hc-legend-swatch.holiday-special { background: #fff7ed; border-color: #fdba74; }
+.hc-legend-swatch.holiday-company { background: #eef2ff; border-color: #c7d2fe; }
+
+.hc-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.hc-dow {
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #94a3b8;
+    padding: 0.35rem 0;
+}
+
+.hc-cell {
+    min-height: 110px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.5rem 0.55rem;
+    background: #fff;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.hc-cell.is-empty {
+    background: transparent;
+    border-color: transparent;
+    min-height: 0;
+    padding: 0;
+}
+
+.hc-cell.is-weekend:not(.is-holiday) {
+    background: #f8fafc;
+}
+
+.hc-cell.is-rest:not(.is-holiday) {
+    background: #f1f5f9;
+}
+
+.hc-cell.is-holiday.is-regular {
+    background: #ecfdf5;
+    border-color: #6ee7b7;
+}
+
+.hc-cell.is-holiday.is-special {
+    background: #fff7ed;
+    border-color: #fdba74;
+}
+
+.hc-cell.is-holiday.is-company {
+    background: #eef2ff;
+    border-color: #a5b4fc;
+}
+
+.hc-cell.is-today {
+    box-shadow: inset 0 0 0 2px #3b82f6;
+}
+
+.hc-cell:not(.is-empty):hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.hc-cell-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+}
+
+.hc-daynum {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #0f172a;
+    line-height: 1;
+}
+
+.hc-lock {
+    color: #94a3b8;
+    font-size: 0.7rem;
+}
+
+.hc-cell-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+    min-height: 0;
+}
+
+.hc-code {
+    display: inline-block;
+    align-self: flex-start;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+/* Holiday event chip inside the day cell */
+.hc-hol-chip {
+    margin-top: auto;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.25;
+    padding: 0.28rem 0.4rem;
+    border-radius: 6px;
+    color: #065f46;
+    background: rgba(16, 185, 129, 0.18);
+    border-left: 3px solid #10b981;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+}
+
+.hc-cell.is-special .hc-hol-chip {
+    color: #9a3412;
+    background: rgba(249, 115, 22, 0.16);
+    border-left-color: #f97316;
+}
+
+.hc-cell.is-company .hc-hol-chip {
+    color: #3730a3;
+    background: rgba(99, 102, 241, 0.16);
+    border-left-color: #6366f1;
+}
+
+/* Form polish inside modals */
+.hc-form-hint {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 767.98px) {
+    .hc-cell {
+        min-height: 88px;
+        padding: 0.35rem;
+    }
+
+    .hc-hol-chip {
+        font-size: 0.65rem;
+        padding: 0.2rem 0.3rem;
+        -webkit-line-clamp: 2;
+    }
+
+    .hc-table thead {
+        display: none;
+    }
+
+    .hc-table tbody tr {
+        display: block;
+        margin-bottom: 0.75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.65rem 0.75rem;
+        background: #fff;
+    }
+
+    .hc-table tbody td {
+        display: block;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0.2rem 0;
+        background: transparent !important;
+    }
+
+    .hc-table tbody td.text-right {
+        text-align: left !important;
+        margin-top: 0.4rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #f1f5f9 !important;
+    }
+}

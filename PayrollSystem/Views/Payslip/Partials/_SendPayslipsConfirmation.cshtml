@@ -1,0 +1,35 @@
+@model PayrollRun
+
+<div class="modal-header">
+    <h5 class="modal-title" id="sendPayslipsModalLabel">Confirm Payslip Sending</h5>
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+<div class="modal-body">
+    <p>Are you sure you want to send payslips to employees for payroll run <strong>@Model.Name</strong> (Period: @Model.PayrollPeriod.PeriodRange)?</p>
+    <p class="text-info">Only payslips that have been generated and not yet sent will be processed.</p>
+</div>
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+    <button type="button" class="btn btn-primary" onclick="confirmSendPayslips(@Model.Id)">Send Payslips</button>
+</div>
+
+<script>
+    function confirmSendPayslips(payrollRunId) {
+        $.post('@Url.Action("SendPayslips", "Payslip")', { payrollRunId: payrollRunId })
+            .done(function (response) {
+                if (response.success) {
+                    toastr.success(response.message || 'Payslips sent successfully');
+                    $('#generalModal').modal('hide'); 
+                    $('#payslipsTable').DataTable().ajax.reload();
+                } else {
+                    toastr.error(response.message || 'An error occurred');
+                }
+            })
+            .fail(function (xhr) {
+                var response = xhr.responseJSON;
+                toastr.error(response?.message || 'An error occurred while sending payslips');
+            });
+    }
+</script>

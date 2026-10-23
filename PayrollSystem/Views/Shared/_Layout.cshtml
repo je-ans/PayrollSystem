@@ -1,0 +1,1666 @@
+@using PayrollSystem.Data
+@using PayrollSystem.Utility
+@using Microsoft.AspNetCore.Identity
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext DbContext
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment hostingEnvironment
+
+@if (User?.Identity != null && User.Identity.IsAuthenticated)
+{
+    @* ============================================
+       PERMISSION CHECKING & USER DATA INITIALIZATION
+       ============================================ *@
+
+    // Removed as asp-permission Tag Helper handles this.
+    // var allUserPermissions = User.FindFirst("UserPermission")?.Value ?? "";
+    // var tokens = new HashSet<string>((allUserPermissions ?? string.Empty)
+    //     .Split('|', StringSplitOptions.RemoveEmptyEntries)
+    //     .Select(t => t.Trim().ToUpperInvariant()));
+
+    // bool Has(string p)
+    // {
+    //     var target = (p ?? string.Empty).Trim().ToUpperInvariant();
+    //     if (string.IsNullOrEmpty(target)) return false;
+    //     if (tokens.Contains(target)) return true;
+    //     if (tokens.Any(t => t.StartsWith(target + ":"))) return true;
+    //     return false;
+    // }
+
+    // Permission Flags - Removed in favor of asp-permission Tag Helper
+    // var canViewDashboard = Has("DASHBOARD");
+    // var canViewBuildUp = Has("BUILD-UP");
+    // var canViewUserManagement = Has("USER_MANAGEMENT");
+    // var canViewAuditTrails = Has("AUDIT_TRAILS");
+    // var canViewSystemSettings = Has("SETTINGS");
+
+    @* User Information *@
+    var user = await UserManager.GetUserAsync(User);
+    if (user != null)
+    {
+        await DbContext.Entry(user).Reference(u => u.Designation).LoadAsync();
+    }
+
+    var fullName = user != null ? $"{user.FirstName} {user.LastName}" : "Guest";
+    var designation = user?.Designation?.DesignationName ?? "No Designation";
+    var profilePicture = user != null && !string.IsNullOrEmpty(user.ProfilePicture)
+       ? Url.Content("~/uploads/" + user.ProfilePicture)
+       : Url.Content("~/image/default_user.png");
+    var canViewEmployeePortal = await EmployeePortalHelper.CanViewEmployeePortalAsync(UserManager, DbContext, User);
+
+    @* System Information *@
+    var systemInfo = DbContext.SystemInfos
+        .Where(s => !s.IsDeleted)
+        .FirstOrDefault();
+
+    var systemShortName = systemInfo?.ShortName ?? "SystemName";
+    var systemLogoUrl = !string.IsNullOrEmpty(systemInfo?.LogoUrl)
+        ? Url.Content(systemInfo.LogoUrl)
+        : Url.Content("~/favicon.ico");
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>@ViewData["Title"] | @systemShortName</title>
+        <link rel="icon" type="image/x-icon" href="@systemLogoUrl" />
+        <link rel="manifest" href="@Url.Action("GetManifest", "Manifest")">
+        <meta name="theme-color" content="#6b5aed">
+
+        <partial name="_PluginLinks" />
+        <partial name="_ModalLayout" />
+
+        <style>
+            /* ============================================
+            ENHANCED SIDEBAR STYLES - Purple/Blue Gradient Theme
+            ============================================ */
+            .main-sidebar {
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                background: linear-gradient(135deg, #3a2c6d 0%, #4a3c8d 30%, #5a4cad 70%, #6a5ccd 100%), radial-gradient(circle at 20% 80%, rgba(120, 100, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(200, 100, 255, 0.08) 0%, transparent 50%);
+                position: relative;
+                overflow: hidden;
+            }
+
+                .main-sidebar::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: linear-gradient(45deg, transparent 65%, rgba(255, 255, 255, 0.03) 65%), linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%);
+                    pointer-events: none;
+                }
+
+            .sidebar {
+                flex-grow: 1;
+                overflow-y: auto;
+                overflow-x: hidden;
+                padding: 0.5rem;
+                position: relative;
+                z-index: 1;
+            }
+
+            .user-info {
+                background: linear-gradient(135deg, #4659af 0%, #703bbf 100%) !important;
+                padding: 1.5rem 1rem !important;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(255, 255, 255, 0.1) inset, 0 -2px 4px rgba(0, 0, 0, 0.1) inset;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                position: relative;
+                overflow: hidden;
+                z-index: 1070;
+            }
+
+                .user-info::before {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    height: 1px;
+                    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%);
+                }
+
+                .user-info .image-wrapper {
+                    position: relative;
+                    margin-bottom: 1rem;
+                }
+
+                .user-info .border-effect {
+                    transition: transform 0.3s ease;
+                }
+
+                    .user-info .border-effect:hover {
+                        transform: scale(1.05);
+                    }
+
+                .user-info img {
+                    border: 3px solid rgba(255, 255, 255, 0.8) !important;
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+                    transition: all 0.3s ease;
+                }
+
+                    .user-info img:hover {
+                        border-color: #fff !important;
+                        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+                    }
+
+                .user-info .name {
+                    font-size: 1rem;
+                    font-weight: 700;
+                    margin-bottom: 0.25rem;
+                    color: white;
+                    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+                    letter-spacing: 0.5px;
+                }
+
+                .user-info .email {
+                    font-size: 0.8rem;
+                    color: rgba(255, 255, 255, 0.9) !important;
+                    font-weight: 500;
+                    opacity: 0.9;
+                }
+
+            .nav-sidebar > .nav-item > .nav-link {
+                display: flex;
+                align-items: center;
+                border-radius: 12px;
+                margin-bottom: 6px;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                color: #e6e8ff;
+                position: relative;
+                overflow: visible;
+                border: 1px solid transparent;
+                background: rgba(255, 255, 255, 0.05);
+                backdrop-filter: blur(5px);
+                padding: 0.75rem 1rem;
+            }
+
+                .nav-sidebar > .nav-item > .nav-link:hover {
+                    background: rgba(255, 255, 255, 0.12);
+                    color: white;
+                    transform: translateX(5px) scale(1.02);
+                    border-color: rgba(255, 255, 255, 0.2);
+                    box-shadow: 0 4px 15px rgba(107, 90, 237, 0.3);
+                }
+
+                .nav-sidebar > .nav-item > .nav-link.active {
+                    background: linear-gradient(135deg, #6b5aed 0%, #8a7bec 100%);
+                    color: white;
+                    box-shadow: 0 6px 20px rgba(107, 90, 237, 0.4), 0 2px 4px rgba(255, 255, 255, 0.2) inset;
+                    border-color: rgba(255, 255, 255, 0.3);
+                    animation: gentleGlow 3s ease-in-out infinite;
+                }
+
+                    .nav-sidebar > .nav-item > .nav-link.active::before {
+                        content: '';
+                        position: absolute;
+                        left: -8px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        height: 40%;
+                        width: 3px;
+                        background: #fff;
+                        border-radius: 0 3px 3px 0;
+                        box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+                    }
+
+            .nav-sidebar .nav-icon {
+                font-size: 1.2rem;
+                width: 24px;
+                text-align: center;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                margin-right: 0.75rem;
+                filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2));
+            }
+
+            /* Collapsed Sidebar States */
+            .sidebar-collapse .main-sidebar .nav-sidebar > .nav-item > .nav-link > p,
+            .sidebar-collapse .main-sidebar .nav-header,
+            .sidebar-collapse .main-sidebar .nav-treeview .nav-link > p {
+                display: none !important;
+            }
+
+            .sidebar-collapse .main-sidebar:hover .nav-sidebar > .nav-item > .nav-link > p,
+            .sidebar-collapse .main-sidebar:hover .nav-header,
+            .sidebar-collapse .main-sidebar:hover .nav-treeview .nav-link > p {
+                display: block !important;
+            }
+
+            /* Enhanced Text and Caret Positioning */
+            .nav-sidebar > .nav-item > .nav-link > p {
+                margin: 0 !important;
+                flex: 1;
+                display: block !important;
+                line-height: normal;
+                padding: 0 !important;
+                padding-right: 20px !important;
+                position: relative;
+                font-weight: 500;
+            }
+
+                /* Right Chevron - Perfectly Centered */
+                .nav-sidebar > .nav-item > .nav-link > p > .right,
+                .nav-sidebar > .nav-item > .nav-link > p > i.right {
+                    position: absolute !important;
+                    right: 0 !important;
+                    top: 50% !important;
+                    transform: translateY(-50%) !important;
+                    transition: transform 0.3s ease;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    line-height: 1 !important;
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    font-size: 0.9rem;
+                    opacity: 0.8;
+                }
+
+            /* Sidebar queue badges (pending approvals / requests) */
+            .nav-sidebar .navbar-queue-badge,
+            .nav-sidebar .badge.right:not(i) {
+                position: absolute !important;
+                right: 0.85rem !important;
+                top: 50% !important;
+                transform: translateY(-50%) !important;
+                font-size: 0.7rem !important;
+                font-weight: 700 !important;
+                min-width: 1.35rem;
+                height: 1.35rem;
+                line-height: 1.35rem !important;
+                padding: 0 0.4rem !important;
+                border-radius: 999px !important;
+                display: inline-flex !important;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.15);
+            }
+
+            .nav-sidebar > .nav-item > .nav-link > p > .navbar-queue-badge,
+            .nav-sidebar > .nav-item > .nav-link > p > .badge.right:not(i) {
+                @* right: 1.65rem !important; *@
+            }
+
+            .nav-treeview .nav-link > p {
+                position: relative;
+                padding-right: 2.25rem !important;
+            }
+
+            .nav-item.menu-open > .nav-link > p > .right,
+            .nav-item.menu-open > .nav-link > p > i.right {
+                transform: translateY(-50%) rotate(-90deg) !important;
+                opacity: 1;
+            }
+
+            /* Enhanced Treeview Menu */
+            .nav-treeview {
+                padding-left: 1.5rem;
+                margin-top: 2px;
+                margin-bottom: 2px;
+            }
+
+                .nav-treeview .nav-link {
+                    display: flex;
+                    align-items: center;
+                    border-radius: 8px;
+                    padding: 0.6rem 1rem;
+                    margin: 3px 0;
+                    font-size: 0.9rem;
+                    color: #d8dcff;
+                    transition: all 0.2s ease;
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid transparent;
+                    position: relative;
+                    overflow: visible;
+                }
+
+                    .nav-treeview .nav-link:hover {
+                        background: rgba(255, 255, 255, 0.08);
+                        color: white;
+                        border-color: rgba(255, 255, 255, 0.15);
+                        transform: translateX(5px);
+                    }
+
+                    .nav-treeview .nav-link.active {
+                        background: rgba(107, 90, 237, 0.25);
+                        color: white;
+                        font-weight: 600;
+                        border-color: rgba(107, 90, 237, 0.4);
+                        box-shadow: 0 2px 8px rgba(107, 90, 237, 0.3);
+                    }
+
+                        .nav-treeview .nav-link.active::before {
+                            content: '';
+                            position: absolute;
+                            left: -8px;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            height: 40%;
+                            width: 2px;
+                            background: #6b5aed;
+                            border-radius: 0 2px 2px 0;
+                            box-shadow: 0 0 8px #6b5aed;
+                        }
+
+                /* Enhanced Treeview Icons */
+                .nav-treeview .nav-icon {
+                    font-size: 0.85rem;
+                    width: 18px;
+                    text-align: center;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-right: 0.5rem;
+                    opacity: 0.8;
+                }
+
+                .nav-treeview .nav-link:hover .nav-icon,
+                .nav-treeview .nav-link.active .nav-icon {
+                    opacity: 1;
+                }
+
+                .nav-treeview .nav-link > p {
+                    margin: 0;
+                    flex: 1;
+                }
+
+            /* Enhanced Nav Header */
+            .nav-header {
+                font-size: 0.75rem;
+                padding: 1rem 0.5rem 0.7rem;
+                color: rgba(255, 255, 255, 0.7);
+                text-transform: uppercase;
+                letter-spacing: 2px;
+                font-weight: 700;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+                margin: 1.2rem 0.5rem 0.7rem;
+                position: relative;
+            }
+
+                .nav-header::after {
+                    content: '';
+                    position: absolute;
+                    bottom: -1px;
+                    left: 0;
+                    width: 40px;
+                    height: 2px;
+                    background: linear-gradient(90deg, #6b5aed, transparent);
+                }
+
+            /* Custom Scrollbar */
+            .sidebar::-webkit-scrollbar {
+                width: 4px;
+            }
+
+            .sidebar::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            .sidebar::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.2);
+                border-radius: 4px;
+                transition: background 0.3s ease;
+            }
+
+                .sidebar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.35);
+                }
+
+            .sidebar {
+                scrollbar-width: thin;
+                scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+            }
+
+            /* Enhanced User Dropdown */
+            .user-info .dropdown-logout {
+                background: transparent !important;
+                border: none !important;
+                color: white !important;
+                padding: 0.25rem !important;
+                margin: 0 !important;
+                width: 28px !important;
+                height: 28px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                transition: all 0.3s ease !important;
+                border-radius: 50% !important;
+            }
+
+                .user-info .dropdown-logout:hover {
+                    transform: scale(1.15) !important;
+                    background: rgba(255, 255, 255, 0.2) !important;
+                    backdrop-filter: blur(5px) !important;
+                    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                }
+
+            .user-info .dropdown-menu {
+                margin-top: 12px !important;
+                border-radius: 10px !important;
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2) !important;
+                border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                background: rgba(255, 255, 255, 0.98) !important;
+                backdrop-filter: blur(10px) !important;
+                min-width: 180px !important;
+                padding: 0.5rem !important;
+            }
+
+            .user-info .dropdown-item {
+                border-radius: 6px !important;
+                transition: all 0.2s ease !important;
+                padding: 0.6rem 1rem !important;
+                color: #2c3e50 !important;
+                text-decoration: none !important;
+                display: flex !important;
+                align-items: center !important;
+                font-weight: 500 !important;
+            }
+
+                .user-info .dropdown-item:hover {
+                    background-color: rgba(107, 90, 237, 0.1) !important;
+                    color: #4a3c8d !important;
+                    transform: translateX(3px);
+                }
+
+                .user-info .dropdown-item i {
+                    width: 22px !important;
+                    margin-right: 0.75rem !important;
+                    text-align: center !important;
+                    font-size: 1.1rem !important;
+                }
+
+            .bg-dropdown-logout:hover {
+                background-color: rgba(220, 53, 69, 0.1) !important;
+                color: #dc3545 !important;
+            }
+
+            .user-info .dropdown-divider {
+                margin: 0.5rem 0 !important;
+                border-color: rgba(0, 0, 0, 0.1) !important;
+            }
+
+            /* Animation Keyframes */
+            @@keyframes gentleGlow {
+                0%, 100% {
+                    box-shadow: 0 6px 20px rgba(107, 90, 237, 0.4);
+                }
+
+                50% {
+                    box-shadow: 0 6px 25px rgba(107, 90, 237, 0.6);
+                }
+            }
+
+            /* Menu Items Entrance Animation */
+            .nav-sidebar > .nav-item {
+                animation: slideInUp 0.4s ease forwards;
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            @@keyframes slideInUp {
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            /* Staggered Animations */
+            .nav-sidebar > .nav-item:nth-child(1) {
+                animation-delay: 0.05s;
+            }
+
+            .nav-sidebar > .nav-item:nth-child(2) {
+                animation-delay: 0.1s;
+            }
+
+            .nav-sidebar > .nav-item:nth-child(3) {
+                animation-delay: 0.15s;
+            }
+
+            .nav-sidebar > .nav-item:nth-child(4) {
+                animation-delay: 0.2s;
+            }
+
+            .nav-sidebar > .nav-item:nth-child(5) {
+                animation-delay: 0.25s;
+            }
+
+            .nav-sidebar > .nav-item:nth-child(6) {
+                animation-delay: 0.3s;
+            }
+
+            .nav-sidebar > .nav-item:nth-child(7) {
+                animation-delay: 0.35s;
+            }
+
+            .nav-sidebar > .nav-item:nth-child(8) {
+                animation-delay: 0.4s;
+            }
+
+            .nav-sidebar > .nav-item:nth-child(9) {
+                animation-delay: 0.45s;
+            }
+
+            .nav-sidebar > .nav-item:nth-child(10) {
+                animation-delay: 0.5s;
+            }
+
+            /* Menu Open State */
+            .nav-item.menu-open > .nav-link {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 12px 12px 0 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            /* ============================================
+            NOTIFICATION STYLES (Preserved from original)
+            ============================================ */
+            #notifList .dropdown-item {
+                white-space: normal;
+            }
+
+            #notifList .flex-fill {
+                min-width: 0;
+            }
+
+            #notifList .text-break {
+                word-break: break-word;
+                overflow-wrap: anywhere;
+            }
+
+            .navbar .nav-link {
+                position: relative;
+            }
+
+            .navbar .navbar-badge {
+                transform: translate(-12%, -22%);
+                font-size: 10px !important;
+                line-height: 1;
+                padding: 2px 5px !important;
+                border: white 1px solid;
+                min-width: 16px;
+                height: 16px;
+                border-radius: 10px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 1;
+            }
+
+            /* ============================================
+            BACK TO TOP BUTTON (Preserved from original)
+            ============================================ */
+            .back-to-top {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                display: flex;
+                z-index: 99;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+                padding: 0;
+                line-height: 1;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 2px 5px 0 rgba(0,0,0,.2), 0 2px 10px 0 rgba(0,0,0,.1);
+                transition: background-color .3s, transform .3s;
+            }
+
+                .back-to-top i {
+                    vertical-align: middle;
+                }
+
+                .back-to-top:hover {
+                    transform: scale(1.1);
+                }
+
+            .back-to-top-hidden {
+                display: none !important;
+            }
+
+            /* Maintenance mode styles */
+            #notifDropdown.maintenance-mode {
+                cursor: not-allowed;
+                opacity: 0.6;
+            }
+
+            #markAllReadBtn.maintenance-mode {
+                pointer-events: none;
+                opacity: 0.5;
+            }
+
+            #seeAllNotifLink.maintenance-mode {
+                pointer-events: none;
+                opacity: 0.5;
+                color: #6c757d !important;
+                cursor: not-allowed;
+            }
+
+            /* Responsive adjustments */
+            @@media (max-width: 768px) {
+                .user-info .name {
+                    font-size: 0.9rem;
+                }
+
+                .user-info .email {
+                    font-size: 0.75rem;
+                }
+
+                .user-info img {
+                    width: 70px;
+                    height: 70px;
+                }
+            }
+        </style>
+    </head>
+
+    <body class="hold-transition sidebar-mini layout-fixed">
+        <div class="wrapper">
+
+            @* ============================================
+               TOP NAVBAR (Preserved from original)
+               ============================================ *@
+            <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" data-widget="pushmenu" href="#" role="button"
+                           data-toggle="tooltip" data-placement="top" title="Menu">
+                            <i class="fas fa-bars"></i>
+                        </a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav ml-auto">
+                    <!-- Notification Dropdown -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link" href="#" id="notifDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Notifications">
+                            <i class="fa fa-bell"></i>
+                            <span class="badge badge-danger navbar-badge text-sm" id="notifBadge" style="display:none;">0</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-right p-0" aria-labelledby="notifDropdown" style="min-width:340px; max-width:380px;">
+                            <div class="d-flex align-items-center justify-content-between px-3 py-2 border-bottom bg-light">
+                                <span class="font-weight-bold">Notifications <span class="text-muted small" id="notifHeaderCount"></span></span>
+                                <div>
+                                    <a href="#" class="small" id="markAllReadBtn">Mark all read</a>
+                                </div>
+                            </div>
+                            <div id="notifList" class="text-break" style="max-height: 380px; overflow-y: auto; overflow-x: hidden;">
+                                <div class="p-3 text-center text-muted small">Loading...</div>
+                            </div>
+                            <div class="border-top text-center">
+                                <a href="/Notification" class="dropdown-item dropdown-footer py-2" id="seeAllNotifLink">See all notifications</a>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </nav>
+
+            @* ============================================
+               ENHANCED SIDEBAR - Purple/Blue Theme
+               ============================================ *@
+            <aside class="main-sidebar sidebar-dark-primary elevation-4">
+                @* Enhanced User Info Section *@
+                <div class="user-info d-flex flex-column align-items-center text-center rounded shadow-lg position-relative"
+                     style="overflow: visible;">
+                    <div class="image-wrapper position-relative mb-3">
+                        <div class="border-effect">
+                            <a asp-controller="Account" asp-action="UserProfile">
+                                <img src="@profilePicture" width="90" height="90" alt="User"
+                                     class="rounded-circle border border-light border-2 shadow-lg">
+                            </a>
+                        </div>
+                    </div>
+                    <div class="info-container">
+                        <div class="name font-weight-bold text-uppercase">@fullName</div>
+                        <div class="email small">@designation</div>
+                    </div>
+
+                    @* Enhanced User Dropdown *@
+                    <button class="btn btn-link text-white p-0 position-absolute dropdown-logout"
+                            style="bottom: 10px; right: 10px;"
+                            id="userDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+
+                    <div class="dropdown-menu dropdown-menu-right border-0 shadow-sm animate__animated animate__fadeIn small"
+                         aria-labelledby="userDropdown"
+                         style="min-width: 180px; position: absolute; top: 100%; z-index: 1000;">
+                        <a asp-controller="Account" asp-action="UserProfile"
+                           class="dropdown-item py-2 px-3 d-flex align-items-center">
+                            <i class="far fa-user-circle mr-2 text-primary"></i>
+                            <span>My Profile</span>
+                        </a>
+                        <div class="dropdown-divider my-1"></div>
+                        <a href="javascript:void(0);"
+                           class="dropdown-item py-2 px-3 d-flex align-items-center text-danger bg-dropdown-logout"
+                           onclick="confirmLogout('@Url.Action("Logout", "Account")')"
+                           aria-label="Logout">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </div>
+
+                @* Navigation Menu - Your original menu structure preserved *@
+                @{
+                    var activeMenu = ViewBag.ActiveMenu as string ?? "";
+                    var activeLink = ViewBag.ActiveLink as string ?? "";
+                    var activeMainMenu = ViewBag.ActiveMainMenu as string ?? "";
+
+                    // Determine which sections should be expanded
+                    var isEmployeeMgmtOpen = activeMenu == "EmployeeManagement" || new[] { "Employee", "EmployeeAllowance", "EmployeeLoan", "EmployeeDeduction" }.Contains(activeLink);
+                    var isAttendanceMonitoringOpen = activeMenu == "AttendanceMonitoring" || new[] { "WorkSchedule", "ScheduleChangeRequest", "ShiftType", "TimeEntry", "DTR", "DtrJustification", "OvertimeRequest", "UndertimeRequest", "DutyExchangeRequest", "ExchangeRestDayRequest", "PendingApprovals" }.Contains(activeLink);
+                    var isPayrollMgmtOpen = activeMenu == "PayrollManagement" || new[] { "PayrollPeriod", "Payroll", "Payslip" }.Contains(activeLink);
+                    var isUserMgmtOpen = activeMenu == "UserManagement" || new[] { "UserAccount", "Department", "Designation" }.Contains(activeLink);
+                    var isSystemSettingOpen = activeMenu == "SystemSetting" || new[] { "Roles", "SystemTasks", "SystemInfo", "AssignRolePermission" }.Contains(activeLink);
+
+                    // Build-Up menu: open when any master data item is active
+                    var isBuildUpOpen = activeMenu == "BuildUp" || activeMenu == "MasterData" || new[]
+                    {
+            "RateType", "DayType", "Holiday", "ApprovalWorkflow", "WorkingCalendar", "AllowanceType", "DeductionType",
+                    "GovernmentContributionType", "GovernmentContributionTable",
+                    "TaxTable", "PayrollConfiguration", "OrganizationStructure"
+                    }.Contains(activeMenu) || new[] { "Holiday", "WorkingCalendar", "DayType" }.Contains(activeLink);
+                        }
+
+                <div class="sidebar">
+                    <nav class="mt-2">
+                        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+
+                            @* ============================================
+                               MAIN NAVIGATION
+                               ============================================ *@
+                            <li class="nav-header" asp-permission="DASHBOARD,EMPLOYEE_VIEW,PAYROLL_VIEW">MAIN NAVIGATION</li>
+
+                            @* Dashboard *@
+                            <li class="nav-item" asp-permission="DASHBOARD">
+                                <a class="nav-link @(activeMenu == "Dashboard" ? "active" : "")"
+                                   asp-controller="Home" asp-action="Index">
+                                    <i class="nav-icon fas fa-tachometer-alt"></i>
+                                    <p>Dashboard</p>
+                                </a>
+                            </li>
+
+                            @* Employee Management (Expandable) *@
+                            <li class="nav-item @(isEmployeeMgmtOpen ? "menu-open" : "")" asp-permission="EMPLOYEE_VIEW,EMPLOYEEALLOWANCE_VIEW,EMPLOYEELOAN_VIEW,DEDUCTIONMASTER_VIEW">
+                                <a href="#" class="nav-link @(isEmployeeMgmtOpen ? "active" : "")">
+                                    <i class="nav-icon fas fa-users"></i>
+                                    <p>Employee Management <i class="fas fa-angle-left right"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item" asp-permission="EMPLOYEE_VIEW">
+                                        <a class="nav-link @(activeLink == "Employee" ? "active" : "")"
+                                           asp-controller="Employee" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Employee</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="EMPLOYEEALLOWANCE_VIEW">
+                                        <a class="nav-link @(activeLink == "EmployeeAllowance" ? "active" : "")"
+                                           asp-controller="EmployeeAllowance" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Employee Allowances</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="EMPLOYEE_VIEW,EMPLOYEELOAN_VIEW">
+                                        <a class="nav-link @(activeLink == "EmployeeLoan" ? "active" : "")"
+                                           asp-controller="EmployeeLoan" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Employee Loans</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="DEDUCTIONMASTER_VIEW">
+                                        <a class="nav-link @(activeLink == "EmployeeDeduction" ? "active" : "")"
+                                           asp-controller="EmployeeDeduction" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Employee Deductions</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            @* Attendance Monitoring (Expandable) *@
+                            <li class="nav-item @(isAttendanceMonitoringOpen ? "menu-open" : "")" asp-permission="WORK_SCHEDULE_VIEW,SHIFTTYPE_VIEW,TIME_ENTRY_VIEW,DTR_VIEW,OVERTIME_REQUEST_VIEW,SCHEDULE_CHANGE_VIEW">
+                                <a href="#" class="nav-link @(isAttendanceMonitoringOpen ? "active" : "")">
+                                    <i class="nav-icon fas fa-fingerprint"></i>
+                                    <p>
+                                        Attendance Monitoring
+                                        @await Component.InvokeAsync("NavBadge", new { type = "attendance" })
+                                        <i class="fas fa-angle-left right"></i>
+                                    </p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item" asp-permission="TIME_ENTRY_VIEW">
+                                        <a class="nav-link @(activeLink == "TimeEntry" ? "active" : "")"
+                                           asp-controller="TimeEntry" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Time Entries</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="DTR_VIEW">
+                                        <a class="nav-link @(activeLink == "DTR" ? "active" : "")"
+                                           asp-controller="Dtr" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Daily Time Record</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="DTR_VIEW">
+                                        <a class="nav-link @(activeLink == "DtrJustification" ? "active" : "")"
+                                           asp-controller="DtrJustification" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Justification Approvals
+                                                @await Component.InvokeAsync("NavBadge", new { type = "justification" })
+                                            </p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="OVERTIME_REQUEST_VIEW,WORK_SCHEDULE_VIEW,DTR_VIEW">
+                                        <a class="nav-link @(activeLink == "OvertimeRequest" ? "active" : "")"
+                                           asp-controller="OvertimeRequest" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Overtime Requests
+                                                @await Component.InvokeAsync("NavBadge", new { type = "overtime" })
+                                            </p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="DTR_VIEW">
+                                        <a class="nav-link @(activeLink == "UndertimeRequest" ? "active" : "")"
+                                           asp-controller="UndertimeRequest" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Undertime Requests</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="DTR_VIEW">
+                                        <a class="nav-link @(activeLink == "DutyExchangeRequest" ? "active" : "")"
+                                           asp-controller="DutyExchangeRequest" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Exchange of Duty</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="DTR_VIEW">
+                                        <a class="nav-link @(activeLink == "ExchangeRestDayRequest" ? "active" : "")"
+                                           asp-controller="ExchangeRestDayRequest" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Exchange Rest Day</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="WORK_SCHEDULE_VIEW">
+                                        <a class="nav-link @(activeLink == "WorkSchedule" ? "active" : "")"
+                                           asp-controller="WorkSchedule" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Monthly Schedule</p>
+                                        </a>
+                                    </li>
+                                    @await Component.InvokeAsync("PendingApprovalNav")
+                                    <li class="nav-item" asp-permission="SCHEDULE_CHANGE_VIEW">
+                                        <a class="nav-link @(activeLink == "ScheduleChangeRequest" ? "active" : "")"
+                                           asp-controller="ScheduleChangeRequest" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>
+                                                Schedule Change Requests
+                                                @await Component.InvokeAsync("NavBadge", new { type = "schedulechange" })
+                                            </p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="SHIFTTYPE_VIEW">
+                                        <a class="nav-link @(activeLink == "ShiftType" ? "active" : "")"
+                                           asp-controller="ShiftType" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Shift Types</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            @* Payroll Management (Expandable) *@
+                            <li class="nav-item @(isPayrollMgmtOpen ? "menu-open" : "")" asp-permission="PAYROLL_PERIOD_VIEW,PAYROLL_VIEW,PAYSLIP_VIEW">
+                                <a href="#" class="nav-link @(isPayrollMgmtOpen ? "active" : "")">
+                                    <i class="nav-icon fas fa-money-bill-wave"></i>
+                                    <p>Payroll Management <i class="fas fa-angle-left right"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item" asp-permission="PAYROLL_PERIOD_VIEW">
+                                        <a class="nav-link @(activeLink == "PayrollPeriod" ? "active" : "")"
+                                           asp-controller="PayrollPeriod" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Payroll Periods</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="PAYROLL_VIEW">
+                                        <a class="nav-link @(activeLink == "Payroll" ? "active" : "")"
+                                           asp-controller="Payroll" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Payroll</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="PAYSLIP_VIEW">
+                                        <a class="nav-link @(activeLink == "Payslip" ? "active" : "")"
+                                           asp-controller="Payslip" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Payslips</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            @* ============================================
+                               BUILD-UP (Master Data - Expandable)
+                               ============================================ *@
+                            <li class="nav-header" asp-permission="RATETYPE_VIEW,DAYTYPE_VIEW,APPROVAL_WORKFLOW_VIEW,HOLIDAY_VIEW,WORKING_CALENDAR_VIEW,ALLOWANCETYPE_VIEW,DEDUCTIONMASTER_VIEW,GOVERNMENTCONTRIBUTIONTYPE_VIEW,GOVERNMENTCONTRIBUTIONTABLE_VIEW,TAXTABLE_VIEW,PAYROLLCONFIG_VIEW,ORGANIZATIONSTRUCTURE_VIEW">MASTER DATA</li>
+
+                            <li class="nav-item @(isBuildUpOpen ? "menu-open" : "")"
+                                asp-permission="RATETYPE_VIEW,DAYTYPE_VIEW,APPROVAL_WORKFLOW_VIEW,HOLIDAY_VIEW,WORKING_CALENDAR_VIEW,ALLOWANCETYPE_VIEW,DEDUCTIONMASTER_VIEW,GOVERNMENTCONTRIBUTIONTYPE_VIEW,GOVERNMENTCONTRIBUTIONTABLE_VIEW,TAXTABLE_VIEW,PAYROLLCONFIG_VIEW,ORGANIZATIONSTRUCTURE_VIEW">
+                                <a href="#" class="nav-link @(isBuildUpOpen ? "active" : "")">
+                                    <i class="nav-icon fas fa-layer-group"></i>
+                                    <p>Build-Up <i class="fas fa-angle-left right"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item" asp-permission="RATETYPE_VIEW">
+                                        <a class="nav-link @(activeMenu == "RateType" ? "active" : "")"
+                                           asp-controller="RateType" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Rate Type</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="DAYTYPE_VIEW">
+                                        <a class="nav-link @(activeMenu == "DayType" || activeLink == "DayType" ? "active" : "")"
+                                           asp-controller="DayType" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Day Type</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="ORGANIZATIONSTRUCTURE_VIEW">
+                                        <a class="nav-link @(activeMenu == "OrganizationStructure" ? "active" : "")"
+                                           asp-controller="OrganizationStructure" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Organization Structure</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="APPROVAL_WORKFLOW_VIEW">
+                                        <a class="nav-link @(activeMenu == "ApprovalWorkflow" ? "active" : "")"
+                                           asp-controller="ApprovalWorkflow" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Approval Workflows</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="HOLIDAY_VIEW">
+                                        <a class="nav-link @(activeLink == "Holiday" ? "active" : "")"
+                                           asp-controller="Holiday" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Holidays</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="WORKING_CALENDAR_VIEW">
+                                        <a class="nav-link @(activeLink == "WorkingCalendar" ? "active" : "")"
+                                           asp-controller="WorkingCalendar" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Working Calendar</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="ALLOWANCETYPE_VIEW">
+                                        <a class="nav-link @(activeMenu == "AllowanceType" ? "active" : "")"
+                                           asp-controller="AllowanceType" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Allowance Types</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="DEDUCTIONMASTER_VIEW">
+                                        <a class="nav-link @(activeMenu == "DeductionType" ? "active" : "")"
+                                           asp-controller="DeductionType" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Deduction Types</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="GOVERNMENTCONTRIBUTIONTYPE_VIEW">
+                                        <a class="nav-link @(activeMenu == "GovernmentContributionType" ? "active" : "")"
+                                           asp-controller="GovernmentContributionType" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Govt. Contri Types</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="GOVERNMENTCONTRIBUTIONTABLE_VIEW">
+                                        <a class="nav-link @(activeMenu == "GovernmentContributionTable" ? "active" : "")"
+                                           asp-controller="GovernmentContributionTable" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Govt. Contri Tables</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="TAXTABLE_VIEW">
+                                        <a class="nav-link @(activeMenu == "TaxTable" ? "active" : "")"
+                                           asp-controller="TaxTable" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Tax Tables</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="PAYROLLCONFIG_VIEW">
+                                        <a class="nav-link @(activeMenu == "PayrollConfiguration" ? "active" : "")"
+                                           asp-controller="PayrollConfiguration" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Payroll Configuration</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            @* ============================================
+                               ADMINISTRATION
+                               ============================================ *@
+                            <li class="nav-header" asp-permission="USER_MANAGEMENT,AUDIT_TRAILS,SYSTEMSETTINGS">ADMINISTRATION</li>
+
+                            @* User Management (Expandable) *@
+                            <li class="nav-item @(isUserMgmtOpen ? "menu-open" : "")" asp-permission="USER_MANAGEMENT,DEPARTMENT_MANAGEMENT,DESIGNATION_MANAGEMENT">
+                                <a href="#" class="nav-link @(isUserMgmtOpen ? "active" : "")">
+                                    <i class="nav-icon fas fa-users-cog"></i>
+                                    <p>User Management <i class="fas fa-angle-left right"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item" asp-permission="USER_MANAGEMENT:USER_VIEW">
+                                        <a class="nav-link @(activeLink == "UserAccount" ? "active" : "")"
+                                           asp-controller="UserManagement" asp-action="UserAccount">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>User Account</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="DEPARTMENT_MANAGEMENT:DEPARTMENT_VIEW">
+                                        <a class="nav-link @(activeLink == "Department" ? "active" : "")"
+                                           asp-controller="Department" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Department</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="DESIGNATION_MANAGEMENT:DESIGNATION_VIEW">
+                                        <a class="nav-link @(activeLink == "Designation" ? "active" : "")"
+                                           asp-controller="Designation" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>Designation</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            @* Audit Trail *@
+                            <li class="nav-item" asp-permission="AUDIT_TRAILS">
+                                <a class="nav-link @(activeMenu == "AuditTrails" ? "active" : "")"
+                                   asp-controller="AuditTrails" asp-action="Index">
+                                    <i class="nav-icon fas fa-clipboard-check"></i>
+                                    <p>Audit Trail</p>
+                                </a>
+                            </li>
+
+                            @* System Settings (Expandable) *@
+                            <li class="nav-item @(isSystemSettingOpen ? "menu-open" : "")" asp-permission="SYSTEMSETTINGS,PERMISSION_ASSIGN">
+                                <a href="#" class="nav-link @(isSystemSettingOpen ? "active" : "")">
+                                    <i class="nav-icon fas fa-cog"></i>
+                                    <p>System Settings <i class="fas fa-angle-left right"></i></p>
+                                </a>
+                                <ul class="nav nav-treeview">
+                                    <li class="nav-item" asp-permission="SYSTEMSETTINGS:ROLE_VIEW">
+                                        <a class="nav-link @(activeLink == "Roles" ? "active" : "")"
+                                           asp-controller="Roles" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>System Roles</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="SYSTEMSETTINGS:SYSTEMTASKS_VIEW">
+                                        <a class="nav-link @(activeLink == "SystemTasks" ? "active" : "")"
+                                           asp-controller="SystemTasks" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>System Tasks</p>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item" asp-permission="SYSTEMSETTINGS:SYSTEMINFO_VIEW">
+                                        <a class="nav-link @(activeLink == "SystemInfo" ? "active" : "")"
+                                           asp-controller="SystemInfo" asp-action="Index">
+                                            <i class="far fa-circle nav-icon"></i>
+                                            <p>System Information</p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+
+                            @if (canViewEmployeePortal)
+                            {
+                                @* ============================================
+                                   EMPLOYEE PORTAL (Employees and granted users)
+                                   ============================================ *@
+                                <li class="nav-header">EMPLOYEE PORTAL</li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link @(activeMenu == "EmployeeDashboard" ? "active" : "")"
+                                       asp-controller="EmployeeDashboard" asp-action="Index">
+                                        <i class="nav-icon fas fa-tachometer-alt"></i>
+                                        <p>Dashboard</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link @(activeMenu == "DTR" ? "active" : "")"
+                                       asp-controller="Dtr" asp-action="Index">
+                                        <i class="nav-icon fas fa-calendar-check"></i>
+                                        <p>DTR</p>
+                                    </a>
+                                </li>
+
+                                @await Component.InvokeAsync("WorkScheduleNav")
+
+                                <li class="nav-item">
+                                    <a class="nav-link @(activeMenu == "OvertimeRequest" ? "active" : "")"
+                                       asp-controller="OvertimeRequest" asp-action="MyRequests">
+                                        <i class="nav-icon fas fa-business-time"></i>
+                                        <p>Overtime Requests</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link @(activeMenu == "UndertimeRequest" ? "active" : "")"
+                                       asp-controller="UndertimeRequest" asp-action="MyRequests">
+                                        <i class="nav-icon fas fa-file-signature"></i>
+                                        <p>Undertime Requests</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link @(activeMenu == "DutyExchangeRequest" ? "active" : "")"
+                                       asp-controller="DutyExchangeRequest" asp-action="MyRequests">
+                                        <i class="nav-icon fas fa-exchange-alt"></i>
+                                        <p>Exchange of Duty</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link @(activeMenu == "ExchangeRestDayRequest" ? "active" : "")"
+                                       asp-controller="ExchangeRestDayRequest" asp-action="MyRequests">
+                                        <i class="nav-icon fas fa-calendar-day"></i>
+                                        <p>Exchange Rest Day</p>
+                                    </a>
+                                </li>
+
+                                @await Component.InvokeAsync("PendingApprovalNav")
+
+                                <li class="nav-item">
+                                    <a class="nav-link @(activeMenu == "Payslip" ? "active" : "")"
+                                       asp-controller="Payslip" asp-action="Index">
+                                        <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                                        <p>Payslip</p>
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link @(activeMenu == "Account" ? "active" : "")"
+                                       asp-controller="Account" asp-action="UserProfile">
+                                        <i class="nav-icon fas fa-user-circle"></i>
+                                        <p>Account</p>
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                </div>
+            </aside>
+
+            @* ============================================
+               CONTENT WRAPPER (Preserved from original)
+               ============================================ *@
+            <div class="content-wrapper">
+                <div class="content-header">
+                    <div class="container-fluid">
+                        <div class="row mb-2">
+                            <div class="col-sm-6">
+                                <h1 class="m-0">@ViewData["Title"]</h1>
+                            </div>
+                            <div class="col-sm-6">
+                                <ol class="breadcrumb float-sm-right">
+                                    <li class="breadcrumb-item">
+                                        <a asp-controller="Home" asp-action="Index">Home</a>
+                                    </li>
+                                    <li class="breadcrumb-item active">@ViewData["Title"]</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="content">
+                    @* Loading Spinner *@
+                    <div class="spinner-overlay show" id="spinnerOverlay" style="z-index: 1060;">
+                        <div class="spinner-container">
+                            <div class="spinner">
+                                <div class="spinner-border"></div>
+                                <div class="spinner-border"></div>
+                                <div class="spinner-border"></div>
+                            </div>
+                            <div class="loading-message">Loading, please wait</div>
+                        </div>
+                    </div>
+
+                    <div class="">
+                        @RenderBody()
+                    </div>
+                </section>
+            </div>
+
+            @* ============================================
+               FOOTER (Preserved from original)
+               ============================================ *@
+            <footer class="main-footer">
+                <div class="float-right d-none d-sm-block">
+                    <b>Version</b> 1.0.0
+                </div>
+                <strong>Copyright © 2026</strong>
+                . All rights reserved.
+            </footer>
+
+            <aside class="control-sidebar control-sidebar-dark"></aside>
+        </div>
+
+        @* Back to Top Button *@
+        <a id="back-to-top" href="#" class="btn btn-primary back-to-top back-to-top-hidden"
+           role="button" aria-label="Scroll to top">
+            <i class="fas fa-chevron-up align-middle"></i>
+        </a>
+
+        @* ================================================================================================================
+           SCRIPTS (Preserved from original)
+        ================================================================================================================ *@
+
+        @* External Scripts *@
+        @await Html.PartialAsync("_ValidationScriptsPartial")
+        <script>
+            window.appAuth = {
+                isPrivileged: @System.Text.Json.JsonSerializer.Serialize(PermissionHelper.IsPrivilegedUser(User)),
+                permissions: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(PermissionHelper.GetPermissionTokens(User).ToArray()))
+            };
+        </script>
+        <script src="~/js/permissions.js" asp-append-version="true"></script>
+        <script src="~/js/print-preview.js" asp-append-version="true"></script>
+        <script src="~/js/notification-handler.js" asp-append-version="true"></script>
+        <script src="~/js/sidebar.js" asp-append-version="true"></script>
+        <script src="~/js/lib/signalr/dist/browser/signalr.js"></script>
+
+        @await RenderSectionAsync("Scripts", required: false)
+
+        <script>
+            //====================================================================================
+            // Notification Functionality (Preserved from original)
+            //====================================================================================
+
+            // Optional: Add maintenance mode class to disable interactions
+            document.addEventListener('DOMContentLoaded', function() {
+                const isMaintenanceMode = false; // Set to false when maintenance is done
+
+                if (isMaintenanceMode) {
+                    document.getElementById('notifDropdown').classList.add('maintenance-mode');
+                    document.getElementById('markAllReadBtn').classList.add('maintenance-mode');
+                    document.getElementById('seeAllNotifLink').classList.add('maintenance-mode');
+
+                    // Optionally hide the badge during maintenance
+                    document.getElementById('notifBadge').style.display = 'none';
+                }
+            });
+
+            (function () {
+                const badge = document.getElementById('notifBadge');
+                const list = document.getElementById('notifList');
+                const dropdown = document.getElementById('notifDropdown');
+                const markAllBtn = document.getElementById('markAllReadBtn');
+                const headerCount = document.getElementById('notifHeaderCount');
+                const pendingReviewBadge = document.getElementById('pendingReviewBadge');
+
+                if (!badge || !list || !dropdown || !pendingReviewBadge) return;
+
+                // Constants
+                const NotificationType = {
+                    ApprovalNeeded: 0,
+                    Approved: 1
+                };
+
+                const ApprovalStatus = {
+                    ForReview: 0,
+                    Approved: 1
+                };
+
+                // Utility: Escape HTML to prevent XSS
+                function escapeHtml(text) {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                }
+
+                function formatMessageWithStatusAndType(msg, status, type) {
+                    const escapedMsg = escapeHtml(msg.replace(/\\[.*?\\]/g, '').trim());
+
+                    if (status === ApprovalStatus.ForReview) {
+                        return `<span class='badge badge-warning mr-1'>For Review</span> ${escapedMsg}`;
+                    } else if (status === ApprovalStatus.Approved && type === NotificationType.Approved) {
+                        return `<span class='badge badge-success mr-1'>Approved</span> ${escapedMsg}`;
+                    }
+                    return escapedMsg;
+                }
+
+                function timeAgo(dateInput) {
+                    try {
+                        const date = new Date(dateInput);
+                        if (isNaN(date.getTime())) return '';
+
+                        const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+                        const intervals = [
+                            { label: 'year', secs: 31536000 },
+                            { label: 'month', secs: 2592000 },
+                            { label: 'day', secs: 86400 },
+                            { label: 'hour', secs: 3600 },
+                            { label: 'min', secs: 60 }
+                        ];
+
+                        for (const i of intervals) {
+                            const v = Math.floor(seconds / i.secs);
+                            if (v >= 1) return `${v} ${i.label}${v > 1 ? 's' : ''} ago`;
+                        }
+                        return 'just now';
+                    } catch (e) {
+                        console.error('Error formatting date:', e);
+                        return '';
+                    }
+                }
+
+                function updateBadge(count) {
+                    const safeCount = Math.max(0, parseInt(count) || 0);
+
+                    if (safeCount > 0) {
+                        badge.style.display = '';
+                        badge.textContent = safeCount > 99 ? '99+' : safeCount;
+                        if (headerCount) headerCount.textContent = `• ${safeCount} unread`;
+                    } else {
+                        badge.style.display = 'none';
+                        if (headerCount) headerCount.textContent = '';
+                    }
+                }
+
+                function updatePendingReviewBadge(count) {
+                    const safeCount = Math.max(0, parseInt(count) || 0);
+                    pendingReviewBadge.textContent = safeCount > 99 ? '99+' : safeCount;
+                    pendingReviewBadge.style.display = safeCount > 0 ? '' : 'none';
+                }
+
+                function renderNotifications(items) {
+                    if (!Array.isArray(items) || items.length === 0) {
+                        list.innerHTML = "<div class='p-3 text-center text-muted small'>No notifications.</div>";
+                        if (headerCount) headerCount.textContent = '';
+                        return;
+                    }
+
+                    list.innerHTML = items.map(n => {
+                        const safeId = escapeHtml(String(n.id || ''));
+                        const safeUrl = escapeHtml(String(n.link || ''));
+                        const safeMessage = escapeHtml(String(n.message || ''));
+                        const formattedMessage = formatMessageWithStatusAndType(
+                            n.message || '',
+                            n.registryApprovalStatus,
+                            n.type
+                        );
+
+                        return `
+                            <a href="javascript:void(0)"
+                               class="dropdown-item d-flex align-items-start text-break notification-link ${n.isRead ? '' : 'bg-light'}"
+                               data-id="${safeId}"
+                               data-url="${safeUrl}"
+                               data-title="Registry Preview"
+                               data-message="${safeMessage}"
+                               data-type="${n.type || 0}"
+                               data-registry-approval-status="${n.registryApprovalStatus || 0}">
+                                <div class="mr-2 mt-1">
+                                    <i class="fa ${n.isRead ? 'fa-envelope-open text-secondary' : 'fa-envelope text-primary'}"></i>
+                                </div>
+                                <div class="small flex-fill text-break">
+                                    <div class="text-break">${formattedMessage}</div>
+                                    <div class="text-muted mt-1">${timeAgo(n.createdAt)}</div>
+                                </div>
+                                ${n.isRead ? '' : '<span class="badge badge-warning ml-2">New</span>'}
+                            </a>
+                        `;
+                    }).join('');
+
+                    // Initialize notification handlers if available
+                    if (typeof NotificationHandler !== 'undefined') {
+                        NotificationHandler.initialize('#notifList', {
+                            onMarkRead: () => {/* No API call, rely on SignalR */}
+                        });
+                    }
+
+                    // Hide dropdown when notification is clicked
+                    list.querySelectorAll('a.notification-link').forEach(a => {
+                        a.addEventListener('click', () => {
+                            if (typeof $ !== 'undefined' && $(dropdown).dropdown) {
+                                $(dropdown).dropdown('hide');
+                            }
+                        });
+                    });
+                }
+
+                // SignalR setup with comprehensive data payload
+                const connection = new signalR.HubConnectionBuilder()
+                    .withUrl("/notificationHub")
+                    .withAutomaticReconnect()
+                    .build();
+
+                // PRIMARY: Receive complete notification payload from SignalR
+                connection.on("ReceiveNotificationUpdate", function (payload) {
+                    console.log("Received notification update:", payload);
+
+                    try {
+                        // Update all UI elements from single SignalR message
+                        if (typeof payload.unreadCount !== 'undefined') {
+                            updateBadge(payload.unreadCount);
+                        }
+
+                        if (typeof payload.pendingReviewCount !== 'undefined') {
+                            updatePendingReviewBadge(payload.pendingReviewCount);
+                        }
+
+                        if (Array.isArray(payload.latestNotifications)) {
+                            renderNotifications(payload.latestNotifications);
+                        }
+                    } catch (e) {
+                        console.error('Error processing SignalR payload:', e);
+                        // If SignalR payload is malformed or processing fails, consider server-side logging or user notification
+                    }
+                });
+
+                connection.start()
+                    .then(() => {
+                        console.log("SignalR connected");
+                        // Request initial data from the server upon successful connection
+                        connection.invoke("RequestNotificationUpdate");
+                    })
+                    .catch(err => console.error("SignalR connection error:", err));
+
+                connection.onreconnected(() => {
+                    console.log("SignalR reconnected - requesting latest data");
+                    // Request fresh data on reconnection
+                    connection.invoke("RequestNotificationUpdate");
+                });
+
+                connection.onclose(error => {
+                    console.error("SignalR connection closed:", error);
+                });
+
+                // Initialize on DOMContentLoaded
+                document.addEventListener('DOMContentLoaded', function () {
+                    // Initial UI state - empty, waiting for SignalR to connect and push data
+                    updateBadge(0);
+                    updatePendingReviewBadge(0);
+                    renderNotifications([]);
+
+                    // Trigger initial request if already connected (e.g., fast page loads, browser back/forward)
+                    if (connection.state === signalR.HubConnectionState.Connected) {
+                        connection.invoke("RequestNotificationUpdate");
+                    }
+
+                    // Refresh when dropdown is opened (optional - can be removed if SignalR is reliable)
+                    dropdown.addEventListener('click', function () {
+                        // If the list is empty or shows 'No notifications', request an update
+                        if (list.children.length === 0 ||
+                            list.innerHTML.includes('No notifications') ||
+                            list.innerHTML.includes('Loading...')) {
+                            connection.invoke("RequestNotificationUpdate");
+                        }
+                    });
+
+                    // Mark all as read
+                    if (markAllBtn) {
+                        markAllBtn.addEventListener('click', async function (e) {
+                            e.preventDefault();
+                            try {
+                                const res = await fetch('/Notification/MarkAllNotificationsRead', {
+                                    method: 'POST'
+                                });
+                                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                                // After marking as read, server should push updated data via SignalR
+                                // (triggered by the MarkAllNotificationsRead action calling PushNotificationUpdate)
+                            } catch (e) {
+                                console.error('Failed to mark all as read:', e);
+                            }
+                        });
+                    }
+                });
+            })();
+
+            //====================================================================================
+            // Logout Confirmation (Preserved from original)
+            //====================================================================================
+            function confirmLogout(logoutUrl) {
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: "You will be logged out!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, logout',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        window.location.href = logoutUrl;
+                    }
+                });
+            }
+
+            //====================================================================================
+            // Loading Spinner (Preserved from original)
+            //====================================================================================
+
+            // Hide spinner when the window has fully loaded all resources
+            window.onload = function() {
+                var spinnerOverlay = document.getElementById('spinnerOverlay');
+                if (spinnerOverlay) {
+                    // Add a small delay to ensure the spinner is seen, even on fast loads
+                    setTimeout(function() {
+                        spinnerOverlay.classList.remove('show');
+                    }, 100); // 100ms delay
+                }
+            };
+
+            document.addEventListener('DOMContentLoaded', function() {
+                var spinnerOverlay = document.getElementById('spinnerOverlay');
+                // Only show spinner for actual page navigations (not anchor links, javascript:, or external links)
+                document.querySelectorAll('a[href]').forEach(function(link) {
+                    link.addEventListener('click', function(event) {
+                        var href = this.getAttribute('href');
+                        var isTabLink = this.getAttribute('data-toggle') === 'tab';
+                        if (href && href !== '#' && !href.startsWith('javascript:') && !this.target && !event.ctrlKey && !event.metaKey && !isTabLink) {
+                            if (spinnerOverlay) {
+                                spinnerOverlay.classList.add('show');
+                            }
+                        }
+                    });
+                });
+
+                // Restore scroll position for this URL (reload only)
+                try {
+                    var scrollKey = 'scroll-pos:' + location.pathname + location.search;
+                    var navEntry = (performance && performance.getEntriesByType) ? performance.getEntriesByType('navigation')[0] : null;
+                    var navType = navEntry ? navEntry.type : (performance && performance.navigation ? (performance.navigation.type === 1 ? 'reload' : '') : '');
+                    if (navType === 'reload') {
+                        var savedY = sessionStorage.getItem(scrollKey);
+                        if (savedY !== null && !location.hash) {
+                            setTimeout(function () {
+                                window.scrollTo(0, parseInt(savedY, 10) || 0);
+                            }, 0);
+                        }
+                    }
+                } catch (e) { }
+            });
+
+            // Ensure spinner is shown when page starts unloading (for back/forward navigation or form submissions)
+            window.addEventListener('beforeunload', function() {
+                var spinnerOverlay = document.getElementById('spinnerOverlay');
+                if (spinnerOverlay) {
+                    spinnerOverlay.classList.add('show');
+                }
+                // Save current scroll position for this URL
+                try {
+                    var y = window.scrollY || document.documentElement.scrollTop || 0;
+                    sessionStorage.setItem('scroll-pos:' + location.pathname + location.search, String(y));
+                } catch (e) { }
+            });
+
+
+            //====================================================================================
+            // Scroll to top button functionality (Preserved from original)
+            //====================================================================================
+
+            $(document).ready(function () {
+                var backToTopButton = $('#back-to-top');
+                // backToTopButton.addClass('d-none'); // Initially hide the button
+
+                // Show or hide the button based on scroll position
+                $(window).scroll(function () {
+                    if ($(this).scrollTop() > 100) { // Show button after scrolling 100px
+                        backToTopButton.removeClass('back-to-top-hidden');
+                    } else {
+                        backToTopButton.addClass('back-to-top-hidden');
+                    }
+                });
+
+                // Smooth scroll to top when button is clicked
+                backToTopButton.on('click', function (e) {
+                    e.preventDefault();
+                    $('html, body').animate({ scrollTop: 0 }, 500); // Scroll duration 500ms
+                });
+            });
+
+
+            // ====================================================================================
+            // Service Worker (Preserved from original)
+            // ====================================================================================
+
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(function (registration) {
+                            // Registration successful
+                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        }, function (err) {
+                            // Registration failed
+                            console.log('ServiceWorker registration failed: ', err);
+                        });
+                });
+            }
+        </script>
+    </body>
+    </html>
+}
+else
+{
+    // User is not authenticated - redirect to login
+    Context.Response.Redirect("/Account/Login");
+}

@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+
+body {
+    font-family: 'Poppins', sans-serif;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login {
+    -ms-flex-align: center;
+    align-items: center;
+    background-color: #e9ecef;
+    display: -ms-flexbox;
+    display: flex;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    height: 80vh;
+    -ms-flex-pack: center;
+    justify-content: center;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.login-photo {
+    width: 100%;
+    left: 50%;
+    position: absolute;
+    transform: translate(-50%, -50%);
+}
+
+.loginPic {
+    width: 30%;
+}
+
+.textDRMC {
+    color: #005BBC;
+}
+
+.textBMS {
+    color: #777777;
+}
+
+.login-logo h5 {
+    color: #7F8387;
+    font-weight: lighter;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        width: 90%;
+        height: auto;
+        padding: 15px;
+    }
+}

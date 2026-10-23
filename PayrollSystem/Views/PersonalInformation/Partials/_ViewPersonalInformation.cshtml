@@ -1,0 +1,157 @@
+@model PersonalInformationViewModel
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Personal Details</h4>
+            <div class="form-group">
+                <label asp-for="Surname"></label>
+                <input asp-for="Surname" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="FirstName"></label>
+                <input asp-for="FirstName" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="MiddleName"></label>
+                <input asp-for="MiddleName" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="NameExtension"></label>
+                <input asp-for="NameExtension" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="DateOfBirth"></label>
+                <input asp-for="DateOfBirth" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="PlaceOfBirth"></label>
+                <input asp-for="PlaceOfBirth" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="Sex"></label>
+                <input asp-for="Sex" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="CivilStatus"></label>
+                <input asp-for="CivilStatus" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="Citizenship"></label>
+                <input asp-for="Citizenship" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="Height"></label>
+                <input asp-for="Height" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="Weight"></label>
+                <input asp-for="Weight" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="BloodType"></label>
+                <input asp-for="BloodType" class="form-control" readonly />
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h4>Government ID Numbers</h4>
+            <div class="form-group">
+                <label asp-for="GsisIdNo"></label>
+                <input asp-for="GsisIdNo" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="PagIbigIdNo"></label>
+                <input asp-for="PagIbigIdNo" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="PhilHealthNo"></label>
+                <input asp-for="PhilHealthNo" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="SssNo"></label>
+                <input asp-for="SssNo" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="TinNo"></label>
+                <input asp-for="TinNo" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="AgencyEmployeeNo"></label>
+                <input asp-for="AgencyEmployeeNo" class="form-control" readonly />
+            </div>
+
+            <h4>Residential Address</h4>
+            <div class="form-group">
+                <label asp-for="ResidentialHouseBlockLotNo"></label>
+                <input asp-for="ResidentialHouseBlockLotNo" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="ResidentialStreet"></label>
+                <input asp-for="ResidentialStreet" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="ResidentialSubdivisionVillage"></label>
+                <input asp-for="ResidentialSubdivisionVillage" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="ResidentialBarangay"></label>
+                <input asp-for="ResidentialBarangay" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="ResidentialCityMunicipality"></label>
+                <input asp-for="ResidentialCityMunicipality" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="ResidentialProvince"></label>
+                <input asp-for="ResidentialProvince" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="ResidentialZipCode"></label>
+                <input asp-for="ResidentialZipCode" class="form-control" readonly />
+            </div>
+
+            <h4>Permanent Address</h4>
+            <div class="form-group">
+                <label asp-for="PermanentHouseBlockLotNo"></label>
+                <input asp-for="PermanentHouseBlockLotNo" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="PermanentStreet"></label>
+                <input asp-for="PermanentStreet" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="PermanentSubdivisionVillage"></label>
+                <input asp-for="PermanentSubdivisionVillage" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="PermanentBarangay"></label>
+                <input asp-for="PermanentBarangay" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="PermanentCityMunicipality"></label>
+                <input asp-for="PermanentCityMunicipality" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="PermanentProvince"></label>
+                <input asp-for="PermanentProvince" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="PermanentZipCode"></label>
+                <input asp-for="PermanentZipCode" class="form-control" readonly />
+            </div>
+
+            <div class="form-group">
+                <label asp-for="TelephoneNo"></label>
+                <input asp-for="TelephoneNo" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="MobileNo"></label>
+                <input asp-for="MobileNo" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="EmailAddress"></label>
+                <input asp-for="EmailAddress" class="form-control" readonly />
+            </div>
+        </div>
+    </div>
+</div>

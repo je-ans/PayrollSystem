@@ -1,0 +1,16 @@
+@model AllowanceTypeViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="DeleteConfirmed" method="post" id="deleteAllowanceTypeForm">
+        <input type="hidden" asp-for="Id" />
+        <div class="text-center my-3">
+            <i class="fa fa-exclamation-triangle text-danger fa-3x"></i>
+        </div>
+        <h5 class="text-center mb-3">Are you sure you want to delete this allowance type?</h5>
+        <h5 class="font-weight-bold text-danger text-center">
+            <strong>@Model.Name (@(Model.Code ?? "N/A"))</strong>
+        </h5>
+        <p class="text-muted text-center">This action cannot be undone.</p>
+    </form>
+</div>

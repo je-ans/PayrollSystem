@@ -1,0 +1,112 @@
+@model IEnumerable<GovernmentContributionTableViewModel>
+
+@{
+    ViewBag.ActiveMenu = "GovernmentContributionTable";
+    ViewBag.ActiveLink = "GovernmentContributionTable";
+    ViewBag.ActiveMainMenu = "";
+}
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center">
+        <div class="flex-grow-1 d-flex justify-content-start">
+            <h3 class="card-title m-0">Government Contribution Tables</h3>
+        </div>
+        <div class="card-tools d-flex align-items-center">
+            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+               data-title="Create Government Contribution Table Entry"
+               data-url="@Url.Action("Create", "GovernmentContributionTable")"
+               data-modal-type="create"
+               data-toogle="tooltip"
+               title="Add Government Contribution Table Entry">
+                <i class="fas fa-plus"></i>
+                <span class="d-none d-lg-inline">Add New</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+            <table class="table table-hover table-striped table-bordered" id="myTable" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>No.</th>
+                        <th>Contribution Type</th>
+                        <th>Effective Start</th>
+                        <th>Min Salary</th>
+                        <th>Max Salary</th>
+                        <th>Employee Share (Fixed)</th>
+                        <th>Employer Share (Fixed)</th>
+                        <th>Total Contribution (Fixed)</th>
+                        <th>Employee Share (%)</th>
+                        <th>Employer Share (%)</th>
+                        <th>Max Emp / Max Er</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        var index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@index</td>
+                                <td>@Html.DisplayFor(modelItem => item.GovernmentContributionType.Name)</td>
+                                <td>@item.EffectiveStartDate.ToString("yyyy-MM-dd")</td>
+                                <td>@Html.DisplayFor(modelItem => item.MinSalary)</td>
+                                <td>@Html.DisplayFor(modelItem => item.MaxSalary)</td>
+                                <td>@Html.DisplayFor(modelItem => item.EmployeeShare)</td>
+                                <td>@Html.DisplayFor(modelItem => item.EmployerShare)</td>
+                                <td>@Html.DisplayFor(modelItem => item.TotalContribution)</td>
+                                <td>@Html.DisplayFor(modelItem => item.EmployeeSharePercentage)</td>
+                                <td>@Html.DisplayFor(modelItem => item.EmployerSharePercentage)</td>
+                                <td>@(item.MaxEmployeeContribution?.ToString("N2") ?? "—") / @(item.MaxEmployerContribution?.ToString("N2") ?? "—")</td>
+                                <td class="text-center">
+                                    <span class="badge @(item.IsActive ? "bg-success" : "bg-danger")">
+                                        <i class="@(item.IsActive ? "fa fa-check-circle text-white" : "fa fa-times-circle text-white")"></i>
+                                        @(item.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td align="center">
+                                    <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                        Action
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu" role="menu">
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Government Contribution Table Details"
+                                           data-url="@Url.Action("Details", "GovernmentContributionTable", new { id = item.Id })"
+                                           data-modal-type="view">
+                                            <i class="fa fa-eye mr-2 text-dark"></i>
+                                            <span>View Entry</span>
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Edit Government Contribution Table Entry"
+                                           data-url="@Url.Action("Edit", "GovernmentContributionTable", new { id = item.Id })"
+                                           data-modal-type="edit">
+                                            <i class="fa fa-edit mr-2 text-primary"></i>
+                                            <span>Edit Entry</span>
+                                        </a>
+
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Delete Government Contribution Table Entry"
+                                           data-url="@Url.Action("Delete", "GovernmentContributionTable", new { id = item.Id })"
+                                           data-modal-type="delete_data">
+                                            <i class="fa fa-trash mr-2 text-danger"></i>
+                                            <span>Delete Entry</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    }
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

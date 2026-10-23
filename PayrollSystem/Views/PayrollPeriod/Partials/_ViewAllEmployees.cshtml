@@ -1,0 +1,223 @@
+@model PayrollPeriodEmployeeListViewModel
+
+<link rel="stylesheet" href="~/css/payroll-time-card.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<div class="container-fluid">
+    <div class="ptc-period-banner mb-3">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <p class="ptc-period-title mb-0">
+                    <i class="fas fa-users mr-1 text-primary"></i>
+                    All Employees
+                </p>
+                <div class="ptc-period-range">@Model.PayrollPeriodName — @Model.PeriodRange</div>
+            </div>
+            <div class="d-flex align-items-center flex-wrap gap-1">
+                <span class="badge badge-light border px-2 py-1">
+                    <i class="fas fa-users mr-1"></i> @Model.Rows.Count employee@(Model.Rows.Count == 1 ? "" : "s")
+                </span>
+                @if (Model.IsLocked)
+                {
+                    <span class="badge badge-warning px-2 py-1">
+                        <i class="fas fa-lock mr-1"></i> Locked
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Rows.Any())
+    {
+        <div class="aw-pending-toolbar aw-pending-toolbar--row mb-3">
+            <div class="aw-pending-search">
+                <i class="fas fa-search"></i>
+                <input type="text" id="employeeSearchInput" class="form-control form-control-sm"
+                       placeholder="Search employee, department, group…" />
+            </div>
+            <small class="text-muted" id="filteredCount"></small>
+        </div>
+
+        <div class="ptc-table-panel">
+            <div class="table-responsive ptc-employee-table-wrap border-0 rounded-0">
+                <table class="table table-sm table-hover table-bordered mb-0 aw-pending-table" id="allEmployeesTable">
+                    <thead class="sticky-top">
+                        <tr>
+                            <th width="40px" class="text-center">#</th>
+                            <th>Employee</th>
+                            <th>Department</th>
+                            <th>Employment Type</th>
+                            <th>Group</th>
+                            <th class="text-right" style="min-width:90px;">Late (min)</th>
+                            <th class="text-right" style="min-width:100px;">Undertime (min)</th>
+                            <th class="text-right" style="min-width:100px;">Absent (hrs)</th>
+                            <th>Notes</th>
+                            <th width="60" class="text-center">Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody id="allEmployeesBody">
+                        @for (int i = 0; i < Model.Rows.Count; i++)
+                        {
+                            var row = Model.Rows[i];
+                            var detailId = $"view-detail-{i}";
+                            var hasDetails = row.Details.Any();
+
+                            <tr class="emp-summary-row" data-index="@i">
+                                <td class="text-center align-middle">@(i + 1)</td>
+                                <td class="align-middle"><span class="aw-queue-employee">@row.EmployeeName</span></td>
+                                <td class="align-middle">@row.OrganizationUnitName</td>
+                                <td class="align-middle">
+                                    <span class="badge badge-light border">@row.EmploymentTypeName</span>
+                                </td>
+                                <td class="align-middle">
+                                    <span class="badge badge-info">@row.BatchLabel</span>
+                                </td>
+                                <td class="text-right align-middle">@row.LateMinutes</td>
+                                <td class="text-right align-middle">@row.UndertimeMinutes</td>
+                                <td class="text-right align-middle">@row.AbsentHours.ToString("0.####")</td>
+                                <td class="align-middle text-muted">
+                                    @(string.IsNullOrWhiteSpace(row.Notes) ? "—" : row.Notes)
+                                </td>
+                                <td class="text-center align-middle">
+                                    @if (hasDetails)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-outline-info btn-xs btn-view-detail"
+                                                data-target="@detailId"
+                                                title="Show per-day-type hours">
+                                            <i class="fas fa-clock"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                            </tr>
+
+                            @if (hasDetails)
+                            {
+                                <tr class="view-detail-subrow" id="@detailId" style="display:none;">
+                                    <td colspan="10" class="p-0 border-top-0">
+                                        <div class="ptc-hours-editor-panel">
+                                            <div class="ptc-hours-editor-header">
+                                                <span>
+                                                    <i class="fas fa-layer-group mr-1 text-info"></i>
+                                                    <strong>Hours by Day Type</strong>
+                                                    <span class="text-muted ml-1">— @row.EmployeeName</span>
+                                                </span>
+                                            </div>
+                                            <div class="p-2">
+                                                <table class="table table-xs table-bordered table-sm mb-0 bg-white">
+                                                    <thead class="thead-light">
+                                                        <tr>
+                                                            <th style="min-width:130px">Day Type</th>
+                                                            <th class="text-right" style="min-width:95px">Basic Hrs</th>
+                                                            <th class="text-right" style="min-width:80px">OT Hrs</th>
+                                                            <th class="text-right" style="min-width:100px">Night Diff Hrs</th>
+                                                            <th class="text-right" style="min-width:110px">ND-OT Hrs</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var det in row.Details)
+                                                        {
+                                                            <tr>
+                                                                <td><span class="badge badge-secondary">@det.DayTypeName</span></td>
+                                                                <td class="text-right">@det.RegularHours.ToString("0.####")</td>
+                                                                <td class="text-right">@det.OvertimeHours.ToString("0.####")</td>
+                                                                <td class="text-right">@det.NightDifferentialHours.ToString("0.####")</td>
+                                                                <td class="text-right">@det.NightDifferentialOvertimeHours.ToString("0.####")</td>
+                                                            </tr>
+                                                        }
+                                                        @{
+                                                            var totReg = row.Details.Sum(d => d.RegularHours);
+                                                            var totOT = row.Details.Sum(d => d.OvertimeHours);
+                                                            var totND = row.Details.Sum(d => d.NightDifferentialHours);
+                                                            var totNDOT = row.Details.Sum(d => d.NightDifferentialOvertimeHours);
+                                                        }
+                                                        <tr class="font-weight-bold table-secondary">
+                                                            <td>Total</td>
+                                                            <td class="text-right">@totReg.ToString("0.####")</td>
+                                                            <td class="text-right">@totOT.ToString("0.####")</td>
+                                                            <td class="text-right">@totND.ToString("0.####")</td>
+                                                            <td class="text-right">@totNDOT.ToString("0.####")</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="mt-2">
+            <small class="text-muted">
+                <i class="fas fa-info-circle mr-1"></i>
+                Showing all employees assigned across all groups for this payroll period.
+            </small>
+        </div>
+    }
+    else
+    {
+        <div class="aw-empty-state">
+            <i class="fas fa-users d-block"></i>
+            <h5>No employees assigned</h5>
+            <p class="mb-0">No employees are assigned to this payroll period yet.</p>
+        </div>
+    }
+</div>
+
+<script>
+    (function () {
+        var $input = $('#employeeSearchInput');
+        var total  = $('.emp-summary-row').length;
+
+        if (!$input.length) return;
+
+        $input.on('keyup', function () {
+            var term    = $(this).val().toLowerCase().trim();
+            var visible = 0;
+
+            $('.emp-summary-row').each(function () {
+                var idx  = $(this).data('index');
+                var text = $(this).text().toLowerCase();
+                var match = !term || text.indexOf(term) !== -1;
+
+                $(this).toggle(match);
+
+                var $detail = $('#view-detail-' + idx);
+                if (!match) $detail.hide();
+                if (match) visible++;
+            });
+
+            var counter = 1;
+            $('.emp-summary-row').each(function () {
+                if ($(this).is(':visible')) {
+                    $(this).find('td:first').text(counter++);
+                }
+            });
+
+            $('#filteredCount').text(term ? (visible + ' of ' + total + ' shown') : '');
+        });
+
+        $(document).on('click', '.btn-view-detail', function () {
+            var targetId = $(this).data('target');
+            var $detail  = $('#' + targetId);
+            var $icon    = $(this).find('i');
+
+            $detail.toggle();
+            if ($detail.is(':visible')) {
+                $(this).removeClass('btn-outline-info').addClass('btn-info');
+                $icon.removeClass('fa-clock').addClass('fa-chevron-up');
+            } else {
+                $(this).removeClass('btn-info').addClass('btn-outline-info');
+                $icon.removeClass('fa-chevron-up').addClass('fa-clock');
+            }
+        });
+    })();
+</script>

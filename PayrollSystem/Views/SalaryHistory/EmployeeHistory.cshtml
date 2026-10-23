@@ -1,0 +1,135 @@
+@using PayrollSystem.Utility
+@model IEnumerable<SalaryHistory>
+
+@{
+    ViewData["Title"] = $"Salary History - {ViewBag.EmployeeName}";
+}
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center">
+        <div class="flex-grow-1 d-flex justify-content-start">
+            <h3 class="card-title m-0">
+                <i class="fas fa-history mr-2"></i>
+                Salary History - @ViewBag.EmployeeName
+            </h3>
+        </div>
+        <div class="card-tools d-flex align-items-center">
+            <a href="/Employee/Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Employees
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+            @if (Model != null && Model.Any())
+            {
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="info-box bg-light">
+                            <div class="info-box-content">
+                                <span class="info-box-text">Total Changes</span>
+                                <span class="info-box-number">@Model.Count()</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-box bg-success">
+                            <div class="info-box-content">
+                                <span class="info-box-text">Increases</span>
+                                <span class="info-box-number">@Model.Count(h => h.ChangeType == SalaryChangeType.Increase)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-box bg-danger">
+                            <div class="info-box-content">
+                                <span class="info-box-text">Decreases</span>
+                                <span class="info-box-number">@Model.Count(h => h.ChangeType == SalaryChangeType.Decrease)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-box bg-info">
+                            <div class="info-box-content">
+                                <span class="info-box-text">Current Salary</span>
+                                <span class="info-box-number">@Model.OrderByDescending(h => h.CreatedOn).First().NewBasicSalary.ToString("N2")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="table table-hover table-striped table-bordered" id="myTable" width="100%">
+                    <thead>
+                        <tr class="text-center">
+                            <th>No.</th>
+                            <th>Change Type</th>
+                            <th>Previous Salary</th>
+                            <th>New Salary</th>
+                            <th>Change Amount</th>
+                            <th>Effective Date</th>
+                            <th>Reason</th>
+                            <th>Approved By</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var index = 1;
+                            var orderedModel = Model.OrderByDescending(h => h.CreatedOn);
+                        }
+                        @foreach (var item in orderedModel)
+                        {
+                            <tr>
+                                <td class="text-center">@index</td>
+                                <td class="text-center">
+                                    <span class="badge @(item.ChangeType == SalaryChangeType.Increase ? "bg-success" : item.ChangeType == SalaryChangeType.Decrease ? "bg-danger" : "bg-warning")">
+                                        @PayrollSystem.Utility.EnumHelper.GetDisplayName(item.ChangeType)
+                                    </span>
+                                </td>
+                                <td class="text-right">@item.PreviousBasicSalary.ToString("N2")</td>
+                                <td class="text-right">@item.NewBasicSalary.ToString("N2")</td>
+                                <td class="text-center">
+                                    <span class="@(item.NewBasicSalary > item.PreviousBasicSalary ? "text-success fw-bold" : item.NewBasicSalary < item.PreviousBasicSalary ? "text-danger fw-bold" : "text-muted")">
+                                        @(item.NewBasicSalary > item.PreviousBasicSalary ? "+" : item.NewBasicSalary < item.PreviousBasicSalary ? "-" : "")
+                                        @Math.Abs(item.NewBasicSalary - item.PreviousBasicSalary).ToString("N2")
+                                    </span>
+                                </td>
+                                <td class="text-center">@item.EffectiveDate.ToString("MMM dd, yyyy")</td>
+                                <td>@item.Reason</td>
+                                <td>@item.ApprovedBy?.UserName</td>
+                                <td align="center">
+                                    <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                        Action
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu" role="menu">
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="History Details"
+                                           data-url="/SalaryHistory/Details/@item.Id"
+                                           data-modal-type="view">
+                                            <i class="fa fa-eye mr-2 text-dark"></i>
+                                            <span>View Details</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                    <h4>No Salary History Found</h4>
+                    <p>This employee has no recorded salary changes.</p>
+                    <a href="/Employee/Index" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Employees
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

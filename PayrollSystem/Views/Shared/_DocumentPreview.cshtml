@@ -1,0 +1,591 @@
+@{
+    var title = ViewData["PreviewTitle"]?.ToString() ?? "Document Preview";
+    var showZoomControls = ViewData["ShowZoomControls"] != null ? Convert.ToBoolean(ViewData["ShowZoomControls"]) : true;
+    var showPrintButton = ViewData["ShowPrintButton"] != null ? Convert.ToBoolean(ViewData["ShowPrintButton"]) : true;
+    var showExportButton = ViewData["ShowExportButton"] != null ? Convert.ToBoolean(ViewData["ShowExportButton"]) : false;
+    var customButtons = ViewData["CustomButtons"] as List<(string text, string icon, string action)> ?? new List<(string text, string icon, string action)>();
+    var documentTableFontSize = ViewData["DocumentTableFontSize"]?.ToString() ?? "10pt"; // Default to 10pt if not set
+    var documentOrientation = ViewData["DocumentOrientation"]?.ToString() ?? "landscape"; // Default to landscape
+    var documentFormat = ViewData["DocumentFormat"]?.ToString() ?? "A4"; // Default to A4
+}
+
+<style>
+    @@media print {
+        @@page {
+            size: @documentOrientation;
+            margin: 0.5cm;
+        }
+        /* Hide all preview chrome and UI elements */
+        .preview-toolbar,
+        .main-footer,
+        .main-header,
+        .main-sidebar,
+        .back-to-top,
+        .content-wrapper > .content-header,
+        .content-header,
+        .breadcrumb,
+        .card-header,
+        .card-tools,
+        .filter-section,
+        #filter-form,
+        #dtrFilterForm,
+        .card-body > .row.mb-4,
+        #noDataFoundMessage,
+        .loading-overlay,
+        .card-body > hr {
+            display: none !important;
+        }
+        /* Remove all borders and shadows from container elements */
+        .main-header,
+        .content-header,
+        .content-wrapper,
+        .container-fluid,
+        .border-bottom,
+        .border-top {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+            .content-header::before,
+            .content-header::after,
+            .main-header::before,
+            .main-header::after,
+            .container-fluid::before,
+            .container-fluid::after {
+                display: none !important;
+            }
+        /* Reset preview container to allow natural document flow */
+        .document-preview-container,
+        .preview-container,
+        .document-holder,
+        .card,
+        .card-body {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            height: auto !important;
+            width: 100% !important;
+            overflow: visible !important;
+            position: static !important;
+        }
+        /* Reset all transforms and positioning for document content */
+        .document-content,
+        #document-content {
+            transform: none !important;
+            position: static !important;
+            width: auto !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        /* Remove A4 classes that add extra padding/margins */
+        .document-a4-portrait,
+        .document-a4-landscape {
+            width: 100% !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+        }
+        /* Ensure document content is visible and prints correctly */
+        .document-content * {
+            visibility: visible !important;
+        }
+        /* Force page breaks to be respected */
+        .page-break {
+            page-break-after: always;
+            break-after: page;
+        }
+    }
+
+    .document-content {
+        width: auto;
+        height: auto;
+        border: 0px;
+        position: absolute;
+        transform-origin: top left;
+        transition: transform 0.2s;
+        background: white;
+    }
+
+    .document-a4-portrait {
+        width: 210mm; /* A4 width */
+        min-height: 297mm; /* A4 height */
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        padding: 6mm;
+        box-sizing: border-box;
+    }
+
+    .document-a4-landscape {
+        width: 297mm; /* A4 landscape width */
+        min-height: 210mm; /* A4 landscape height */
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        padding: 8mm;
+        box-sizing: border-box;
+    }
+
+    .preview-container {
+        height: calc(115vh - 320px);
+        overflow: auto;
+        border: 1px solid #EFEFEF;
+        position: relative;
+        background: #E6E6E6;
+    }
+
+    .document-holder {
+        position: relative;
+        margin: 15px auto;
+        transition: height 0.2s, width 0.2s;
+        height: auto;
+        min-height: 100px;
+        background: white;
+        box-shadow: 0 3px 14px rgba(0,0,0,0.15);
+        border-radius: 2px;
+    }
+
+    .table {
+        font-size: 10pt;
+        table-layout: fixed;
+        width: 100%;
+    }
+
+    /* Ensure all table borders are black in preview */
+    table.table-bordered {
+        border-collapse: collapse;
+    }
+
+    .table-bordered > thead > tr > th,
+    .table-bordered > thead > tr > td,
+    .table-bordered > tbody > tr > th,
+    .table-bordered > tbody > tr > td,
+    .table-bordered > tfoot > tr > th,
+    .table-bordered > tfoot > tr > td {
+        border: 1px solid #000 !important;
+    }
+
+    .table th, .table td {
+        padding: 2px 4px;
+        white-space: normal;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
+
+    .zoom-level {
+        min-width: 60px;
+        text-align: center;
+        padding: 0 10px;
+        font-size: 13px;
+        border: 1px solid #ced4da;
+        background: white;
+        display: inline-block;
+        min-width: 55px;
+        text-align: center;
+        line-height: 30px;
+        border-radius: 2px;
+        color: #495057;
+    }
+
+    /* Responsive and professional toolbar styles */
+    .preview-toolbar {
+        background: #f8f9fa;
+        border-bottom: 1px solid #e5e5e5;
+        padding: 12px 16px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .preview-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    .toolbar-title h5 {
+        font-weight: 600;
+        color: #0056b3;
+        margin-bottom: 0;
+    }
+
+    @@media (max-width: 768px) {
+        .preview-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 10px 8px;
+        }
+
+        .toolbar-title {
+            margin-bottom: 8px;
+        }
+
+        .preview-controls {
+            justify-content: flex-start;
+        }
+    }
+
+    @@media (max-width: 576px) {
+        .preview-toolbar {
+            padding: 8px 4px;
+        }
+
+        .preview-controls .btn {
+            font-size: 13px;
+            padding: 4px 8px;
+        }
+
+        .zoom-level {
+            min-width: 40px !important;
+            font-size: 12px !important;
+        }
+    }
+</style>
+
+<div class="document-preview-container">
+    <!-- Preview toolbar -->
+    <div class="preview-toolbar d-flex flex-wrap flex-md-nowrap align-items-center justify-content-between px-3 py-2 border-bottom bg-light">
+        <div class="toolbar-title mb-2 mb-md-0">
+            <h5 class="m-0 fw-semibold text-primary">@title</h5>
+        </div>
+        <div class="preview-controls d-flex flex-wrap gap-2 align-items-center justify-content-end">
+            @if (showZoomControls)
+            {
+                <div class="btn-group me-2 mb-2 mb-md-0" role="group" aria-label="Zoom controls">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnZoomOut" title="Zoom Out">
+                        <i class="fas fa-search-minus"></i>
+                    </button>
+                    <span class="zoom-level px-2 border bg-white d-inline-block text-center rounded-1 text-secondary" style="min-width: 55px; line-height: 30px; font-size: 13px;">100%</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnZoomIn" title="Zoom In">
+                        <i class="fas fa-search-plus"></i>
+                    </button>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2 mb-2 mb-md-0" id="btnFitWidth" title="Fit to Width">
+                    <i class="fas fa-expand-alt"></i>
+                </button>
+            }
+            @if (showPrintButton)
+            {
+                <button type="button" class="btn btn-sm btn-primary me-2 mb-2 mb-md-0" id="btnPrintPreview" title="Print Document">
+                    <i class="fas fa-print"></i> <span class="d-none d-sm-inline">Print</span>
+                </button>
+            }
+            @foreach (var button in customButtons)
+            {
+                <button type="button" class="btn btn-sm btn-outline-primary me-2 mb-2 mb-md-0" onclick="@button.action" title="@button.text">
+                    <i class="@button.icon"></i> <span class="d-none d-sm-inline">@button.text</span>
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Preview container -->
+    <div class="preview-container">
+        <div id="document-holder" class="document-holder">
+            <div id="document-content" class="document-content @(documentOrientation == "portrait" ? "document-a4-portrait" : (documentOrientation == "landscape" ? "document-a4-landscape" : ""))">
+                <!-- Document content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<script src="/plugins/jszip/jszip.min.js"></script>
+<script src="~/js/exportToExcel.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Function to get document dimensions based on format and orientation
+        function getDocumentDimensions(format, orientation) {
+            let width, pdfFormat;
+
+            const DPI = 96; // Standard web display DPI
+
+            if (format === "A4") {
+                if (orientation === "portrait") {
+                    width = Math.round(8.27 * DPI); // 210mm / 25.4mm/inch * 96dpi = ~794px
+                    pdfFormat = "'a4'";
+                } else { // landscape
+                    width = Math.round(11.69 * DPI); // 297mm / 25.4mm/inch * 96dpi = ~1122px
+                    pdfFormat = "'a4'";
+                }
+            } else if (format === "letter") {
+                if (orientation === "portrait") {
+                    width = Math.round(8.5 * DPI); // Letter width
+                    pdfFormat = "'letter'";
+                } else { // landscape
+                    width = Math.round(11 * DPI); // Letter landscape width
+                    pdfFormat = "'letter'";
+                }
+            } else { // Default to A4 portrait if unknown
+                 if (orientation === "portrait") {
+                    width = Math.round(8.27 * DPI); // 210mm / 25.4mm/inch * 96dpi = ~794px
+                    pdfFormat = "'a4'";
+                } else { // landscape
+                    width = Math.round(11.69 * DPI); // 297mm / 25.4mm/inch * 96dpi = ~1122px
+                    pdfFormat = "'a4'";
+                }
+            }
+            return { width: width, pdfFormat: pdfFormat };
+        }
+
+        // Get settings based on ViewData
+        const docSettings = getDocumentDimensions("@documentFormat", "@documentOrientation");
+
+        // Console log ViewData parameters
+        console.log("Document Preview ViewData:");
+        console.log("  DocumentOrientation: @documentOrientation");
+        console.log("  DocumentFormat: @documentFormat");
+        console.log("  Determined DOCUMENT_WIDTH: " + docSettings.width);
+        console.log("  Determined DocumentPdfFormat: " + docSettings.pdfFormat);
+
+        var FitScale, FitWidth;
+        var ZoomScale = 1.0; // Set initial zoom to 100%
+        const DOCUMENT_WIDTH = docSettings.width;
+        var resizeTimeout;
+
+
+        function CalculateScale() {
+            FitWidth = $(".preview-container").width() - 80;
+
+            // Prevent negative values
+            if (FitWidth <= 0) {
+                FitWidth = window.innerWidth - 100; // Fallback to window width
+            }
+
+            FitScale = (FitWidth / DOCUMENT_WIDTH).toFixed(2);
+
+            // Ensure minimum scale
+            if (FitScale <= 0) {
+                FitScale = 0.1;
+            }
+
+            var targetWidth = FitWidth * ZoomScale;
+            var targetScale = (FitScale * ZoomScale).toFixed(2);
+
+            // Get actual content height using scrollHeight
+            var $documentContent = $("#document-content");
+            var contentHeight = Math.max(
+                $documentContent[0].scrollHeight || 0,
+                $documentContent.height() || 0,
+                768 // Minimum height fallback
+            );
+
+            var targetHeight = contentHeight * targetScale;
+
+            $("#document-content").css("transform", "scale(" + targetScale + ")");
+            $("#document-holder").css({
+                width: targetWidth + "px",
+                height: targetHeight + "px"
+            });
+
+            // Update zoom level display
+            $(".zoom-level").text(Math.round(ZoomScale * 100) + '%');
+        }
+
+        // Handle zoom controls
+        $('#btnZoomIn').on('click', function() {
+            if (ZoomScale >= 2.0)
+                return;
+            ZoomScale += 0.2;
+            CalculateScale();
+        });
+
+        $('#btnZoomOut').on('click', function() {
+            if (ZoomScale <= 0.4)
+                return;
+            ZoomScale -= 0.2;
+            CalculateScale();
+        });
+
+        $('#btnFitWidth').on('click', function() {
+            ZoomScale = 1.0;
+            CalculateScale();
+        });
+
+        // Handle print button click
+        $('#btnPrintPreview').on('click', function() {
+            window.print();
+        });
+
+        // Handle export button click
+        $('#btnExportPreview').on('click', function() {
+            var $header = $('#document-content #documentHeader').first();
+            var $detailsTable = $('#document-content .table-borderless').first();
+            var $mainTable = $('#reportTable');
+            if ($mainTable.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Table Found',
+                    text: 'No document table is available to export.'
+                });
+                return;
+            }
+            // Combine header, details, and main table HTML into one table for a single sheet
+            var exportTables = [];
+            if ($header.length) {
+                var tempHeaderTable = document.createElement('table');
+                var tr = document.createElement('tr');
+                var td = document.createElement('td');
+                td.innerHTML = $header.html();
+                tr.appendChild(td);
+                tempHeaderTable.appendChild(tr);
+                exportTables.push(tempHeaderTable);
+            }
+            if ($detailsTable.length) {
+                exportTables.push($detailsTable[0]);
+            }
+            exportTables.push($mainTable[0]);
+
+            var currentDate = moment().format('MMDDYYYY');
+            var filename = 'PayrollDocument_' + currentDate + '.xlsx';
+            exportToExcel(exportTables, filename, 'PayrollDocument');
+        });
+
+        // Handle export to PDF button click
+        $('#btnExportPdf').on('click', function () {
+            var $documentContent = $('#document-content');
+            if ($documentContent.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'No Document Content',
+                    text: 'No document content is available to export to PDF.'
+                });
+                return;
+            }
+
+            console.log("Document content found for PDF export:", $documentContent);
+            console.log("Document content HTML:", $documentContent.html());
+
+            // Generate filename similar to Excel export
+            var currentDate = moment().format('MMDDYYYY');
+            var filename = 'PayrollDocument_' + currentDate + '.pdf';
+
+            // Get the actual scroll height of the content
+            var contentScrollHeight = $documentContent[0].scrollHeight;
+
+            var opt = {
+                margin: 0.5, // 0.5 inch margin
+                filename: filename,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    logging: true,
+                    dpi: 192,
+                    letterRendering: true,
+                    useCORS: true
+                },
+                jsPDF: { unit: 'in', format: JSON.parse(docSettings.pdfFormat), orientation: "@documentOrientation" },
+                pagebreak: { mode: ['css', 'legacy'], after: '.page-break' }
+            };
+
+            console.log("jsPDF options for export:", opt.jsPDF);
+
+            // Temporarily reset zoom and apply specific styles for PDF generation
+            var originalTransform = $documentContent.css('transform');
+            var originalWidth = $documentContent.css('width');
+            var originalHeight = $documentContent.css('height');
+            var originalPosition = $documentContent.css('position');
+            var originalOverflow = $documentContent.css('overflow');
+
+            $documentContent.css({
+                'transform': 'scale(1)',
+                'width': '1700px',
+                'height': contentScrollHeight + 'px', // Use scroll height for full content
+                'position': 'static', // Change to static to avoid positioning issues
+                'overflow': 'visible' // Ensure all content is visible
+            });
+
+             // Update html2canvas options with dynamic height
+            opt.html2canvas.height = contentScrollHeight;
+            opt.html2canvas.width = 1700; // Explicitly set width based on DOCUMENT_WIDTH
+
+            // Add a slight delay to ensure all styles are applied before rendering
+            setTimeout(function () {
+                html2pdf().from($documentContent[0]).set(opt).save().then(function() {
+                    // Restore original styles after PDF generation
+                    $documentContent.css({
+                        'transform': originalTransform,
+                        'width': originalWidth,
+                        'height': originalHeight,
+                        'position': originalPosition,
+                        'overflow': originalOverflow
+                    });
+                });
+            }, 100); // 100ms delay
+        });
+
+        // Handle window resize
+        $(window).on('resize', function() {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(CalculateScale, 250);
+        });
+
+        // Initialize on load with a delay to ensure container is ready
+        $(window).on("load", function() {
+            setTimeout(function() {
+                CalculateScale();
+            }, 100);
+        });
+
+        // Initial calculation with retry mechanism
+        function initializeScale(retryCount = 0) {
+            setTimeout(function() {
+                const container = $('.preview-container');
+                if (container.width() > 0) {
+                    CalculateScale();
+                } else if (retryCount < 10) {
+                    // Retry with exponential backoff
+                    setTimeout(function() {
+                        initializeScale(retryCount + 1);
+                    }, Math.min(100 * Math.pow(2, retryCount), 1000));
+                } else {
+                    // Fallback calculation with safe values
+                    FitWidth = window.innerWidth - 100;
+                    FitScale = 0.1;
+                    ZoomScale = 0.5;
+                    CalculateScale();
+                }
+            }, 100);
+        }
+
+        // Start initial scale calculation
+        initializeScale();
+
+        // Adjust when document content is loaded
+        $(document).on('documentContentLoaded', function() {
+            // Recalculate after content loads
+            setTimeout(function() {
+                CalculateScale();
+            }, 150);
+        });
+
+        // Monitor for content changes (useful if content is dynamically loaded)
+        var contentObserver = new MutationObserver(function(mutations) {
+            // Debounce the recalculation
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(CalculateScale, 300);
+        });
+
+        // Start observing the document content for changes
+        var documentContent = document.getElementById('document-content');
+        if (documentContent) {
+            contentObserver.observe(documentContent, {
+                childList: true,
+                subtree: true,
+                attributes: false
+            });
+        }
+    });
+</script>

@@ -1,0 +1,120 @@
+@model DtrJustificationFormViewModel
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+
+@if (Model.HasPendingRequest)
+{
+    <div class="dm-modal">
+        <div class="dm-modal-hero">
+            <div class="dm-modal-hero-icon dm-accent-amber">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="dm-modal-hero-body">
+                <h5 class="dm-modal-title">Justify Time Log</h5>
+                <p class="dm-modal-subtitle">@Model.DateDisplay</p>
+            </div>
+        </div>
+        <div class="dm-alert-banner dm-alert-banner--info mb-0">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Pending justification</strong>
+                <span>@(Model.StatusMessage ?? "Your justification is currently awaiting approval.")</span>
+            </div>
+        </div>
+    </div>
+    return;
+}
+
+<form id="justifyTimeLogForm" method="post" action="@Url.Action("SubmitJustification", "Dtr")">
+    @Html.AntiForgeryToken()
+    <span asp-validation-summary="ModelOnly" class="text-danger validation-summary mb-2"></span>
+
+    <input type="hidden" asp-for="EmployeeId" />
+    <input type="hidden" name="Date" value="@Model.Date.ToString("yyyy-MM-dd")" />
+    <input type="hidden" name="ScheduleLayout" value="@Model.ScheduleLayout" />
+    @if (Model.RelatesToPreviousShiftDate.HasValue)
+    {
+        <input type="hidden" name="RelatesToPreviousShiftDate" value="@Model.RelatesToPreviousShiftDate.Value.ToString("yyyy-MM-dd")" />
+    }
+
+    <div class="dm-modal">
+        <div class="dm-modal-hero">
+            <div class="dm-modal-hero-icon dm-accent-teal">
+                <i class="fas fa-pen"></i>
+            </div>
+            <div class="dm-modal-hero-body">
+                <h5 class="dm-modal-title">Justify Time Log</h5>
+                <p class="dm-modal-subtitle">@Model.DateDisplay</p>
+            </div>
+            <div class="dm-modal-hero-aside">
+                <span class="dm-metric-pill">
+                    <i class="fas fa-exclamation-circle"></i>
+                    @Model.MissingSlots.Count missing
+                </span>
+            </div>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header">
+                <i class="fas fa-clock"></i>
+                Missing time entries
+            </div>
+            <div class="dm-section-body">
+                @if (Model.ScheduleLayout == "Overnight")
+                {
+                    <div class="dm-alert-banner dm-alert-banner--info mb-3">
+                        <i class="fas fa-moon"></i>
+                        <div>
+                            <strong>Night shift</strong>
+                            <span>Shift start is evening (PM). Shift end is next-day morning (AM) — use the next calendar date if that day is leave/off.</span>
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.InfoMessage))
+                {
+                    <div class="dm-alert-banner dm-alert-banner--info mb-3">
+                        <i class="fas fa-info-circle"></i>
+                        <div>@Model.InfoMessage</div>
+                    </div>
+                }
+                @if (Model.MissingSlots.Any())
+                {
+                    <p class="dm-form-hint mb-3">Provide the correct time for each missing biometric entry.</p>
+                    <div class="dm-slot-grid">
+                        @foreach (var slot in Model.MissingSlots)
+                        {
+                            <div class="dm-slot-card">
+                                <div class="dm-slot-card-top">
+                                    <span class="dm-slot-card-title">@slot.Label</span>
+                                    <span class="text-muted small">@Model.DateDisplay</span>
+                                </div>
+                                <div class="dm-slot-card-desc">@slot.Description</div>
+                                <input type="time"
+                                       class="form-control form-control-sm dm-form-control dm-time-input"
+                                       name="@slot.Key" />
+                            </div>
+                        }
+                    </div>
+                    <span class="text-danger validation-message" id="justifyTimeSlotsError" style="display:none;">
+                        Please provide at least one preferred time.
+                    </span>
+                }
+            </div>
+        </div>
+
+        <div class="dm-section">
+            <div class="dm-section-header">
+                <i class="fas fa-comment-dots"></i>
+                Justification details
+            </div>
+            <div class="dm-section-body">
+                <textarea asp-for="Justification"
+                          class="form-control dm-form-control"
+                          rows="4"
+                          placeholder="Explain why the time logs are missing or need correction…"></textarea>
+                <span asp-validation-for="Justification" class="text-danger validation-message"></span>
+                <span class="dm-form-hint">Be clear and concise. This will be reviewed by HR.</span>
+            </div>
+        </div>
+    </div>
+</form>

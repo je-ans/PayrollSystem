@@ -1,0 +1,86 @@
+@model TimeEntryViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="CreateTimeEntry" method="post" asp-antiforgery="true" id="createTimeEntryForm">
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <select asp-for="EmployeeId" class="form-control floating-input general-select" required data-placeholder="Select Employee">
+                            <option value="">Select Employee</option>
+                            @foreach (var employee in ViewBag.Employees)
+                            {
+                                <option value="@employee.Id">@employee.Name</option>
+                            }
+                        </select>
+                        <label asp-for="EmployeeId" class="floating-label">Employee</label>
+                    </div>
+                    <span asp-validation-for="EmployeeId" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <select asp-for="EntryType" class="form-control floating-input general-select" asp-items="Html.GetEnumSelectList<PayrollSystem.Models.EntryType>()" required data-placeholder="Select Entry Type">
+                            <option value="">Select Entry Type</option>
+                        </select>
+                        <label asp-for="EntryType" class="floating-label">Entry Type</label>
+                    </div>
+                    <span asp-validation-for="EntryType" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="EntryDateTime" class="form-control floating-input" type="datetime-local" required placeholder=" " />
+                        <label asp-for="EntryDateTime" class="floating-label">Entry Date &amp; Time</label>
+                    </div>
+                    <span asp-validation-for="EntryDateTime" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="BiometricDeviceId" class="form-control floating-input" placeholder=" " />
+                        <label asp-for="BiometricDeviceId" class="floating-label">Biometric Device ID</label>
+                    </div>
+                    <span asp-validation-for="BiometricDeviceId" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Location" class="form-control floating-input" placeholder=" " />
+                        <label asp-for="Location" class="floating-label">Location</label>
+                    </div>
+                    <span asp-validation-for="Location" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Notes" class="form-control floating-input" placeholder=" " />
+                        <label asp-for="Notes" class="floating-label">Notes</label>
+                    </div>
+                    <span asp-validation-for="Notes" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+
+        <input asp-for="IsManualEntry" class="custom-control-input" checked hidden/>
+        @* <div class="form-group"> *@
+        @*     <div class="custom-control custom-checkbox"> *@
+        @*         <input asp-for="IsManualEntry" class="custom-control-input" checked /> *@
+        @*         <label class="custom-control-label" asp-for="IsManualEntry"></label> *@
+        @*     </div> *@
+        @* </div> *@
+    </form>
+</div>

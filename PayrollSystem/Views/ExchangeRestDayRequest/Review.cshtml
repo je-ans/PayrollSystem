@@ -1,0 +1,121 @@
+@using PayrollSystem.Utility
+@model ExchangeRestDayProcessViewModel
+@{
+    string StatusClass(JustificationStatus status) => status switch
+    {
+        JustificationStatus.Pending => "dm-status--pending",
+        JustificationStatus.Approved => "dm-status--approved",
+        JustificationStatus.Rejected => "dm-status--rejected",
+        _ => "dm-status--neutral"
+    };
+}
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<div class="dm-modal">
+    <div class="dm-modal-hero">
+        <div class="dm-modal-hero-icon dm-accent-teal">
+            <i class="fas fa-calendar-day"></i>
+        </div>
+        <div class="dm-modal-hero-body">
+            <h5 class="dm-modal-title">Exchange Rest Day</h5>
+            <p class="dm-modal-subtitle">
+                @Model.FirstEmployeeName ↔ @Model.SecondEmployeeName
+            </p>
+        </div>
+        <div class="dm-modal-hero-aside">
+            <span class="dm-status @StatusClass(Model.CurrentStatus)">
+                @EnumHelper.GetDisplayName(Model.CurrentStatus)
+            </span>
+        </div>
+    </div>
+
+    <div class="dm-review-layout">
+        <div class="dm-review-main">
+            <div class="dm-section">
+                <div class="dm-section-header">
+                    <i class="fas fa-info-circle"></i>
+                    Request details
+                </div>
+                <div class="dm-section-body">
+                    <div class="dm-detail-grid mb-3">
+                        @if (!string.IsNullOrWhiteSpace(Model.DepartmentName))
+                        {
+                            <div class="dm-detail-item dm-detail-item--full">
+                                <span class="dm-detail-label">Department</span>
+                                <span class="dm-detail-value">@Model.DepartmentName</span>
+                            </div>
+                        }
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Date filed</span>
+                            <span class="dm-detail-value">@Model.DateFiled.ToString("MMMM dd, yyyy")</span>
+                        </div>
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Submitted by</span>
+                            <span class="dm-detail-value dm-detail-value--muted">@Model.SubmittedBy</span>
+                        </div>
+                        <div class="dm-detail-item">
+                            <span class="dm-detail-label">Submitted on</span>
+                            <span class="dm-detail-value dm-detail-value--muted">@Model.SubmittedOn.ToString("MMM dd, yyyy h:mm tt")</span>
+                        </div>
+                        @if (Model.ReviewedOn.HasValue)
+                        {
+                            <div class="dm-detail-item">
+                                <span class="dm-detail-label">Last reviewed</span>
+                                <span class="dm-detail-value dm-detail-value--muted">@Model.ReviewedOn.Value.ToString("MMM dd, yyyy h:mm tt")</span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="dm-detail-item dm-detail-item--full mb-2">
+                                <span class="dm-detail-label">First employee</span>
+                                <span class="dm-detail-value">@Model.FirstEmployeeName</span>
+                            </div>
+                            <div class="small mb-1"><strong>Rest day:</strong> @Model.FirstRestDate.ToString("MMM dd, yyyy") · @Model.FirstRestShiftDisplay</div>
+                            <div class="small"><strong>Works on colleague rest day:</strong> @Model.SecondRestDate.ToString("MMM dd, yyyy") · @Model.FirstWorkShiftDisplay</div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="dm-detail-item dm-detail-item--full mb-2">
+                                <span class="dm-detail-label">Second employee</span>
+                                <span class="dm-detail-value">@Model.SecondEmployeeName</span>
+                            </div>
+                            <div class="small mb-1"><strong>Rest day:</strong> @Model.SecondRestDate.ToString("MMM dd, yyyy") · @Model.SecondRestShiftDisplay</div>
+                            <div class="small"><strong>Works on first rest day:</strong> @Model.FirstRestDate.ToString("MMM dd, yyyy") · @Model.SecondWorkShiftDisplay</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dm-section">
+                <div class="dm-section-header">
+                    <i class="fas fa-comment-alt"></i>
+                    Reason
+                </div>
+                <div class="dm-section-body">
+                    <p class="dm-reason-box">@Model.Reason</p>
+                    @if (!string.IsNullOrWhiteSpace(Model.ReviewNotes))
+                    {
+                        <div class="mt-3">
+                            <span class="dm-detail-label d-block mb-1">Latest review notes</span>
+                            <p class="dm-reason-box mb-0">@Model.ReviewNotes</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (Model.ApprovalTimeline != null)
+        {
+            <div class="dm-review-side">
+                <div class="dm-section">
+                    <div class="dm-section-body">
+                        @await Html.PartialAsync("~/Views/ApprovalWorkflow/Partials/_ApprovalTimeline.cshtml", Model.ApprovalTimeline)
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,93 @@
+﻿@model IEnumerable<SystemTask>
+
+@{
+    ViewData["Title"] = "System Task";
+    ViewBag.ActiveMenu = "SystemSetting";
+    ViewBag.ActiveLink = "SystemTasks";
+}
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center">
+		<div class="flex-grow-1 d-flex justify-content-start">
+            <h3 class="card-title m-0">System Tasks List</h3>
+		</div>
+		<div class="card-tools d-flex align-items-center">
+			<a href="javascript:void(0)" class="btn btn-primary open-modal"
+               data-title="Add System Task"
+               data-url="/SystemTasks/Create"
+			   data-modal-type="create"
+			   data-toogle="tooltip"
+               title="Add System Task">
+				<i class="fas fa-plus"></i>
+                <span class="d-none d-lg-inline">Add System Task</span>
+			</a>
+		</div>
+	</div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+            <table class="table table-hover table-striped table-bordered" id="myTable" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>No.</th>
+                        <th>Code</th>
+                        <th>Task Name</th>
+                        <th>Parent Name</th>
+                        <th>Order Number</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        var index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@index</td>
+                                <td>@item.Code</td>
+                                <td>@item.TaskName</td>
+                                <td>@item.Parent?.TaskName</td>
+                                <td class="text-center">@item.OrderNumber</td>
+                                <td align="center">
+                                    <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                        Action
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu" role="menu">
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal" 
+                                            data-title="System Task Details" 
+                                            data-url="/SystemTasks/View/@item.Id" 
+                                            data-modal-type="view">
+                                            <i class="fa fa-eye mr-2 text-dark"></i>
+                                            <span>View System Task</span>
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal" 
+                                            data-title="Edit System Task" 
+                                            data-url="/SystemTasks/Edit/@item.Id" 
+                                            data-modal-type="edit">
+                                            <i class="fa fa-edit mr-2 text-primary"></i>
+                                            <span>Edit System Task</span>
+                                        </a>
+
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal" 
+                                            data-title="Delete System Task" 
+                                            data-url="/SystemTasks/Delete/@item.Id" 
+                                            data-modal-type="delete_data">
+                                            <i class="fa fa-trash mr-2 text-danger"></i>
+                                            <span>Delete System Task</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    }
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

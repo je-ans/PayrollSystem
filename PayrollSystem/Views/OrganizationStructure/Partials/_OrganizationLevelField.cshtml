@@ -1,0 +1,15 @@
+@model OrganizationStructureFormViewModel
+
+<div class="form-group">
+    <div class="input-container">
+        <select asp-for="Level" asp-items="Model.LevelOptions"
+                class="form-control floating-input select2 general-select" id="orgLevel" required>
+        </select>
+        <label asp-for="Level" class="floating-label">Organization Level <span class="text-danger">*</span></label>
+    </div>
+    <span asp-validation-for="Level" class="text-danger validation-message"></span>
+    <small class="text-muted">
+        Pick any level deeper than the parent. Intermediate levels can be skipped
+        (e.g. Institution → Division → Section, or Institution → Division → Department → Section).
+    </small>
+</div>

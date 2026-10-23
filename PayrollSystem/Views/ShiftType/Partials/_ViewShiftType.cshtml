@@ -1,0 +1,89 @@
+@model ShiftTypeViewModel
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<div class="dm-modal">
+    <div class="aw-detail-hero">
+        <div>
+            <h5 class="aw-detail-hero-title">@Model.Code — @Model.Label</h5>
+            <p class="aw-detail-hero-subtitle">@Model.ScheduleDisplay</p>
+        </div>
+        <div class="d-flex flex-wrap align-items-center" style="gap:0.4rem;">
+            <span class="d-inline-block rounded border"
+                  style="width: 28px; height: 28px; background-color: @Model.ColorHex;"
+                  title="@Model.ColorHex"></span>
+            @if (Model.IsActive)
+            {
+                <span class="badge badge-success">Active</span>
+            }
+            else
+            {
+                <span class="badge badge-danger">Inactive</span>
+            }
+            @if (Model.IsLeave)
+            {
+                <span class="badge badge-warning">Leave / Off</span>
+            }
+        </div>
+    </div>
+
+    <div class="aw-detail-grid">
+        <div class="aw-detail-item">
+            <span class="aw-detail-label">Code</span>
+            <span class="aw-detail-value">@Model.Code</span>
+        </div>
+        <div class="aw-detail-item">
+            <span class="aw-detail-label">Label</span>
+            <span class="aw-detail-value">@Model.Label</span>
+        </div>
+        <div class="aw-detail-item">
+            <span class="aw-detail-label">Credited Hours</span>
+            <span class="aw-detail-value">@Model.Hours.ToString("N2")</span>
+        </div>
+        <div class="aw-detail-item">
+            <span class="aw-detail-label">Sort Order</span>
+            <span class="aw-detail-value">@Model.SortOrder</span>
+        </div>
+        @if (!Model.IsLeave)
+        {
+            <div class="aw-detail-item">
+                <span class="aw-detail-label">Flexible</span>
+                <span class="aw-detail-value">@(Model.IsFlexible ? "Yes" : "No")</span>
+            </div>
+            @if (!Model.IsFlexible && Model.StartTime.HasValue)
+            {
+                <div class="aw-detail-item">
+                    <span class="aw-detail-label">Start / End</span>
+                    <span class="aw-detail-value">
+                        @ShiftTypeScheduleHelper.FormatTime(Model.StartTime)
+                        –
+                        @ShiftTypeScheduleHelper.FormatTime(Model.EndTime)
+                        @(Model.SpansNextDay ? " (next day)" : "")
+                    </span>
+                </div>
+                <div class="aw-detail-item">
+                    <span class="aw-detail-label">Grace Period</span>
+                    <span class="aw-detail-value">@(Model.GracePeriodMinutes.HasValue ? $"{Model.GracePeriodMinutes} min" : "Company default")</span>
+                </div>
+                <div class="aw-detail-item aw-detail-item--full">
+                    <span class="aw-detail-label">Lunch Break</span>
+                    <span class="aw-detail-value">
+                        @if (Model.HasLunchBreak && Model.LunchStart.HasValue)
+                        {
+                            @:Yes (@ShiftTypeScheduleHelper.FormatTime(Model.LunchStart) – @ShiftTypeScheduleHelper.FormatTime(Model.LunchEnd))
+                        }
+                        else
+                        {
+                            @:No
+                        }
+                    </span>
+                </div>
+            }
+        }
+        <div class="aw-detail-item">
+            <span class="aw-detail-label">Color</span>
+            <span class="aw-detail-value">@Model.ColorHex</span>
+        </div>
+    </div>
+</div>

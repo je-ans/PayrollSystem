@@ -1,0 +1,188 @@
+@using System.Text.Json
+@model DeductionEditViewModel
+
+<style>
+    .section-header-container { position: relative; }
+    .section-header { color: #2c3e50; font-weight: 600; position: relative; display: inline-block; padding-right: 1rem; background: white; z-index: 1; }
+    .section-divider { position: absolute; top: 50%; width: 100%; height: 1px; background-color: #e0e0e0; z-index: 0; }
+    .section-divider-wide { height: 1px; background: linear-gradient(to right, transparent, #e0e0e0, transparent); }
+</style>
+
+<form asp-action="Manage" method="post" id="manageEmployeeDeductionForm">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="Id" />
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <span asp-validation-summary="All" class="text-danger"></span>
+
+            <div class="section-header-container mb-1">
+                <h6 class="section-header">Deduction</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            @if (Model.Id > 0)
+            {
+                <p class="text-muted small mb-3">Update this deduction and who receives it. Saving replaces the current employee list.</p>
+            }
+            else
+            {
+                <p class="text-muted small mb-3">Define the deduction and assign employees in one step.</p>
+            }
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <select asp-for="DeductionTypeId" class="form-control floating-input general-select"
+                            asp-items="ViewBag.DeductionTypes">
+                        <option value="" selected disabled hidden>-- Select Deduction Type --</option>
+                    </select>
+                    <label asp-for="DeductionTypeId" class="floating-label">Deduction Type <span class="text-danger">*</span></label>
+                </div>
+                <span asp-validation-for="DeductionTypeId" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <input asp-for="DeductionName" class="form-control floating-input" placeholder=" " />
+                    <label asp-for="DeductionName" class="floating-label">Deduction Name <span class="text-danger">*</span></label>
+                </div>
+                <span asp-validation-for="DeductionName" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <input asp-for="Code" class="form-control floating-input" placeholder=" " />
+                    <label asp-for="Code" class="floating-label">Code</label>
+                </div>
+                <span asp-validation-for="Code" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="section-header-container mb-1 mt-3">
+                <h6 class="section-header">Amount & Schedule</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <input asp-for="Amount" type="number" step="0.01" class="form-control floating-input" placeholder=" " />
+                    <label asp-for="Amount" class="floating-label">Amount <span class="text-danger">*</span></label>
+                </div>
+                <span asp-validation-for="Amount" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input asp-for="EffectiveStartDate" type="date" class="form-control floating-input" />
+                            <label asp-for="EffectiveStartDate" class="floating-label">Effective Start Date <span class="text-danger">*</span></label>
+                        </div>
+                        <span asp-validation-for="EffectiveStartDate" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input asp-for="EffectiveEndDate" type="date" class="form-control floating-input" />
+                            <label asp-for="EffectiveEndDate" class="floating-label">Effective End Date</label>
+                        </div>
+                        <span asp-validation-for="EffectiveEndDate" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-header-container mb-1 mt-3">
+                <h6 class="section-header">Assign Employees</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" asp-for="ApplyAllActiveEmployees" id="manageDeductionApplyAllActive" />
+                    <label class="custom-control-label font-weight-semibold" for="manageDeductionApplyAllActive">
+                        Apply to all active employees
+                        @if (ViewBag.ActiveEmployeeCount != null)
+                        {
+                            <span class="text-muted font-weight-normal">(<span>@ViewBag.ActiveEmployeeCount</span> active)</span>
+                        }
+                    </label>
+                </div>
+                <small class="form-text text-muted d-block mb-2">Turn on to include every active employee. Turn off to pick specific people below.</small>
+            </div>
+
+            <div class="form-group mt-3" id="manageDeductionManualEmployeePick">
+                <div class="input-container">
+                    <select asp-for="EmployeeIds" class="form-control floating-input select2 general-select" multiple="multiple" data-placeholder="-- Select employee(s) --" data-val="false">
+                        @foreach (var e in ViewBag.Employees ?? new List<dynamic>())
+                        {
+                            <option value="@e.Id">@e.Name (@e.EmployeeIdNumber)</option>
+                        }
+                    </select>
+                    <label asp-for="EmployeeIds" class="floating-label">Employees <span class="text-muted font-weight-normal">(manual)</span></label>
+                </div>
+                <span asp-validation-for="EmployeeIds" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="form-group mt-4">
+                <div class="input-container">
+                    <textarea asp-for="Remarks" class="form-control floating-input" rows="2" placeholder=" "></textarea>
+                    <label asp-for="Remarks" class="floating-label">Remarks</label>
+                </div>
+                <span asp-validation-for="Remarks" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="section-header-container mb-1 mt-3">
+                <h6 class="section-header">Settings</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-4">
+                    <div class="custom-control custom-switch">
+                        <input class="custom-control-input" asp-for="IsActive" id="manageDeductionIsActive" />
+                        <label class="custom-control-label" for="manageDeductionIsActive">Active</label>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</form>
+
+<script>
+    (function () {
+        var assignedEmployeeIds = @Html.Raw(JsonSerializer.Serialize(Model.EmployeeIds ?? new List<Guid>()));
+
+        function syncManageDeductionTargets() {
+            var allActive = $('#manageDeductionApplyAllActive').is(':checked');
+            var $wrap = $('#manageDeductionManualEmployeePick');
+            var $sel = $wrap.find('select');
+            $sel.prop('disabled', allActive);
+            try {
+                if ($sel.hasClass('select2-hidden-accessible'))
+                    $sel.trigger('select2:close');
+            } catch (e) { /* ignore */ }
+            if (allActive) {
+                $sel.val(null).trigger('change');
+                $wrap.css('opacity', '0.55');
+            } else {
+                $wrap.css('opacity', '');
+            }
+        }
+
+        function applyAssignedEmployees() {
+            var $sel = $('#manageDeductionManualEmployeePick select');
+            if (!$sel.length || !assignedEmployeeIds.length) return;
+            $sel.val(assignedEmployeeIds).trigger('change');
+        }
+
+        $('#manageDeductionApplyAllActive').off('change.manageDeduction').on('change.manageDeduction', syncManageDeductionTargets);
+
+        syncManageDeductionTargets();
+        applyAssignedEmployees();
+        setTimeout(function () {
+            syncManageDeductionTargets();
+            applyAssignedEmployees();
+        }, 400);
+    })();
+</script>

@@ -1,0 +1,9 @@
+@model OrganizationStructureViewModel
+
+<div class="container-fluid">
+    <p>Are you sure you want to delete <strong>@Model.Name</strong> (<code>@Model.Code</code>)?</p>
+    <p class="text-muted mb-0">This action cannot be undone.</p>
+
+    <form asp-action="DeleteConfirmed" asp-route-id="@Model.Id" method="post" asp-antiforgery="true" id="organizationStructureForm" class="d-none">
+    </form>
+</div>

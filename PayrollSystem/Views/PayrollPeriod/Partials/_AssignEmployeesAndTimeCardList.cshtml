@@ -1,0 +1,139 @@
+@model PayrollPeriodTimeCardViewModel
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center">
+        <div class="flex-grow-1 d-flex justify-content-start">
+            <h3 class="card-title m-0">Assign Employees & Time Card List</h3>
+            <small class="text-muted ml-2">@Model.PayrollPeriodName - @Model.PeriodRange</small>
+        </div>
+        <div class="card-tools d-flex align-items-center">
+            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+               data-title="Assign Employees & Edit Time Card"
+               data-url="/PayrollPeriod/EditAssignEmployeesAndTimeCard/@Model.PayrollPeriodId"
+               data-modal-type="create"
+               data-parent-modal="#viewModal"
+               data-size="modal-xl"
+               data-toggle="tooltip"
+               title="Assign Employees & Edit Time Card">
+                <i class="fas fa-plus"></i>
+                <span class="d-none d-lg-inline">Assign Employees & Edit Time Card</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+            <table class="table table-hover table-striped table-bordered" id="assignTimeCardListTable" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>No.</th>
+                        <th>Employee</th>
+                        <th>Department</th>
+                        <th>Late (min)</th>
+                        <th>Undertime (min)</th>
+                        <th>Absent (hrs)</th>
+                        <th>Notes</th>
+                        <th>Hours</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Rows != null && Model.Rows.Any())
+                    {
+                        var index = 1;
+                        foreach (var row in Model.Rows)
+                        {
+                            var hasDetails = row.Details.Any();
+                            var detailId = $"list-detail-{index}";
+                            <tr>
+                                <td class="text-center">@index</td>
+                                <td>@row.EmployeeName</td>
+                                <td>@row.OrganizationUnitName</td>
+                                <td class="text-right">@row.LateMinutes</td>
+                                <td class="text-right">@row.UndertimeMinutes</td>
+                                <td class="text-right">@row.AbsentHours.ToString("0.####")</td>
+                                <td>@(row.Notes ?? "—")</td>
+                                <td class="text-center">
+                                    @if (hasDetails)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-outline-info btn-xs btn-list-detail"
+                                                data-target="@detailId"
+                                                title="Show per-day-type hours">
+                                            <i class="fas fa-clock"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </td>
+                            </tr>
+                            @if (hasDetails)
+                            {
+                                <tr class="list-detail-subrow" id="@detailId" style="display:none;">
+                                    <td colspan="8" class="p-0 border-top-0">
+                                        <div class="bg-light border-top p-2">
+                                            <strong class="small text-secondary">
+                                                <i class="fas fa-layer-group mr-1"></i>Hours by Day Type — @row.EmployeeName
+                                            </strong>
+                                            <table class="table table-xs table-bordered table-sm mb-0 bg-white mt-1">
+                                                <thead class="thead-light">
+                                                    <tr>
+                                                        <th>Day Type</th>
+                                                        <th class="text-right">Basic Hrs</th>
+                                                        <th class="text-right">OT Hrs</th>
+                                                        <th class="text-right">Night Diff Hrs</th>
+                                                        <th class="text-right">ND-OT Hrs</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var det in row.Details)
+                                                    {
+                                                        <tr>
+                                                            <td><span class="badge badge-secondary">@det.DayTypeName</span></td>
+                                                            <td class="text-right">@det.RegularHours.ToString("0.####")</td>
+                                                            <td class="text-right">@det.OvertimeHours.ToString("0.####")</td>
+                                                            <td class="text-right">@det.NightDifferentialHours.ToString("0.####")</td>
+                                                            <td class="text-right">@det.NightDifferentialOvertimeHours.ToString("0.####")</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                            index++;
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                No employees assigned to this payroll period yet. Click "Assign Employees & Edit Time Card" to add employees.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    $(document).on('click', '.btn-list-detail', function () {
+        var targetId = $(this).data('target');
+        var $detail  = $('#' + targetId);
+        var $icon    = $(this).find('i');
+        $detail.toggle();
+        if ($detail.is(':visible')) {
+            $(this).removeClass('btn-outline-info').addClass('btn-info');
+            $icon.removeClass('fa-clock').addClass('fa-chevron-up');
+        } else {
+            $(this).removeClass('btn-info').addClass('btn-outline-info');
+            $icon.removeClass('fa-chevron-up').addClass('fa-clock');
+        }
+    });
+})();
+</script>

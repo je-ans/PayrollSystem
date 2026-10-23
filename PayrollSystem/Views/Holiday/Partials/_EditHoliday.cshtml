@@ -1,0 +1,76 @@
+@model HolidayFormViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="EditHoliday" asp-route-id="@Model.Id" method="post" asp-antiforgery="true" id="holidayForm">
+        <input type="hidden" asp-for="Id" />
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Name" type="text" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="Name" class="floating-label">Holiday Name</label>
+                    </div>
+                    <span asp-validation-for="Name" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="Date" type="date" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="Date" class="floating-label">Date</label>
+                    </div>
+                    <span asp-validation-for="Date" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <select asp-for="HolidayType" asp-items="Html.GetEnumSelectList<HolidayType>()"
+                                class="form-control floating-input select2 general-select" required>
+                            <option value="" selected disabled hidden>-- Select Holiday Type --</option>
+                        </select>
+                        <label asp-for="HolidayType" class="floating-label">Holiday Type <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="HolidayType" class="text-danger small validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <select asp-for="DayTypeId" asp-items="Model.DayTypeOptions"
+                                class="form-control floating-input select2 general-select" required>
+                            <option value="" selected disabled hidden>-- Select Day Type --</option>
+                        </select>
+                        <label asp-for="DayTypeId" class="floating-label">Day Type <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="DayTypeId" class="text-danger small validation-message"></span>
+                    <small class="text-muted">Payroll uses this Day Type’s multipliers for the holiday date.</small>
+                </div>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="input-container">
+                <textarea asp-for="Description" class="form-control floating-input" placeholder=" "></textarea>
+                <label asp-for="Description" class="floating-label">Description</label>
+            </div>
+            <span asp-validation-for="Description" class="text-danger validation-message"></span>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <div class="custom-control custom-switch">
+                    <input class="custom-control-input" asp-for="IsRecurring" id="editIsRecurring" />
+                    <label class="custom-control-label" for="editIsRecurring">Recurring annually</label>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="custom-control custom-switch">
+                    <input class="custom-control-input" asp-for="IsActive" id="editIsActive" />
+                    <label class="custom-control-label" for="editIsActive">Active</label>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

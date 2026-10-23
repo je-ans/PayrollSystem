@@ -1,0 +1,250 @@
+@using System.Linq
+@model PayslipViewModel
+
+@{
+    ViewData["Title"] = $"Payslip - {Model.PayslipNumber}";
+    Layout = "_Layout";
+}
+
+@if (Context.Request.Query["print"] == "true")
+{
+    Layout = null;
+}
+
+<section class="content @(Context.Request.Query["print"] != "true" ? "content-header" : "")">
+    <div class="container-fluid">
+        @if (Context.Request.Query["print"] != "true")
+        {
+            <div class="row mb-2">
+                <div class="col-sm-6">
+                    <h1>@ViewData["Title"]</h1>
+                </div>
+                <div class="col-sm-6">
+                    <ol class="breadcrumb float-sm-right">
+                        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Home</a></li>
+                        <li class="breadcrumb-item"><a asp-controller="Payslip" asp-action="Index">Payslips</a></li>
+                        <li class="breadcrumb-item active">View</li>
+                    </ol>
+                </div>
+            </div>
+        }
+
+        <!-- Payslip Content -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card @(Context.Request.Query["print"] == "true" ? "card-outline" : "")">
+                    <div class="card-header @(Context.Request.Query["print"] != "true" ? "bg-primary" : "")">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h3 class="card-title mb-0">
+                                    <i class="fas fa-file-invoice-dollar mr-2"></i>
+                                    Payslip #@Model.PayslipNumber
+                                </h3>
+                            </div>
+                            @if (Context.Request.Query["print"] != "true")
+                            {
+                                <div>
+                                    <button type="button" class="btn btn-light btn-sm" onclick="window.print()">
+                                        <i class="fas fa-print"></i> Print
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Company Header -->
+                        <div class="row mb-4">
+                            <div class="col-12 text-center">
+                                <h4 class="mb-1">@Model.CompanyName</h4>
+                                <p class="mb-1">@Model.CompanyAddress</p>
+                                <p class="mb-0">@Model.CompanyPhone @(!string.IsNullOrEmpty(Model.CompanyEmail) ? "| " + Model.CompanyEmail : "")</p>
+                            </div>
+                        </div>
+
+                        <!-- Employee and Period Information -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <table class="table table-borderless table-sm">
+                                    <tr>
+                                        <td width="15%"><strong>Employee ID:</strong></td>
+                                        <td width="35%">@Model.EmployeeIdNumber</td>
+                                        <td width="15%"><strong>Payroll Period Coverage:</strong></td>
+                                        <td width="35%">@(Model.PeriodStartDate.HasValue && Model.PeriodEndDate.HasValue ? $"{Model.PeriodStartDate.Value:MMM dd, yyyy} - {Model.PeriodEndDate.Value:MMM dd, yyyy}" : Model.PayrollPeriodName)</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Name:</strong></td>
+                                        <td>@Model.EmployeeName</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Department:</strong></td>
+                                        <td>@Model.OrganizationUnitName</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Position:</strong></td>
+                                        <td>@Model.DesignationName</td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Compensation Section -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-info">
+                                        <h5 class="card-title mb-0">
+                                            <i class="fas fa-money-bill-wave mr-2"></i>Compensation
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-sm mb-0">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Description</th>
+                                                    <th class="text-right">Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Regular Pay</td>
+                                                    <td class="text-right">₱@(Model.RegularPay.HasValue ? Model.RegularPay.Value.ToString("N2") : "0.00")</td>
+                                                </tr>
+                                                @if (Model.Benefits != null && Model.Benefits.Any())
+                                                {
+                                                    foreach (var benefit in Model.Benefits)
+                                                    {
+                                                        <tr>
+                                                            <td>@benefit.Description</td>
+                                                            <td class="text-right">₱@benefit.Amount.ToString("N2")</td>
+                                                        </tr>
+                                                    }
+                                                }
+                                            </tbody>
+                                            <tfoot class="bg-light">
+                                                <tr>
+                                                    <th><strong>Gross Pay</strong></th>
+                                                    <th class="text-right"><strong>₱@(Model.TotalEarnings.HasValue ? Model.TotalEarnings.Value.ToString("N2") : "0.00")</strong></th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Deductions -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-warning">
+                                        <h5 class="card-title mb-0">
+                                            <i class="fas fa-minus-circle mr-2"></i>Deductions
+                                        </h5>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <table class="table table-sm mb-0">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>Type</th>
+                                                    <th>Description</th>
+                                                    <th class="text-right">Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @if (Model.Deductions != null && Model.Deductions.Any())
+                                                {
+                                                    @foreach (var deduction in Model.Deductions)
+                                                    {
+                                                        <tr>
+                                                            <td>@(deduction.DeductionTypeName ?? "Deduction")</td>
+                                                            <td>@deduction.Description</td>
+                                                            <td class="text-right">₱@deduction.Amount.ToString("N2")</td>
+                                                        </tr>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <tr>
+                                                        <td colspan="3" class="text-center text-muted">No deductions</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                            <tfoot class="bg-light">
+                                                <tr>
+                                                    <th><strong>TOTAL DEDUCTIONS</strong></th>
+                                                    <th class="text-right"><strong>₱@(Model.TotalDeductions.HasValue ? Model.TotalDeductions.Value.ToString("N2") : "0.00")</strong></th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Net Pay -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="card border-primary">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <h4 class="mb-0"><strong>NET PAY</strong></h4>
+                                            <h3 class="mb-0 text-primary">
+                                                <strong>₱@(Model.NetPay.HasValue ? Model.NetPay.Value.ToString("N2") : "0.00")</strong>
+                                            </h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer Note -->
+                        <div class="row mt-4">
+                            <div class="col-12 text-center text-muted">
+                                <small>This is a system-generated payslip. For any discrepancies, please contact HR.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@if (Context.Request.Query["print"] != "true")
+{
+    <div class="text-center mb-4">
+        <a asp-controller="Payslip" asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Payslips
+        </a>
+    </div>
+}
+
+@if (Context.Request.Query["print"] == "true")
+{
+    <style>
+        body {
+            font-size: 12px;
+        }
+        .card {
+            border: 1px solid #000 !important;
+        }
+        .table th, .table td {
+            border: 1px solid #000 !important;
+        }
+        @@media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                margin: 0;
+                padding: 10px;
+            }
+        }
+    </style>
+}

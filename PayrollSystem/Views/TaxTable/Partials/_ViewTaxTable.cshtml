@@ -1,0 +1,67 @@
+@model TaxTableViewModel
+
+<div class="container">
+    <table class="table table-bordered table-hover">
+        <tr>
+            <th class="bg-light">Tax Table Name</th>
+            <td>@Model.Name</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Description</th>
+            <td>@(string.IsNullOrWhiteSpace(Model.Description) ? "—" : Model.Description)</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Bracket Type</th>
+            <td>@Model.BracketType</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Bracket Order</th>
+            <td>@Model.BracketOrder</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Minimum Income</th>
+            <td>@Model.MinIncome.ToString("N2")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Maximum Income</th>
+            <td>@(Model.MaxIncome.HasValue ? Model.MaxIncome.Value.ToString("N2") : "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Tax Rate</th>
+            <td>@(Model.TaxRate.HasValue ? Model.TaxRate.Value.ToString("N2") + "%" : "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Fixed Amount</th>
+            <td>@(Model.FixedAmount.HasValue ? Model.FixedAmount.Value.ToString("N2") : "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Base Tax Amount</th>
+            <td>@Model.BaseTaxAmount.ToString("N2")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Effective Start Date</th>
+            <td>@Model.EffectiveStartDate.ToString("MMMM dd, yyyy")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Tax Year</th>
+            <td>@(string.IsNullOrWhiteSpace(Model.TaxYear) ? "—" : Model.TaxYear)</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Reference</th>
+            <td>@(string.IsNullOrWhiteSpace(Model.Reference) ? "—" : Model.Reference)</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Is Active</th>
+            <td>
+                @if (Model.IsActive)
+                {
+                    <span class="badge badge-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge badge-danger">Inactive</span>
+                }
+            </td>
+        </tr>
+    </table>
+</div>

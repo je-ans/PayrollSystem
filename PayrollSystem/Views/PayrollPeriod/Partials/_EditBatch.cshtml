@@ -1,0 +1,970 @@
+@model AssignEmployeesAndTimeCardBatchEditViewModel
+
+<link rel="stylesheet" href="~/css/payroll-time-card.css" asp-append-version="true" />
+
+@if (!Model.BatchId.HasValue)
+{
+    @await Html.PartialAsync("Partials/_EditBatchPicker", Model)
+}
+else
+{
+
+<div class="container-fluid ptc-page">
+
+    <form id="batchEditForm" asp-action="SaveBatch" asp-controller="PayrollPeriod" method="post"
+          data-locked="@(Model.IsLocked ? "true" : "false")">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="PayrollPeriodId" value="@Model.PayrollPeriodId" />
+        @if (Model.BatchId.HasValue)
+        {
+            <input type="hidden" name="BatchId" value="@Model.BatchId.Value" />
+        }
+
+        <!-- Period banner -->
+        <div class="ptc-period-banner mb-3">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <p class="ptc-period-title mb-0">
+                        <i class="fas fa-calendar-alt mr-1 text-primary"></i>
+                        Edit Employee Group
+                    </p>
+                    <div class="ptc-period-range">@Model.PayrollPeriodName — @Model.PeriodRange</div>
+                </div>
+                <div class="ptc-period-badges">
+                    <span class="badge badge-info px-2 py-1">
+                        <i class="fas fa-clock mr-1"></i> Time Cards
+                    </span>
+                    @if (Model.IsLocked)
+                    {
+                        <span class="badge badge-warning px-2 py-1">
+                            <i class="fas fa-lock mr-1"></i> Period Locked
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (!Model.IsLocked)
+        {
+            <div class="ptc-tip-strip mb-3">
+                <i class="fas fa-file-import"></i>
+                <div>
+                    Use <strong>Import from DTR</strong> to refresh hours and tardiness for selected employees.
+                    Only checked rows are saved with this group.
+                </div>
+            </div>
+        }
+
+        <div class="ptc-panel mb-3">
+            <div class="ptc-panel-header">
+                <span><i class="fas fa-filter"></i>Reload Employees</span>
+            </div>
+            <div class="ptc-panel-body ptc-filter-panel border-0 mb-0 p-3">
+        <div class="row align-items-end">
+            <div class="col-md-5 mb-2 mb-md-0">
+                <label>
+                    Department(s)
+                    <small class="text-muted font-weight-normal">(leave empty for all)</small>
+                </label>
+                <select id="batchDepartmentFilter" class="form-control form-control-sm" multiple="multiple">
+                    @foreach (var d in Model.OrganizationUnits)
+                    {
+                        var isDeptSelected = Model.SelectedOrganizationStructureIds.Contains(int.Parse(d.Value));
+                        if (isDeptSelected)
+                        {
+                            <option value="@d.Value" selected="selected">@d.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@d.Value">@d.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4 mb-2 mb-md-0">
+                <label>Employment Type</label>
+                <select id="batchEmploymentFilter" class="form-control form-control-sm">
+                    <option value="">— All Types —</option>
+                    @foreach (var e in Model.EmploymentTypes)
+                    {
+                        var isEmpSelected = Model.SelectedEmploymentBasis.HasValue &&
+                        Model.SelectedEmploymentBasis.Value.ToString() == e.Value;
+                        if (isEmpSelected)
+                        {
+                            <option value="@e.Value" selected="selected">@e.Text</option>
+                        }
+                        else
+                        {
+                            <option value="@e.Value">@e.Text</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="button" id="batchLoadBtn" class="btn btn-primary btn-sm btn-block">
+                    <i class="fas fa-search mr-1"></i> Load Employees
+                </button>
+            </div>
+        </div>
+            </div>
+        </div>
+
+        @if (Model.ExcludedCount > 0)
+        {
+            <div class="alert alert-warning py-2 mb-3 small border-0" style="border-radius:10px;">
+                <i class="fas fa-user-slash mr-1"></i>
+                <strong>@Model.ExcludedCount employee(s)</strong> already assigned to another group in this period.
+            </div>
+        }
+
+        <div class="ptc-panel">
+            <div class="ptc-panel-header">
+                <span><i class="fas fa-id-card"></i>Time Card Entries</span>
+                @if (Model.Rows.Any())
+                {
+                    <div class="ptc-toolbar-stats">
+                        <span class="ptc-stat-chip ptc-stat-chip--available" id="employeeCountBadge">@Model.Rows.Count loaded</span>
+                        <span class="ptc-stat-chip ptc-stat-chip--selected" id="selectedCountBadge">@Model.Rows.Count(r => r.IsSelected) selected</span>
+                    </div>
+                }
+            </div>
+            <div class="ptc-panel-body pt-2 pb-2 px-2">
+
+        <!-- Toolbar -->
+        <div class="ptc-toolbar border-0 bg-transparent px-0 pt-0">
+            <span class="small text-muted font-weight-bold text-uppercase" style="letter-spacing:.03em;">Actions</span>
+            @if (Model.Rows.Any() && !Model.IsLocked)
+            {
+                <div class="ptc-toolbar-actions">
+                    <button type="button" class="btn btn-info btn-sm ptc-import-btn" id="btnImportFromDtr" title="Populate hours and tardiness from employee DTR">
+                        <i class="fas fa-file-import mr-1"></i> Import from DTR
+                    </button>
+                    <div class="ptc-toolbar-group">
+                        <button type="button" class="btn btn-outline-secondary btn-xs" id="btnSelectAll">
+                            <i class="fas fa-check-square mr-1"></i> All
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-xs" id="btnDeselectAll">
+                            <i class="far fa-square mr-1"></i> None
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Table -->
+        @{
+            var hasDayTypes = Model.DayTypes.Any();
+            var hourSummaryCols = hasDayTypes ? 4 : 0;
+            var emptyColSpan = 9 + hourSummaryCols + (hasDayTypes ? 1 : 0);
+        }
+        <div class="table-responsive ptc-employee-table-wrap">
+            <table class="table table-sm table-bordered table-striped mb-0" id="batchEmployeeTable" data-empty-colspan="@emptyColSpan">
+                <thead class="thead-light sticky-top">
+                    <tr>
+                        <th width="36" class="text-center">
+                            <input type="checkbox" id="batchSelectAll" title="Select all" />
+                        </th>
+                        <th class="text-sm">Employee</th>
+                        <th class="text-sm">Department</th>
+                        <th class="text-sm">Type</th>
+                        @if (hasDayTypes)
+                        {
+                            <th class="text-right text-sm" style="min-width:80px;" title="Sum of Basic hours across all Day Types">Basic Hrs</th>
+                            <th class="text-right text-sm" style="min-width:70px;">OT Hrs</th>
+                            <th class="text-right text-sm" style="min-width:85px;">ND Hrs</th>
+                            <th class="text-right text-sm" style="min-width:90px;">ND-OT Hrs</th>
+                        }
+                        <th class="text-right text-sm" style="min-width:90px;">Late (min)</th>
+                        <th class="text-right text-sm" style="min-width:110px;">Undertime (min)</th>
+                        <th class="text-right text-sm" style="min-width:100px;">Absent (hrs)</th>
+                        <th class="text-sm text-center" style="min-width:160px;">Notes</th>
+                        @if (hasDayTypes)
+                        {
+                            <th width="90" class="text-center text-sm">Day Types</th>
+                        }
+                        <th width="36" class="text-center text-sm"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Rows.Any())
+                    {
+                        @for (int i = 0; i < Model.Rows.Count; i++)
+                        {
+                            var row = Model.Rows[i];
+                            var rowId = $"emp-row-{i}";
+                            var detailId = $"detail-row-{i}";
+
+                            var totalBasicHrs = row.Details.Sum(d => d.RegularHours);
+                            var totalOtHrs = row.Details.Sum(d => d.OvertimeHours);
+                            var totalNdHrs = row.Details.Sum(d => d.NightDifferentialHours);
+                            var totalNdOtHrs = row.Details.Sum(d => d.NightDifferentialOvertimeHours);
+                            var hasAnyHours = totalBasicHrs + totalOtHrs + totalNdHrs + totalNdOtHrs > 0;
+                            var usedDayTypes = row.Details.Where(d =>
+                                d.RegularHours > 0 || d.OvertimeHours > 0 ||
+                                d.NightDifferentialHours > 0 || d.NightDifferentialOvertimeHours > 0).ToList();
+
+                            <tr class="batch-employee-row @(row.IsSelected ? "" : "table-light text-muted")" id="@rowId">
+                                <td class="text-center align-middle">
+                                    @if (row.IsSelected)
+                                    {
+                                        <input type="checkbox" name="Rows[@i].IsSelected" value="true"
+                                               class="batch-row-check" checked="checked" />
+                                    }
+                                    else
+                                    {
+                                        <input type="checkbox" name="Rows[@i].IsSelected" value="true"
+                                               class="batch-row-check" />
+                                    }
+                                    <input type="hidden" name="Rows[@i].EmployeeId" value="@row.EmployeeId" />
+                                </td>
+                                <td class="align-middle font-weight-bold">@row.EmployeeName</td>
+                                <td class="align-middle small">@row.OrganizationUnitName</td>
+                                <td class="align-middle">
+                                    <span class="badge badge-light border">@row.EmploymentTypeName</span>
+                                </td>
+
+                                @if (hasDayTypes)
+                                {
+                                    <td>
+                                        <input value="@totalBasicHrs.ToString("0.####")" class="form-control form-control-sm text-right hours-summary-basic" type="number" step="0.0001" min="0" readonly="readonly" tabindex="-1" title="Total Basic hours (all Day Types)" />
+                                    </td>
+                                    <td>
+                                        <input value="@totalOtHrs.ToString("0.####")" class="form-control form-control-sm text-right hours-summary-ot" type="number" step="0.0001" min="0" readonly="readonly" tabindex="-1" title="Total OT hours (all Day Types)" />
+                                    </td>
+                                    <td>
+                                        <input value="@totalNdHrs.ToString("0.####")" class="form-control form-control-sm text-right hours-summary-nd" type="number" step="0.0001" min="0" readonly="readonly" tabindex="-1" title="Total ND hours (all Day Types)" />
+                                    </td>
+                                    <td>
+                                        <input value="@totalNdOtHrs.ToString("0.####")" class="form-control form-control-sm text-right hours-summary-ndot" type="number" step="0.0001" min="0" readonly="readonly" tabindex="-1" title="Total ND-OT hours (all Day Types)" />
+                                    </td>
+                                }
+
+                                <td>
+                                    @if (Model.IsLocked)
+                                    {
+                                        <input name="Rows[@i].LateMinutes" value="@row.LateMinutes" class="form-control form-control-sm text-right batch-input" type="number" step="1" min="0" readonly="readonly" />
+                                    }
+                                    else
+                                    {
+                                        <input name="Rows[@i].LateMinutes" value="@row.LateMinutes" class="form-control form-control-sm text-right batch-input" type="number" step="1" min="0" />
+                                    }
+                                </td>
+                                <td>
+                                    @if (Model.IsLocked)
+                                    {
+                                        <input name="Rows[@i].UndertimeMinutes" value="@row.UndertimeMinutes" class="form-control form-control-sm text-right batch-input" type="number" step="1" min="0" readonly="readonly" />
+                                    }
+                                    else
+                                    {
+                                        <input name="Rows[@i].UndertimeMinutes" value="@row.UndertimeMinutes" class="form-control form-control-sm text-right batch-input" type="number" step="1" min="0" />
+                                    }
+                                </td>
+                                <td>
+                                    @if (Model.IsLocked)
+                                    {
+                                        <input name="Rows[@i].AbsentHours" value="@row.AbsentHours" class="form-control form-control-sm text-right batch-input" type="number" step="0.0001" min="0" readonly="readonly" />
+                                    }
+                                    else
+                                    {
+                                        <input name="Rows[@i].AbsentHours" value="@row.AbsentHours" class="form-control form-control-sm text-right batch-input" type="number" step="0.0001" min="0" />
+                                    }
+                                </td>
+                                <td>
+                                    @if (Model.IsLocked)
+                                    {
+                                        <input name="Rows[@i].Notes" value="@row.Notes" class="form-control form-control-sm batch-input" maxlength="1000" placeholder="Optional..." readonly="readonly" />
+                                    }
+                                    else
+                                    {
+                                        <input name="Rows[@i].Notes" value="@row.Notes" class="form-control form-control-sm batch-input" maxlength="1000" placeholder="Optional..." />
+                                    }
+                                </td>
+
+                                @if (hasDayTypes)
+                                {
+                                    <td class="text-center align-middle">
+                                        <button type="button"
+                                                class="btn btn-hours-toggle @(hasAnyHours ? "btn-info" : "btn-outline-secondary") btn-xs"
+                                                data-target="@detailId"
+                                                data-employee="@row.EmployeeName"
+                                                title="View hours by Day Type (from Working Calendar / DTR / approved OT)">
+                                            @if (hasAnyHours)
+                                            {
+                                                <i class="fas fa-clock mr-1"></i>
+                                                <span class="hours-summary">@usedDayTypes.Count type@(usedDayTypes.Count != 1 ? "s" : "")</span>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-layer-group mr-1"></i>
+                                                <span>Day Types</span>
+                                            }
+                                        </button>
+                                    </td>
+                                }
+
+                                <td class="text-center align-middle">
+                                    @if (!Model.IsLocked)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-link btn-sm text-danger p-0 btn-remove-row"
+                                                title="Remove from group">
+                                            <i class="fas fa-times-circle"></i>
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+
+                            @if (hasDayTypes)
+                            {
+                                <tr class="detail-subrow" id="@detailId" style="display:none;">
+                                    <td colspan="@emptyColSpan" class="p-0">
+                                        <div class="hours-editor-panel">
+                                            <div class="hours-editor-header">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-layer-group mr-2 text-info"></i>
+                                                    <strong>Hours by Day Type</strong>
+                                                    <span class="text-muted ml-2 small">— @row.EmployeeName</span>
+                                                </div>
+                                                <div class="d-flex align-items-center">
+                                                    <button type="button"
+                                                            class="btn btn-xs btn-outline-secondary btn-collapse-detail"
+                                                            data-target="@detailId">
+                                                        <i class="fas fa-chevron-up"></i> Collapse
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div class="hours-editor-body">
+                                                <table class="table table-xs table-bordered mb-0 hours-inner-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style="min-width:160px">Day Type</th>
+                                                            <th class="text-right" style="min-width:95px">Basic Hrs</th>
+                                                            <th class="text-right" style="min-width:80px">OT Hrs</th>
+                                                            <th class="text-right" style="min-width:105px">Night Diff Hrs</th>
+                                                            <th class="text-right" style="min-width:110px">ND-OT Hrs</th>
+                                                            @if (!Model.IsLocked)
+                                                            {
+                                                                <th width="36" class="text-center">
+                                                                    <i class="fas fa-trash-alt text-muted" title="Clear row"></i>
+                                                                </th>
+                                                            }
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody class="hours-daytype-tbody" data-row-index="@i">
+                                                        @for (int j = 0; j < row.Details.Count; j++)
+                                                        {
+                                                            var det = row.Details[j];
+                                                            var hasData = det.RegularHours > 0 || det.OvertimeHours > 0 ||
+                                                                det.NightDifferentialHours > 0 ||
+                                                                det.NightDifferentialOvertimeHours > 0;
+
+                                                            <tr class="daytype-row @(hasData ? "daytype-active" : "daytype-inactive")"
+                                                                data-daytype-id="@det.DayTypeId"
+                                                                style="@(hasData ? "" : "display:none;")">
+                                                                <td class="align-middle">
+                                                                    <span class="badge @(hasData ? "badge-info" : "badge-secondary")">@det.DayTypeName</span>
+                                                                    <input type="hidden" name="Rows[@i].Details[@j].DayTypeId" value="@det.DayTypeId" />
+                                                                    <input type="hidden" name="Rows[@i].Details[@j].DayTypeName" value="@det.DayTypeName" />
+                                                                </td>
+                                                                <td>
+                                                                    @if (Model.IsLocked)
+                                                                    {
+                                                                        <input name="Rows[@i].Details[@j].RegularHours" value="@det.RegularHours" class="form-control form-control-sm text-right batch-input hours-field" type="number" step="0.0001" min="0" readonly="readonly" />
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <input name="Rows[@i].Details[@j].RegularHours" value="@det.RegularHours" class="form-control form-control-sm text-right batch-input hours-field" type="number" step="0.0001" min="0" />
+                                                                    }
+                                                                </td>
+                                                                <td>
+                                                                    @if (Model.IsLocked)
+                                                                    {
+                                                                        <input name="Rows[@i].Details[@j].OvertimeHours" value="@det.OvertimeHours" class="form-control form-control-sm text-right batch-input hours-field" type="number" step="0.0001" min="0" readonly="readonly" />
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <input name="Rows[@i].Details[@j].OvertimeHours" value="@det.OvertimeHours" class="form-control form-control-sm text-right batch-input hours-field" type="number" step="0.0001" min="0" />
+                                                                    }
+                                                                </td>
+                                                                <td>
+                                                                    @if (Model.IsLocked)
+                                                                    {
+                                                                        <input name="Rows[@i].Details[@j].NightDifferentialHours" value="@det.NightDifferentialHours" class="form-control form-control-sm text-right batch-input hours-field" type="number" step="0.0001" min="0" readonly="readonly" />
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <input name="Rows[@i].Details[@j].NightDifferentialHours" value="@det.NightDifferentialHours" class="form-control form-control-sm text-right batch-input hours-field" type="number" step="0.0001" min="0" />
+                                                                    }
+                                                                </td>
+                                                                <td>
+                                                                    @if (Model.IsLocked)
+                                                                    {
+                                                                        <input name="Rows[@i].Details[@j].NightDifferentialOvertimeHours" value="@det.NightDifferentialOvertimeHours" class="form-control form-control-sm text-right batch-input hours-field" type="number" step="0.0001" min="0" readonly="readonly" />
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <input name="Rows[@i].Details[@j].NightDifferentialOvertimeHours" value="@det.NightDifferentialOvertimeHours" class="form-control form-control-sm text-right batch-input hours-field" type="number" step="0.0001" min="0" />
+                                                                    }
+                                                                </td>
+                                                                @if (!Model.IsLocked)
+                                                                {
+                                                                    <td class="text-center align-middle">
+                                                                        <button type="button" class="btn btn-link btn-xs text-danger p-0 btn-clear-daytype" title="Clear this day type">
+                                                                            <i class="fas fa-times"></i>
+                                                                        </button>
+                                                                    </td>
+                                                                }
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+
+                                                <div class="hours-empty-state @(usedDayTypes.Any() ? "d-none" : "")" id="empty-@detailId">
+                                                    <i class="fas fa-clock-o mr-1"></i>
+                                                    No day-type hours yet.
+                                                    @if (!Model.IsLocked)
+                                                    {
+                                                        <span>Import from DTR to populate hours from the Working Calendar, attendance, and approved overtime.</span>
+                                                    }
+                                                </div>
+
+                                                <div class="hours-totals-bar" id="totals-@detailId">
+                                                    <span class="totals-label"><i class="fas fa-sigma mr-1"></i>Totals</span>
+                                                    <span class="total-chip"><span class="chip-label">Basic</span><span class="chip-value total-regular">@totalBasicHrs.ToString("0.##")</span></span>
+                                                    <span class="total-chip"><span class="chip-label">OT</span><span class="chip-value total-ot">@totalOtHrs.ToString("0.##")</span></span>
+                                                    <span class="total-chip"><span class="chip-label">ND</span><span class="chip-value total-nd">@totalNdHrs.ToString("0.##")</span></span>
+                                                    <span class="total-chip"><span class="chip-label">ND-OT</span><span class="chip-value total-ndot">@totalNdOtHrs.ToString("0.##")</span></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    }
+                    else
+                    {
+                        <tr id="emptyRow">
+                            <td colspan="@emptyColSpan">
+                                <div class="ptc-empty-state py-4">
+                                    <i class="fas fa-users"></i>
+                                    <p>Select filters above and click <strong>Load Employees</strong>, or edit the loaded time cards below.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (Model.Rows.Any())
+        {
+            <div class="mt-2 px-1">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Only <strong>checked</strong> employees will be saved with this group.
+                </small>
+            </div>
+        }
+
+            </div><!-- /.ptc-panel-body -->
+        </div><!-- /.ptc-panel -->
+
+    </form>
+</div>
+
+<script>
+    (function () {
+        // Ensure DOM is fully loaded
+        $(document).ready(function() {
+            initializeBatchEdit();
+        });
+
+        function initializeBatchEdit() {
+            var periodId = @Model.PayrollPeriodId;
+            var batchId  = @(Model.BatchId.HasValue ? Model.BatchId.Value.ToString() : "null");
+            var isLocked = @(Model.IsLocked ? "true" : "false");
+
+            var $deptFilter   = $('#batchDepartmentFilter');
+            var $modalContent = $deptFilter.closest('.modal-content');
+            var dropdownParent = $modalContent.length ? $modalContent : $('body');
+
+            // Initialize Select2
+            if ($.fn.select2) {
+                $deptFilter.select2({
+                    placeholder: 'All departments',
+                    allowClear: true,
+                    closeOnSelect: false,
+                    width: '100%',
+                    dropdownParent: dropdownParent
+                });
+                $('#batchEmploymentFilter').select2({
+                    placeholder: '— All Types —',
+                    allowClear: true,
+                    width: '100%',
+                    dropdownParent: dropdownParent
+                });
+            }
+
+            // Load button handler
+            $('#batchLoadBtn').off('click').on('click', function () {
+                var deptIds  = $deptFilter.val();
+                var empBasis = $('#batchEmploymentFilter').val();
+                var url = '/PayrollPeriod/EditBatch?id=' + periodId;
+                if (deptIds && deptIds.length) url += '&organizationStructureIds=' + deptIds.join(',');
+                if (empBasis) url += '&employmentBasis=' + empBasis;
+
+                var $modal   = $('#batchEditForm').closest('.modal');
+                var $content = $modal.find('#editModalContent, [id^=editModalContent_]').first();
+
+                $('#spinnerOverlay').css({ display: 'flex', opacity: 1 });
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .done(function (html) {
+                    $content.html(html);
+                    if (batchId) {
+                        $('#batchEditForm').find('input[name="BatchId"]').remove();
+                        $('#batchEditForm').prepend($('<input>').attr({ type: 'hidden', name: 'BatchId', value: batchId }));
+                    }
+                    // Reinitialize event handlers after content load
+                    initializeEventHandlers();
+                })
+                .fail(function () {
+                    alert('Failed to load employees.');
+                })
+                .always(function () {
+                    $('#spinnerOverlay').hide();
+                });
+            });
+
+            // Initialize all event handlers
+            initializeEventHandlers();
+
+            // Initialize all toggle button states
+            initializeToggleButtons();
+        }
+
+        function initializeEventHandlers() {
+            // Toggle button click - Use event delegation for dynamic elements
+            $(document).off('click', '.btn-hours-toggle').on('click', '.btn-hours-toggle', function (e) {
+                e.preventDefault();
+                var targetId = $(this).data('target');
+                if (!targetId) {
+                    console.error('No target specified for toggle button');
+                    return;
+                }
+                var $panel = $('#' + targetId);
+                if (!$panel.length) {
+                    console.error('Panel not found:', targetId);
+                    return;
+                }
+
+                $panel.toggle();
+                if ($panel.is(':visible')) {
+                    $(this).removeClass('btn-outline-secondary').addClass('btn-info');
+                    // Refresh totals when opened
+                    var $tbody = $panel.find('.hours-daytype-tbody');
+                    if ($tbody.length) {
+                        recalcTotals($tbody);
+                    }
+                } else {
+                    refreshToggleBtnState($(this));
+                }
+            });
+
+            // Collapse detail button
+            $(document).off('click', '.btn-collapse-detail').on('click', '.btn-collapse-detail', function () {
+                var $detailRow = $(this).closest('tr.detail-subrow');
+                $detailRow.hide();
+                var $toggleBtn = $detailRow.prev('tr.batch-employee-row').find('.btn-hours-toggle');
+                if ($toggleBtn.length) {
+                    refreshToggleBtnState($toggleBtn);
+                }
+            });
+
+            // Clear day type
+            $(document).off('click', '.btn-clear-daytype').on('click', '.btn-clear-daytype', function () {
+                var $dtRow = $(this).closest('.daytype-row');
+                if (!$dtRow.length) return;
+
+                // Clear all hour fields
+                $dtRow.find('.hours-field').val('0');
+                $dtRow.removeClass('daytype-active').addClass('daytype-inactive').hide();
+                $dtRow.find('.badge').removeClass('badge-info').addClass('badge-secondary');
+
+                var $tbody = $dtRow.closest('.hours-daytype-tbody');
+                if ($tbody.length) {
+                    recalcTotals($tbody);
+                    refreshEmptyState($tbody);
+
+                    // Update toggle button state
+                    var $panel = $tbody.closest('.detail-subrow');
+                    if ($panel.length) {
+                        var $toggleBtn = $panel.prev('tr.batch-employee-row').find('.btn-hours-toggle');
+                        if ($toggleBtn.length) {
+                            refreshToggleBtnState($toggleBtn);
+                        }
+                    }
+                }
+            });
+
+            // Hours field input — panel fields drive both totals bar and main-row summary
+            $(document).off('input', '.hours-field').on('input', '.hours-field', function () {
+                var $field = $(this);
+                var $tbody = $field.closest('.hours-daytype-tbody');
+                if (!$tbody.length) return;
+
+                recalcTotals($tbody);
+                var $panel = $tbody.closest('.detail-subrow');
+                if ($panel.length) {
+                    var $btn = $panel.prev('tr.batch-employee-row').find('.btn-hours-toggle');
+                    if ($btn.length) {
+                        refreshToggleBtnState($btn);
+                    }
+                }
+            });
+
+            // Selection handlers
+            $('#btnSelectAll').off('click').on('click', function () {
+                $('.batch-row-check').prop('checked', true);
+                $('#batchSelectAll').prop({ checked: true, indeterminate: false });
+                updateRowStyles();
+                updateSelectedCount();
+            });
+
+            $('#btnDeselectAll').off('click').on('click', function () {
+                $('.batch-row-check').prop('checked', false);
+                $('#batchSelectAll').prop({ checked: false, indeterminate: false });
+                updateRowStyles();
+                updateSelectedCount();
+            });
+
+            $('#batchSelectAll').off('change').on('change', function () {
+                $('.batch-row-check').prop('checked', this.checked);
+                updateRowStyles();
+                updateSelectedCount();
+            });
+
+            $(document).off('change', '.batch-row-check').on('change', '.batch-row-check', function () {
+                var total = $('.batch-row-check').length,
+                    checked = $('.batch-row-check:checked').length;
+                $('#batchSelectAll').prop('checked', total > 0 && checked === total)
+                    .prop('indeterminate', checked > 0 && checked < total);
+                updateRowStyles();
+                updateSelectedCount();
+            });
+
+            // Import from DTR
+            $('#btnImportFromDtr').off('click').on('click', function () {
+                var employeeIds = [];
+                $('.batch-row-check:checked').each(function () {
+                    var id = $(this).closest('tr.batch-employee-row').find('input[name$=".EmployeeId"]').val();
+                    if (id) employeeIds.push(id);
+                });
+
+                if (!employeeIds.length) {
+                    toastr.warning('Select at least one employee to import from DTR.');
+                    return;
+                }
+
+                if (!confirm('Import hours, tardiness, and undertime from DTR for ' + employeeIds.length +
+                    ' selected employee(s)? Values in those fields will be overwritten.')) {
+                    return;
+                }
+
+                var periodId = $('#batchEditForm input[name="PayrollPeriodId"]').val();
+                var token = $('#batchEditForm input[name="__RequestVerificationToken"]').val();
+                var $btn = $(this);
+
+                $btn.prop('disabled', true);
+                $('#spinnerOverlay').css({ display: 'flex', opacity: 1 });
+
+                $.ajax({
+                    url: '/PayrollPeriod/ImportTimeCardFromDtr',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    headers: { 'RequestVerificationToken': token },
+                    data: JSON.stringify({
+                        payrollPeriodId: parseInt(periodId, 10),
+                        employeeIds: employeeIds
+                    })
+                })
+                .done(function (res) {
+                    if (!res.success) {
+                        toastr.error(res.message || 'Import failed.');
+                        return;
+                    }
+
+                    var dayTypeByName = {};
+                    (res.dayTypes || []).forEach(function (dt) {
+                        dayTypeByName[(dt.name || '').toLowerCase()] = dt;
+                    });
+
+                    (res.rows || []).forEach(function (row) {
+                        applyDtrImportToRow(row, dayTypeByName);
+                    });
+
+                    toastr.success(res.message || 'DTR data imported. Review and save the group.');
+                })
+                .fail(function (xhr) {
+                    var msg = (xhr.responseJSON && xhr.responseJSON.message)
+                        ? xhr.responseJSON.message
+                        : 'Failed to import from DTR. Please try again.';
+                    toastr.error(msg);
+                })
+                .always(function () {
+                    $btn.prop('disabled', false);
+                    $('#spinnerOverlay').hide();
+                });
+            });
+
+            // Remove row
+            $(document).off('click', '.btn-remove-row').on('click', '.btn-remove-row', function () {
+                if (isLocked) return;
+
+                var $row = $(this).closest('tr.batch-employee-row');
+                if (!$row.length) return;
+
+                $row.find('.batch-row-check').prop('checked', false).trigger('change');
+                var $detailRow = $row.next('tr.detail-subrow');
+                if ($detailRow.length) $detailRow.remove();
+
+                $row.fadeOut(200, function () {
+                    $(this).remove();
+                    reindexRows();
+                    var remaining = $('.batch-row-check').length;
+                    $('#employeeCountBadge').text(remaining + ' loaded');
+                    if (remaining === 0) {
+                        var colSpan = parseInt($('#batchEmployeeTable').data('empty-colspan'), 10) || 14;
+                        $('#batchEmployeeTable tbody').html('<tr id="emptyRow"><td colspan="' + colSpan + '" class="text-center text-muted py-4"><i class="fas fa-users fa-2x mb-2 d-block"></i>No employees loaded. Use the filter above to load employees.</td></tr>');
+                        $('#selectedCountBadge').text('0 selected');
+                    }
+                    updateSelectedCount();
+                });
+            });
+        }
+
+        function recalcTotals($tbody) {
+            if (!$tbody || !$tbody.length) return;
+
+            var basic = 0, ot = 0, nd = 0, ndot = 0;
+            $tbody.find('.daytype-active').each(function () {
+                var $inputs = $(this).find('.hours-field');
+                if ($inputs.length >= 4) {
+                    basic += parseFloat($inputs.eq(0).val()) || 0;
+                    ot    += parseFloat($inputs.eq(1).val()) || 0;
+                    nd    += parseFloat($inputs.eq(2).val()) || 0;
+                    ndot  += parseFloat($inputs.eq(3).val()) || 0;
+                }
+            });
+
+            var $bar = $tbody.closest('.hours-editor-body').find('.hours-totals-bar');
+            if ($bar.length) {
+                $bar.find('.total-regular').text(formatNumber(basic));
+                $bar.find('.total-ot').text(formatNumber(ot));
+                $bar.find('.total-nd').text(formatNumber(nd));
+                $bar.find('.total-ndot').text(formatNumber(ndot));
+            }
+
+            var $empRow = $tbody.closest('tr.detail-subrow').prev('tr.batch-employee-row');
+            if ($empRow.length) {
+                $empRow.find('.hours-summary-basic').val(formatNumber(basic));
+                $empRow.find('.hours-summary-ot').val(formatNumber(ot));
+                $empRow.find('.hours-summary-nd').val(formatNumber(nd));
+                $empRow.find('.hours-summary-ndot').val(formatNumber(ndot));
+            }
+        }
+
+        function formatNumber(v) {
+            return v % 1 === 0 ? v.toString() : parseFloat(v.toFixed(4)).toString();
+        }
+
+        function refreshEmptyState($tbody) {
+            if (!$tbody || !$tbody.length) return;
+
+            var $panel = $tbody.closest('.detail-subrow');
+            if (!$panel.length) return;
+
+            var panelId = $panel.attr('id');
+            var hasActive = $tbody.find('.daytype-active').length > 0;
+            var $emptyDiv = $('#empty-' + panelId);
+            if ($emptyDiv.length) {
+                $emptyDiv.toggleClass('d-none', hasActive);
+            }
+        }
+
+        function refreshToggleBtnState($btn) {
+            if (!$btn || !$btn.length) return;
+
+            var targetId = $btn.data('target');
+            var $panel = $('#' + targetId);
+
+            var panelCount = 0;
+            var hasPanelHrs = false;
+            if ($panel.length) {
+                var $tbody = $panel.find('.hours-daytype-tbody');
+                if ($tbody.length) {
+                    panelCount = $tbody.find('.daytype-active').length;
+                    $tbody.find('.daytype-active .hours-field').each(function() {
+                        var val = parseFloat($(this).val());
+                        if (!isNaN(val) && val > 0) {
+                            hasPanelHrs = true;
+                            return false;
+                        }
+                    });
+                }
+            }
+
+            if (panelCount > 0 && hasPanelHrs) {
+                $btn.removeClass('btn-outline-secondary').addClass('btn-info');
+                $btn.find('i').attr('class', 'fas fa-clock mr-1');
+                $btn.find('span').text(panelCount + ' type' + (panelCount !== 1 ? 's' : ''));
+            } else {
+                $btn.removeClass('btn-info').addClass('btn-outline-secondary');
+                $btn.find('i').attr('class', 'fas fa-layer-group mr-1');
+                $btn.find('span').text('Day Types');
+            }
+        }
+
+        function initializeToggleButtons() {
+            // Initialize all toggle buttons on page load
+            $('.btn-hours-toggle').each(function() {
+                refreshToggleBtnState($(this));
+            });
+        }
+
+        function reindexRows() {
+            var idx = 0;
+            $('#batchEmployeeTable tbody tr.batch-employee-row').each(function () {
+                var $mainRow = $(this);
+                // Reindex main row inputs
+                $mainRow.find('input, select, textarea').each(function () {
+                    var n = $(this).attr('name');
+                    if (n) {
+                        $(this).attr('name', n.replace(/Rows\[\d+\]/, 'Rows[' + idx + ']'));
+                    }
+                });
+
+                // Reindex detail row
+                var $btn = $mainRow.find('.btn-hours-toggle');
+                if ($btn.length) {
+                    var oldTarget = $btn.data('target');
+                    var newTarget = 'detail-row-' + idx;
+                    $btn.data('target', newTarget);
+
+                    var $detailRow = $('#' + oldTarget);
+                    if ($detailRow.length) {
+                        $detailRow.attr('id', newTarget);
+                        $detailRow.find('input, select, textarea').each(function () {
+                            var n = $(this).attr('name');
+                            if (n) {
+                                $(this).attr('name', n.replace(/Rows\[\d+\]/, 'Rows[' + idx + ']'));
+                            }
+                        });
+                        $detailRow.find('[id^="empty-"]').attr('id', 'empty-' + newTarget);
+                        $detailRow.find('[id^="totals-"]').attr('id', 'totals-' + newTarget);
+                    }
+                }
+                idx++;
+            });
+        }
+
+        function updateRowStyles() {
+            $('.batch-row-check').each(function() {
+                $(this).closest('tr.batch-employee-row').toggleClass('table-light text-muted', !$(this).is(':checked'));
+            });
+        }
+
+        function updateSelectedCount() {
+            $('#selectedCountBadge').text($('.batch-row-check:checked').length + ' selected');
+        }
+
+        function applyDtrImportToRow(rowData, dayTypeByName) {
+            var empId = rowData.employeeId;
+            var $empRow = $('#batchEmployeeTable tbody tr.batch-employee-row').filter(function () {
+                return $(this).find('input[name$=".EmployeeId"]').val() === empId;
+            }).first();
+
+            if (!$empRow.length) return;
+
+            $empRow.find('input[name$=".LateMinutes"]').val(rowData.lateMinutes || 0);
+            $empRow.find('input[name$=".UndertimeMinutes"]').val(rowData.undertimeMinutes || 0);
+            $empRow.find('input[name$=".AbsentHours"]').val(rowData.absentHours || 0);
+            $empRow.find('input[name$=".Notes"]').val(rowData.notes || '');
+
+            var $detailRow = $empRow.next('tr.detail-subrow');
+            if (!$detailRow.length) return;
+
+            // Reset all Day Type hour rows so totals reconcile to imported values only.
+            $detailRow.find('.daytype-row').each(function () {
+                var $dtRow = $(this);
+                $dtRow.find('.hours-field').val(0);
+                $dtRow.removeClass('daytype-active').addClass('daytype-inactive').hide();
+                $dtRow.find('.badge').removeClass('badge-info').addClass('badge-secondary');
+            });
+
+            function activateDayTypeRow(dayTypeName, fieldSuffix, hours) {
+                var amount = parseFloat(hours);
+                if (!amount || amount <= 0) return;
+                var dtKey = (dayTypeName || '').toLowerCase();
+                var dt = dayTypeByName[dtKey];
+                var dayTypeId = dt ? dt.id : null;
+                var $dtRow = dayTypeId
+                    ? $detailRow.find('.daytype-row[data-daytype-id="' + dayTypeId + '"]')
+                    : $detailRow.find('.daytype-row').filter(function () {
+                        return ($(this).find('input[name$=".DayTypeName"]').val() || '').toLowerCase() === dtKey;
+                    });
+
+                if (!$dtRow.length) {
+                    // Last resort: put OT/ND on Regular Day so hours are not lost.
+                    $dtRow = $detailRow.find('.daytype-row').filter(function () {
+                        var name = ($(this).find('input[name$=".DayTypeName"]').val() || '').toLowerCase();
+                        return name.indexOf('regular') >= 0 && name.indexOf('holiday') < 0;
+                    }).first();
+                }
+
+                if (!$dtRow.length) return;
+
+                $dtRow.removeClass('daytype-inactive').addClass('daytype-active').show();
+                $dtRow.find('.badge').removeClass('badge-secondary').addClass('badge-info');
+                var $field = $dtRow.find('input[name$=".' + fieldSuffix + '"]');
+                var existing = parseFloat($field.val()) || 0;
+                $field.val(existing + amount);
+            }
+
+            var hoursMap = rowData.hoursByDayTypeName || {};
+            Object.keys(hoursMap).forEach(function (dayTypeName) {
+                activateDayTypeRow(dayTypeName, 'RegularHours', hoursMap[dayTypeName]);
+            });
+
+            var ndMap = rowData.nightDifferentialHoursByDayTypeName || {};
+            Object.keys(ndMap).forEach(function (dayTypeName) {
+                activateDayTypeRow(dayTypeName, 'NightDifferentialHours', ndMap[dayTypeName]);
+            });
+
+            var otMap = rowData.overtimeHoursByDayTypeName || {};
+            Object.keys(otMap).forEach(function (dayTypeName) {
+                activateDayTypeRow(dayTypeName, 'OvertimeHours', otMap[dayTypeName]);
+            });
+
+            var ndOtMap = rowData.nightDifferentialOvertimeHoursByDayTypeName || {};
+            Object.keys(ndOtMap).forEach(function (dayTypeName) {
+                activateDayTypeRow(dayTypeName, 'NightDifferentialOvertimeHours', ndOtMap[dayTypeName]);
+            });
+
+            var $tbody = $detailRow.find('.hours-daytype-tbody');
+            if ($tbody.length) {
+                recalcTotals($tbody);
+                refreshEmptyState($tbody);
+            }
+            refreshToggleBtnState($empRow.find('.btn-hours-toggle'));
+
+            $empRow.addClass('table-info');
+        }
+    })();
+</script>
+}

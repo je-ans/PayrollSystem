@@ -1,0 +1,540 @@
+@model PayrollSystem.Controllers.EmployeeDashboardViewModel
+
+@{
+    ViewData["Title"] = "My Dashboard";
+    ViewBag.ActiveMenu = "EmployeeDashboard";
+
+    var employee = Model.Employee;
+    var profilePicture = employee?.ApplicationUser != null && !string.IsNullOrEmpty(employee.ApplicationUser.ProfilePicture)
+        ? Url.Content("~/uploads/" + employee.ApplicationUser.ProfilePicture)
+        : null;
+    var latestPayslip = Model.RecentPayslips.FirstOrDefault();
+    var latestNetPay = latestPayslip?.PayrollEntry?.NetPay ?? latestPayslip?.NetPay;
+    var initials = string.Join("", new[] { employee?.FirstName, employee?.Surname }
+        .Where(s => !string.IsNullOrWhiteSpace(s))
+        .Select(s => s!.Trim()[0])
+        .Take(2));
+
+    // Helper function to calculate days until DateOnly
+    int GetDaysUntil(DateOnly targetDate)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        return targetDate.DayNumber - today.DayNumber;
+    }
+}
+
+<style>
+    :root {
+        --primary-gradient-start: #0ea5e9;
+        --primary-gradient-end: #2563eb;
+        --success-gradient-start: #16a34a;
+        --success-gradient-end: #22c55e;
+        --info-gradient-start: #3b82f6;
+        --info-gradient-end: #2563eb;
+        --purple-gradient-start: #8b5cf6;
+        --purple-gradient-end: #7c3aed;
+        --surface-white: #ffffff;
+        --surface-gray: #f9fafb;
+        --text-primary: #111827;
+        --text-secondary: #6b7280;
+        --text-tertiary: #9ca3af;
+        --border-light: #e5e7eb;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        --shadow-custom: 0 2px 10px rgba(0, 0, 0, 0.1);
+        --transition-default: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Page Header */
+    .page-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.75rem;
+    }
+
+        .page-header h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-primary), var(--primary-gradient-start));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.25rem;
+        }
+
+    .kpi-card-modern {
+        position: relative;
+        border-radius: 1.25rem;
+        padding: 1.5rem;
+        color: white;
+        overflow: hidden;
+        transition: var(--transition-default);
+        box-shadow: var(--shadow-custom);
+        height: 100%;
+    }
+
+        .kpi-card-modern:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .kpi-card-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(30px, -30px);
+        }
+
+        .kpi-card-modern::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 50%;
+            transform: translate(-30px, 30px);
+        }
+
+        .kpi-card-modern .kpi-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-weight: 700;
+            opacity: 0.85;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-card-modern .kpi-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-card-modern .kpi-sub {
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+
+        .kpi-card-modern .kpi-icon {
+            position: absolute;
+            right: 1.25rem;
+            bottom: 1rem;
+            font-size: 3rem;
+            opacity: 0.12;
+            transition: var(--transition-default);
+        }
+
+        .kpi-card-modern:hover .kpi-icon {
+            opacity: 0.2;
+            transform: scale(1.05) rotate(3deg);
+        }
+
+    .kpi-gradient-info {
+        background: linear-gradient(135deg, var(--info-gradient-start), var(--info-gradient-end));
+        box-shadow: 0 2px 10px rgba(59, 130, 246, 0.3);
+    }
+
+    .kpi-gradient-success {
+        background: linear-gradient(135deg, var(--success-gradient-start), var(--success-gradient-end));
+        box-shadow: 0 2px 10px rgba(34, 197, 94, 0.3);
+    }
+
+    .kpi-gradient-purple {
+        background: linear-gradient(135deg, var(--purple-gradient-start), var(--purple-gradient-end));
+        box-shadow: 0 2px 10px rgba(139, 92, 246, 0.3);
+    }
+
+    .profile-card {
+        background: var(--surface-white);
+        border-radius: 1.25rem;
+        overflow: hidden;
+        box-shadow: var(--shadow-custom);
+        transition: var(--transition-default);
+        text-align: center;
+        padding: 0 1.5rem 1.5rem;
+        position: relative;
+    }
+
+        .profile-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-xl);
+        }
+
+    .profile-cover {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 140px;
+        background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+        z-index: 0;
+    }
+
+    .profile-image-container {
+        position: relative;
+        z-index: 1;
+        margin-bottom: 0.75rem;
+        padding-top: 80px; 
+    }
+
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        margin: 0 auto;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 4px solid var(--surface-white);
+        box-shadow: var(--shadow-lg);
+        background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+        transition: var(--transition-default);
+    }
+
+        .profile-avatar:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .profile-avatar .initials {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            font-weight: 800;
+            color: white;
+            letter-spacing: 0.05em;
+            background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+        }
+
+    /* Profile Info */
+    .profile-name {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 0.25rem;
+        margin-top: 0.5rem;
+    }
+
+    .profile-designation {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--primary-gradient-start);
+        margin-bottom: 0.5rem;
+    }
+
+    .profile-department {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 1rem;
+        background: var(--surface-gray);
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.75rem;
+    }
+
+        .profile-department i {
+            color: var(--primary-gradient-start);
+            font-size: 0.7rem;
+        }
+
+    /* Status Badge */
+    .profile-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 1rem;
+        background: rgba(22, 163, 74, 0.12);
+        border-radius: 2rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #16a34a;
+    }
+
+        .profile-status i {
+            font-size: 0.5rem;
+        }
+
+    /* Quick Links Card */
+    .card-modern {
+        background: var(--surface-white);
+        border: none;
+        border-radius: 1.25rem;
+        box-shadow: var(--shadow-custom);
+        transition: var(--transition-default);
+        overflow: hidden;
+        height: 100%;
+    }
+
+        .card-modern:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card-modern .card-header {
+            background: transparent;
+            border-bottom: 2px solid var(--border-light);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .card-modern .card-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+            .card-modern .card-title i {
+                color: var(--primary-gradient-start);
+                font-size: 1.1rem;
+            }
+
+    /* Quick Links */
+    .quick-link {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.875rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid var(--border-light);
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: var(--transition-default);
+        margin-bottom: 0.5rem;
+    }
+
+        .quick-link:last-child {
+            margin-bottom: 0;
+        }
+
+        .quick-link:hover {
+            border-color: transparent;
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.08), rgba(37, 99, 235, 0.08));
+            color: var(--primary-gradient-end);
+            transform: translateX(4px);
+            text-decoration: none;
+        }
+
+        .quick-link .ql-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .quick-link .ql-text strong {
+            display: block;
+            font-size: 0.85rem;
+        }
+
+        .quick-link .ql-text small {
+            color: var(--text-tertiary);
+            font-size: 0.7rem;
+        }
+
+    /* Utility Classes */
+    .currency-peso {
+        font-weight: 600;
+        margin-right: 0.125rem;
+    }
+</style>
+
+<div class="container-fluid px-3">
+    <!-- First Row: 3 KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="kpi-card-modern kpi-gradient-info">
+                <div class="kpi-label">
+                    <i class="fas fa-calendar-alt me-1"></i> Next Payroll
+                </div>
+                <div class="kpi-value">
+                    @(Model.UpcomingPayrollPeriod != null
+                        ? Model.UpcomingPayrollPeriod.PeriodEndDate.ToString("MMM dd, yyyy")
+                        : "N/A")
+                </div>
+                <div class="kpi-sub">
+                    @if (Model.UpcomingPayrollPeriod != null)
+                    {
+                        var daysUntil = GetDaysUntil(Model.UpcomingPayrollPeriod.PeriodEndDate);
+                        if (daysUntil > 0)
+                        {
+                            <text><i class="far fa-clock me-1"></i> @daysUntil days from now</text>
+                        }
+                        else if (daysUntil == 0)
+                        {
+                            <text><i class="fas fa-bell me-1"></i> Today is payday!</text>
+                        }
+                        else
+                        {
+                            <text><i class="fas fa-chart-line me-1"></i> Payroll period ongoing</text>
+                        }
+                    }
+                    else
+                    {
+                        <text>No upcoming period scheduled</text>
+                    }
+                </div>
+                <i class="fas fa-calendar-alt kpi-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi-card-modern kpi-gradient-success">
+                <div class="kpi-label">
+                    <i class="fas fa-hand-holding-usd me-1"></i> Latest Net Pay
+                </div>
+                <div class="kpi-value">
+                    @if (latestNetPay != null)
+                    {
+                        <span class="currency-peso">₱</span>
+
+                        @latestNetPay?.ToString("N2")
+                    }
+                    else
+                    {
+                        <text>—</text>
+                    }
+                </div>
+                <div class="kpi-sub">
+                    @if (latestPayslip != null)
+                    {
+                        <text>@latestPayslip.PayrollEntry.PayrollRun.PayrollPeriod.Name</text>
+                    }
+                    else
+                    {
+                        <text>From your most recent payslip</text>
+                    }
+                </div>
+                <i class="fas fa-hand-holding-usd kpi-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="kpi-card-modern kpi-gradient-purple">
+                <div class="kpi-label">
+                    <i class="fas fa-file-invoice me-1"></i> Total Payslips
+                </div>
+                <div class="kpi-value">@Model.RecentPayslips.Count()</div>
+                <div class="kpi-sub">
+                    <i class="fas fa-download me-1"></i> Available for download
+                </div>
+                <i class="fas fa-file-invoice kpi-icon"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second Row: Profile Card + Quick Links -->
+    <div class="row g-3">
+        <!-- Modern Portrait ID Card -->
+        <div class="col-md-3">
+            <div class="profile-card">
+                <div class="profile-cover"></div>
+
+                <div class="profile-image-container">
+                    <div class="profile-avatar">
+                        @if (profilePicture != null)
+                        {
+                            <img src="@profilePicture" alt="@employee?.FullName" />
+                        }
+                        else
+                        {
+                            <div class="initials">@(string.IsNullOrEmpty(initials) ? "?" : initials)</div>
+                        }
+                    </div>
+                </div>
+
+                <div class="profile-info">
+                    <h3 class="profile-name">@employee?.FullName</h3>
+                    <div class="profile-designation">
+                        <i class="fas fa-briefcase me-1"></i> @(employee?.Designations.FirstOrDefault(d => d.EffectiveTo == null)?.Designation?.DesignationName ?? "—")
+                    </div>
+                    <div class="profile-department">
+                        <i class="fas fa-building"></i>
+                        <span>@(Model.OrganizationUnitsDisplay ?? "—")</span>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="col-md-4">
+            <div class="card-modern">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-bolt"></i>
+                        Quick Links
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <a asp-controller="Payslip" asp-action="Index" class="quick-link">
+                        <span class="ql-icon"><i class="fas fa-file-invoice-dollar"></i></span>
+                        <span class="ql-text">
+                            <strong>Payslips</strong>
+                            <small>View and download your payslip</small>
+                        </span>
+                    </a>
+                    <a asp-controller="Dtr" asp-action="Index" class="quick-link">
+                        <span class="ql-icon"><i class="fas fa-calendar-check"></i></span>
+                        <span class="ql-text">
+                            <strong>Daily Time Record</strong>
+                            <small>Review attendance and time logs</small>
+                        </span>
+                    </a>
+                    @if (Model.CanManageSchedule)
+                    {
+                        <a asp-controller="WorkSchedule" asp-action="Index" class="quick-link">
+                            <span class="ql-icon"><i class="fas fa-calendar-week"></i></span>
+                            <span class="ql-text">
+                                <strong>Work Schedule</strong>
+                                <small>Manage your unit's monthly work schedule</small>
+                            </span>
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="MySchedule" asp-action="Index" class="quick-link">
+                            <span class="ql-icon"><i class="fas fa-calendar-week"></i></span>
+                            <span class="ql-text">
+                                <strong>Office Schedule</strong>
+                                <small>View your section's monthly work schedule</small>
+                            </span>
+                        </a>
+                    }
+                    <a asp-controller="Account" asp-action="UserProfile" class="quick-link">
+                        <span class="ql-icon"><i class="fas fa-user-cog"></i></span>
+                        <span class="ql-text">
+                            <strong>Account Settings</strong>
+                            <small>Update profile and preferences</small>
+                        </span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

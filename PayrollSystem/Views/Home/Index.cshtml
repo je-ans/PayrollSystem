@@ -1,0 +1,689 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewBag.ActiveMenu = "Dashboard";
+    ViewBag.ActiveLink = "Dashboard";
+    var a = Model.Audience;
+    var periodLabel = Model.SelectedPeriodName ?? "No period selected";
+}
+
+<link rel="stylesheet" href="~/css/dashboard-ops.css" asp-append-version="true" />
+
+<div class="container-fluid ops-dash">
+    <div class="ops-toolbar">
+        <div>
+            <h1 class="ops-title">Operations Dashboard</h1>
+            <p class="ops-subtitle">
+                What needs attention today
+                @if (!string.IsNullOrWhiteSpace(Model.SelectedPeriodName))
+                {
+                    <span>· focused on <strong>@Model.SelectedPeriodName</strong></span>
+                }
+            </p>
+        </div>
+        <form method="get" asp-action="Index" class="ops-period-form">
+            <label for="periodId">Payroll period</label>
+            <select id="periodId" name="periodId" class="form-control form-control-sm" onchange="this.form.submit()">
+                @if (!Model.PeriodOptions.Any())
+                {
+                    <option value="">No periods</option>
+                }
+                else
+                {
+                    foreach (var p in Model.PeriodOptions)
+                    {
+                        if (p.Id == Model.SelectedPeriodId)
+                        {
+                            <option value="@p.Id" selected>@p.Name @(p.IsLocked ? "(Locked)" : "")</option>
+                        }
+                        else
+                        {
+                            <option value="@p.Id">@p.Name @(p.IsLocked ? "(Locked)" : "")</option>
+                        }
+                    }
+                }
+            </select>
+            @if (Model.SelectedPeriodId.HasValue)
+            {
+                <span class="ops-period-badge @(Model.SelectedPeriodIsLocked ? "is-locked" : "is-open")">
+                    @(Model.SelectedPeriodIsLocked ? "Locked" : "Open")
+                </span>
+            }
+        </form>
+    </div>
+
+    @if (a.ShowPayrollSummary)
+    {
+        <div class="ops-kpi-row">
+            <div class="ops-kpi ops-kpi-gross">
+                <div class="label">Gross Pay</div>
+                <div class="value">@(Model.HasPeriodPayrollTotals ? Model.PeriodGrossPay!.Value.ToString("N2") : "—")</div>
+                <div class="sub">@periodLabel</div>
+                <i class="fas fa-coins"></i>
+            </div>
+            <div class="ops-kpi ops-kpi-net">
+                <div class="label">Net Pay</div>
+                <div class="value">@(Model.HasPeriodPayrollTotals ? Model.PeriodTotalNetPay!.Value.ToString("N2") : "—")</div>
+                <div class="sub">@(Model.HasPeriodPayrollTotals ? $"{Model.PeriodPayrollEmployeeCount} employees" : "No completed run")</div>
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="ops-kpi ops-kpi-ded">
+                <div class="label">Deductions</div>
+                <div class="value">@(Model.HasPeriodPayrollTotals ? Model.PeriodTotalDeductions!.Value.ToString("N2") : "—")</div>
+                <div class="sub">@periodLabel</div>
+                <i class="fas fa-minus-circle"></i>
+            </div>
+            <div class="ops-kpi ops-kpi-ben">
+                <div class="label">Benefits</div>
+                <div class="value">@(Model.HasPeriodPayrollTotals ? Model.PeriodTotalBenefits!.Value.ToString("N2") : "—")</div>
+                <div class="sub">@periodLabel</div>
+                <i class="fas fa-hand-holding-heart"></i>
+            </div>
+        </div>
+
+        <div class="ops-stat-row">
+            <div class="ops-stat">
+                <div class="label">Active Employees</div>
+                <div class="value">@Model.ActiveEmployees</div>
+            </div>
+            <div class="ops-stat">
+                <div class="label">Open Periods</div>
+                <div class="value">@Model.ActivePayrollPeriodsCount</div>
+            </div>
+            <div class="ops-stat">
+                <div class="label">Completed Runs</div>
+                <div class="value">@Model.CompletedPayrollRunsCount</div>
+            </div>
+            <div class="ops-stat">
+                <div class="label">Draft Runs</div>
+                <div class="value">@Model.DraftPayrollRunsCount</div>
+            </div>
+        </div>
+    }
+
+    <div class="ops-grid">
+        @if (a.ShowPendingApprovals)
+        {
+            <div class="ops-col-4">
+                <div class="ops-card">
+                    <div class="ops-card-header">
+                        <h3><i class="fas fa-tasks"></i> Pending Approvals</h3>
+                        <a class="btn btn-xs btn-outline-primary" asp-controller="PendingApproval" asp-action="Index">Open</a>
+                    </div>
+                    <div class="ops-card-body">
+                        <ul class="ops-metric-list">
+                            <li>
+                                <a asp-controller="OvertimeRequest" asp-action="Index">
+                                    <span class="name">Overtime</span>
+                                </a>
+                                <span class="count">@Model.PendingApprovals.Overtime</span>
+                            </li>
+                            <li>
+                                <span class="name">Leave</span>
+                                <span class="count" title="Leave module not configured">@Model.PendingApprovals.Leave</span>
+                            </li>
+                            <li>
+                                <a asp-controller="DtrJustification" asp-action="Index">
+                                    <span class="name">DTR Justifications</span>
+                                </a>
+                                <span class="count">@Model.PendingApprovals.DtrJustifications</span>
+                            </li>
+                            <li>
+                                <a asp-controller="ScheduleChangeRequest" asp-action="Index">
+                                    <span class="name">Schedule Changes</span>
+                                </a>
+                                <span class="count">@Model.PendingApprovals.ScheduleChanges</span>
+                            </li>
+                            <li>
+                                <a asp-controller="PendingApproval" asp-action="Index">
+                                    <span class="name">Work Schedules</span>
+                                </a>
+                                <span class="count">@Model.PendingApprovals.WorkSchedules</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (a.ShowPayrollProgress)
+        {
+            <div class="ops-col-4">
+                <div class="ops-card">
+                    <div class="ops-card-header">
+                        <h3><i class="fas fa-tasks"></i> Payroll Progress</h3>
+                        <span class="ops-chip @(Model.PayrollProgress.IsLocked ? "ops-chip-warn" : "ops-chip-ok")">
+                            @Model.PayrollProgress.StatusLabel
+                        </span>
+                    </div>
+                    <div class="ops-card-body">
+                        <div class="ops-progress-meta">
+                            <span>Total <strong>@Model.PayrollProgress.TotalEmployees</strong></span>
+                            <span>Processed <strong>@Model.PayrollProgress.Processed</strong></span>
+                            <span>Remaining <strong>@Model.PayrollProgress.Remaining</strong></span>
+                        </div>
+                        <div class="ops-progress-bar">
+                            <span style="width:@Model.PayrollProgress.PercentComplete.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%"></span>
+                        </div>
+                        <p class="ops-event-sub mb-0">@Model.PayrollProgress.PercentComplete% of assigned employees have time cards.</p>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (a.ShowOvertimeSummary)
+        {
+            <div class="ops-col-4">
+                <div class="ops-card">
+                    <div class="ops-card-header">
+                        <h3><i class="fas fa-business-time"></i> Overtime Summary</h3>
+                        <a class="btn btn-xs btn-outline-primary" asp-controller="OvertimeRequest" asp-action="Index">Open</a>
+                    </div>
+                    <div class="ops-card-body">
+                        <ul class="ops-metric-list">
+                            <li><span class="name">Pending Approval</span><span class="count">@Model.OvertimeSummary.PendingApproval</span></li>
+                            <li><span class="name">Approved (Pending Import)</span><span class="count">@Model.OvertimeSummary.ApprovedPendingImport</span></li>
+                            <li><span class="name">Imported</span><span class="count">@Model.OvertimeSummary.Imported</span></li>
+                            <li><span class="name">Rejected</span><span class="count">@Model.OvertimeSummary.Rejected</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (a.ShowAttendanceSummary)
+        {
+            <div class="ops-col-6">
+                <div class="ops-card">
+                    <div class="ops-card-header">
+                        <h3><i class="fas fa-user-clock"></i> Attendance Summary</h3>
+                        <span class="text-muted small">@Model.AttendanceSummary.PeriodLabel</span>
+                    </div>
+                    <div class="ops-card-body">
+                        <ul class="ops-metric-list">
+                            <li><span class="name">Present</span><span class="count">@Model.AttendanceSummary.Present</span></li>
+                            <li><span class="name">Late</span><span class="count">@Model.AttendanceSummary.Late</span></li>
+                            <li><span class="name">Absent</span><span class="count">@Model.AttendanceSummary.Absent</span></li>
+                            <li><span class="name">On Leave</span><span class="count">@Model.AttendanceSummary.OnLeave</span></li>
+                            <li><span class="name">Rest Day</span><span class="count">@Model.AttendanceSummary.RestDay</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (a.ShowAttention)
+        {
+            <div class="ops-col-6">
+                <div class="ops-card">
+                    <div class="ops-card-header">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Employees Requiring Attention</h3>
+                        @if (Model.Attention.Total > 0)
+                        {
+                            <span class="ops-chip ops-chip-warn">@Model.Attention.Total</span>
+                        }
+                    </div>
+                    <div class="ops-card-body">
+                        <ul class="ops-metric-list">
+                            <li><span class="name">Missing DTR logs</span><span class="count">@Model.Attention.MissingDtrLogs</span></li>
+                            <li><span class="name">Missing schedules</span><span class="count">@Model.Attention.MissingSchedules</span></li>
+                            <li><span class="name">Missing time cards</span><span class="count">@Model.Attention.MissingTimeCards</span></li>
+                            <li><span class="name">Payroll validation issues</span><span class="count">@Model.Attention.PayrollValidationErrors</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (a.ShowUpcoming)
+        {
+            <div class="ops-col-6">
+                <div class="ops-card">
+                    <div class="ops-card-header">
+                        <h3><i class="fas fa-calendar-alt"></i> Upcoming Events</h3>
+                    </div>
+                    <div class="ops-card-body is-scroll-sm">
+                        @if (!Model.UpcomingEvents.Any())
+                        {
+                            <div class="ops-empty">No upcoming holidays or payroll dates.</div>
+                        }
+                        else
+                        {
+                            <ul class="ops-event-list">
+                                @foreach (var e in Model.UpcomingEvents)
+                                {
+                                    <li>
+                                        <span class="ops-icon @e.AccentClass"><i class="@e.IconClass"></i></span>
+                                        <div>
+                                            <p class="ops-event-title">@e.Title</p>
+                                            <p class="ops-event-sub">@e.Date.ToString("MMM d, yyyy") · @e.Subtitle</p>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                            <p class="ops-limit-note">Showing next @Model.UpcomingEvents.Count</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (a.ShowRecentActivity)
+        {
+            <div class="ops-col-6">
+                <div class="ops-card">
+                    <div class="ops-card-header">
+                        <h3><i class="fas fa-stream"></i> Recent Activities</h3>
+                    </div>
+                    <div class="ops-card-body is-scroll">
+                        @if (!Model.RecentActivities.Any())
+                        {
+                            <div class="ops-empty">No recent activity yet.</div>
+                        }
+                        else
+                        {
+                            <ul class="ops-activity-list">
+                                @foreach (var act in Model.RecentActivities)
+                                {
+                                    <li>
+                                        <span class="ops-icon @act.AccentClass"><i class="@act.IconClass"></i></span>
+                                        <div>
+                                            <p class="ops-activity-title">
+                                                @if (!string.IsNullOrEmpty(act.Url))
+                                                {
+                                                    <a href="@act.Url">@act.Title</a>
+                                                }
+                                                else
+                                                {
+                                                    @act.Title
+                                                }
+                                            </p>
+                                            <p class="ops-activity-sub">@act.Detail · @act.OccurredOn.ToString("MMM d, h:mm tt")</p>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                            <p class="ops-limit-note">Latest @Model.RecentActivities.Count activities</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (a.ShowRecentRuns)
+        {
+            <div class="ops-col-12">
+                <div class="ops-card">
+                    <div class="ops-card-header">
+                        <h3><i class="fas fa-history"></i> Recent Payroll Runs</h3>
+                        <a class="btn btn-xs btn-outline-primary" asp-controller="Payroll" asp-action="Index">All payroll</a>
+                    </div>
+                    <div class="ops-card-body p-0">
+                        @if (!Model.RecentPayrollRuns.Any())
+                        {
+                            <div class="ops-empty">No completed payroll runs yet.</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive ops-table-scroll">
+                                <table class="table ops-table mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Run</th>
+                                            <th>Period</th>
+                                            <th class="text-right">Employees</th>
+                                            <th class="text-right">Gross</th>
+                                            <th class="text-right">Net</th>
+                                            <th>Processed</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var run in Model.RecentPayrollRuns)
+                                        {
+                                            <tr>
+                                                <td>@run.Name</td>
+                                                <td>@run.PeriodName</td>
+                                                <td class="text-right">@run.TotalEmployees</td>
+                                                <td class="text-right">@run.TotalGrossPay.ToString("N2")</td>
+                                                <td class="text-right">@run.TotalNetPay.ToString("N2")</td>
+                                                <td>@(run.ProcessedDate?.ToString("MMM d, yyyy") ?? "—")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="ops-limit-note px-3 pb-2">Latest @Model.RecentPayrollRuns.Count runs</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (a.ShowCharts)
+        {
+            var hasAttendanceChart = Model.Charts.AttendanceTrend.Labels.Count > 0;
+            var hasPayrollChart = Model.Charts.PayrollCost.Labels.Count > 0;
+            var hasStatusChart = Model.Charts.EmployeeStatus.Labels.Count > 0;
+            var statusTotal = Model.Charts.EmployeeStatus.Counts.Sum();
+            var statusColors = new[] { "#2563eb", "#16a34a", "#d97706", "#0ea5e9", "#64748b", "#dc2626" };
+
+            <div class="ops-section">
+                <div class="ops-section-head">
+                    <h2>Analytics</h2>
+                    <span class="ops-section-meta">Period-aware · click charts to drill in</span>
+                </div>
+
+                <div class="ops-charts">
+                    <div class="ops-chart-attendance">
+                        <div class="ops-card is-chart">
+                            <div class="ops-card-header">
+                                <h3><i class="fas fa-chart-line"></i> Attendance Trend</h3>
+                                <span class="text-muted small">@periodLabel</span>
+                            </div>
+                            <div class="ops-card-body">
+                                <div class="ops-chart-panel">
+                                    <div class="ops-chart-wrap is-tall">
+                                        @if (hasAttendanceChart)
+                                        {
+                                            <canvas id="attendanceTrendChart"></canvas>
+                                        }
+                                        else
+                                        {
+                                            <div class="ops-chart-empty">
+                                                <i class="fas fa-chart-line"></i>
+                                                <span>No attendance data for this period</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="ops-chart-foot">
+                                    <p class="ops-limit-note">Present, late, absent, and leave by day</p>
+                                    <span class="ops-chart-hint"><i class="fas fa-mouse-pointer"></i> Open DTR</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ops-chart-payroll">
+                        <div class="ops-card is-chart">
+                            <div class="ops-card-header">
+                                <h3><i class="fas fa-chart-bar"></i> Payroll Cost by Period</h3>
+                                <span class="text-muted small">Last 6 completed runs</span>
+                            </div>
+                            <div class="ops-card-body">
+                                <div class="ops-chart-panel">
+                                    <div class="ops-chart-wrap">
+                                        @if (hasPayrollChart)
+                                        {
+                                            <canvas id="payrollCostChart"></canvas>
+                                        }
+                                        else
+                                        {
+                                            <div class="ops-chart-empty">
+                                                <i class="fas fa-chart-bar"></i>
+                                                <span>No completed payroll runs yet</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="ops-chart-foot">
+                                    <p class="ops-limit-note">Basic, overtime, benefits, and deductions</p>
+                                    <span class="ops-chart-hint"><i class="fas fa-mouse-pointer"></i> Open run</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ops-chart-status">
+                        <div class="ops-card is-chart">
+                            <div class="ops-card-header">
+                                <h3><i class="fas fa-chart-pie"></i> Employee Status</h3>
+                                <span class="text-muted small">@statusTotal active</span>
+                            </div>
+                            <div class="ops-card-body">
+                                <div class="ops-status-layout">
+                                    <div class="ops-chart-panel">
+                                        <div class="ops-chart-wrap is-pie">
+                                            @if (hasStatusChart)
+                                            {
+                                                <canvas id="employeeStatusChart"></canvas>
+                                            }
+                                            else
+                                            {
+                                                <div class="ops-chart-empty">
+                                                    <i class="fas fa-users"></i>
+                                                    <span>No active employees</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                    @if (hasStatusChart)
+                                    {
+                                        <ul class="ops-status-legend">
+                                            @for (var i = 0; i < Model.Charts.EmployeeStatus.Labels.Count; i++)
+                                            {
+                                                var pct = statusTotal > 0
+                                                    ? (100.0 * Model.Charts.EmployeeStatus.Counts[i] / statusTotal)
+                                                    : 0;
+                                                <li>
+                                                    <span class="label">
+                                                        <span class="swatch" style="background:@statusColors[i % statusColors.Length]"></span>
+                                                        @Model.Charts.EmployeeStatus.Labels[i]
+                                                    </span>
+                                                    <span class="count">@Model.Charts.EmployeeStatus.Counts[i] <span class="text-muted font-weight-normal">(@pct.ToString("0"))%</span></span>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </div>
+                                <div class="ops-chart-foot">
+                                    <p class="ops-limit-note">By employment basis</p>
+                                    <span class="ops-chart-hint"><i class="fas fa-mouse-pointer"></i> Open list</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/plugins/chart.js/Chart.min.js" asp-append-version="true"></script>
+    <script>
+        (function () {
+            var chartData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(new {
+                attendance = new {
+                    labels = Model.Charts.AttendanceTrend.Labels,
+                    dateKeys = Model.Charts.AttendanceTrend.DateKeys,
+                    present = Model.Charts.AttendanceTrend.Present,
+                    late = Model.Charts.AttendanceTrend.Late,
+                    absent = Model.Charts.AttendanceTrend.Absent,
+                    leave = Model.Charts.AttendanceTrend.Leave,
+                    dtrUrl = Model.Charts.AttendanceTrend.DtrUrl
+                },
+                payroll = new {
+                    labels = Model.Charts.PayrollCost.Labels,
+                    basic = Model.Charts.PayrollCost.BasicPay,
+                    overtime = Model.Charts.PayrollCost.OvertimePay,
+                    benefits = Model.Charts.PayrollCost.Benefits,
+                    deductions = Model.Charts.PayrollCost.Deductions,
+                    runIds = Model.Charts.PayrollCost.PayrollRunIds,
+                    payrollUrl = Model.Charts.PayrollCost.PayrollUrl
+                },
+                status = new {
+                    labels = Model.Charts.EmployeeStatus.Labels,
+                    counts = Model.Charts.EmployeeStatus.Counts,
+                    employeeUrl = Model.Charts.EmployeeStatus.EmployeeUrl
+                }
+            }));
+
+            if (typeof Chart === 'undefined') return;
+
+            Chart.defaults.global.defaultFontFamily = "'Segoe UI', system-ui, sans-serif";
+            Chart.defaults.global.defaultFontColor = '#64748b';
+            Chart.defaults.global.defaultFontSize = 11;
+            Chart.defaults.global.animation.duration = 450;
+            Chart.defaults.global.animation.easing = 'easeOutQuart';
+            Chart.defaults.global.legend.labels.boxWidth = 10;
+            Chart.defaults.global.legend.labels.padding = 14;
+            Chart.defaults.global.legend.labels.usePointStyle = true;
+            Chart.defaults.global.tooltips.backgroundColor = 'rgba(15, 23, 42, 0.92)';
+            Chart.defaults.global.tooltips.titleFontStyle = 'bold';
+            Chart.defaults.global.tooltips.cornerRadius = 8;
+            Chart.defaults.global.tooltips.xPadding = 10;
+            Chart.defaults.global.tooltips.yPadding = 8;
+
+            function money(v) {
+                var n = Number(v) || 0;
+                return n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            }
+
+            var att = chartData.attendance;
+            if (att && att.labels && att.labels.length && document.getElementById('attendanceTrendChart')) {
+                var attChart = new Chart(document.getElementById('attendanceTrendChart').getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: att.labels,
+                        datasets: [
+                            { label: 'Present', data: att.present, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.12)', fill: true, lineTension: 0.35, pointRadius: 2.5, pointHoverRadius: 5, borderWidth: 2.25 },
+                            { label: 'Late', data: att.late, borderColor: '#d97706', backgroundColor: 'rgba(217,119,6,0.08)', fill: false, lineTension: 0.35, pointRadius: 2.5, pointHoverRadius: 5, borderWidth: 2.25 },
+                            { label: 'Absent', data: att.absent, borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.08)', fill: false, lineTension: 0.35, pointRadius: 2.5, pointHoverRadius: 5, borderWidth: 2.25 },
+                            { label: 'Leave', data: att.leave, borderColor: '#475569', backgroundColor: 'rgba(71,85,105,0.08)', fill: false, lineTension: 0.35, pointRadius: 2.5, pointHoverRadius: 5, borderWidth: 2.25 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        legend: { position: 'top', align: 'end' },
+                        layout: { padding: { top: 4, right: 8, bottom: 0, left: 0 } },
+                        scales: {
+                            xAxes: [{
+                                gridLines: { display: false, drawBorder: false },
+                                ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 10, fontColor: '#94a3b8' }
+                            }],
+                            yAxes: [{
+                                ticks: { beginAtZero: true, precision: 0, fontColor: '#94a3b8', padding: 6 },
+                                gridLines: { color: 'rgba(226,232,240,0.7)', zeroLineColor: '#e2e8f0', drawBorder: false }
+                            }]
+                        },
+                        tooltips: { mode: 'index', intersect: false },
+                        hover: { mode: 'nearest', intersect: true },
+                        onClick: function (evt) {
+                            var points = attChart.getElementsAtEvent(evt);
+                            if (!points || !points.length) return;
+                            var idx = points[0]._index;
+                            var key = att.dateKeys[idx];
+                            if (!key) return;
+                            var parts = key.split('-');
+                            var year = parts[0], month = parseInt(parts[1], 10);
+                            window.location.href = att.dtrUrl + '?year=' + year + '&month=' + month;
+                        }
+                    }
+                });
+            }
+
+            var pay = chartData.payroll;
+            if (pay && pay.labels && pay.labels.length && document.getElementById('payrollCostChart')) {
+                var payChart = new Chart(document.getElementById('payrollCostChart').getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: pay.labels,
+                        datasets: [
+                            { label: 'Basic Pay', data: pay.basic, backgroundColor: '#2563eb', hoverBackgroundColor: '#1d4ed8', stack: 'cost', barPercentage: 0.65, categoryPercentage: 0.7 },
+                            { label: 'Overtime Pay', data: pay.overtime, backgroundColor: '#0ea5e9', hoverBackgroundColor: '#0284c7', stack: 'cost', barPercentage: 0.65, categoryPercentage: 0.7 },
+                            { label: 'Benefits', data: pay.benefits, backgroundColor: '#64748b', hoverBackgroundColor: '#475569', stack: 'cost', barPercentage: 0.65, categoryPercentage: 0.7 },
+                            { label: 'Deductions', data: pay.deductions, backgroundColor: '#f59e0b', hoverBackgroundColor: '#d97706', stack: 'cost', barPercentage: 0.65, categoryPercentage: 0.7 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        legend: { position: 'top', align: 'end' },
+                        layout: { padding: { top: 4, right: 8, bottom: 0, left: 0 } },
+                        scales: {
+                            xAxes: [{
+                                stacked: true,
+                                gridLines: { display: false, drawBorder: false },
+                                ticks: { fontColor: '#94a3b8', maxRotation: 35, minRotation: 0 }
+                            }],
+                            yAxes: [{
+                                stacked: true,
+                                ticks: {
+                                    beginAtZero: true,
+                                    fontColor: '#94a3b8',
+                                    padding: 6,
+                                    callback: function (v) { return money(v); }
+                                },
+                                gridLines: { color: 'rgba(226,232,240,0.7)', zeroLineColor: '#e2e8f0', drawBorder: false }
+                            }]
+                        },
+                        tooltips: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function (tip, data) {
+                                    var ds = data.datasets[tip.datasetIndex];
+                                    return (ds.label || '') + ': ' + money(tip.yLabel);
+                                }
+                            }
+                        },
+                        onClick: function (evt) {
+                            var points = payChart.getElementsAtEvent(evt);
+                            if (!points || !points.length) return;
+                            var idx = points[0]._index;
+                            var runId = pay.runIds[idx];
+                            if (!runId) return;
+                            window.location.href = '/Payroll/ViewPayroll/' + runId;
+                        }
+                    }
+                });
+            }
+
+            var st = chartData.status;
+            if (st && st.labels && st.labels.length && document.getElementById('employeeStatusChart')) {
+                var colors = ['#2563eb', '#16a34a', '#d97706', '#0ea5e9', '#64748b', '#dc2626'];
+                var statusChart = new Chart(document.getElementById('employeeStatusChart').getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: st.labels,
+                        datasets: [{
+                            data: st.counts,
+                            backgroundColor: st.labels.map(function (_, i) { return colors[i % colors.length]; }),
+                            hoverBackgroundColor: st.labels.map(function (_, i) { return colors[i % colors.length]; }),
+                            borderWidth: 3,
+                            borderColor: '#fff',
+                            hoverBorderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutoutPercentage: 62,
+                        legend: { display: false },
+                        layout: { padding: 6 },
+                        tooltips: {
+                            callbacks: {
+                                label: function (tip, data) {
+                                    var label = data.labels[tip.index] || '';
+                                    var val = data.datasets[0].data[tip.index] || 0;
+                                    var total = data.datasets[0].data.reduce(function (a, b) { return a + b; }, 0) || 1;
+                                    var pct = Math.round((val / total) * 100);
+                                    return label + ': ' + val + ' (' + pct + '%)';
+                                }
+                            }
+                        },
+                        onClick: function (evt) {
+                            var points = statusChart.getElementsAtEvent(evt);
+                            if (!points || !points.length) return;
+                            var idx = points[0]._index;
+                            var basis = encodeURIComponent(st.labels[idx] || '');
+                            window.location.href = st.employeeUrl + (basis ? ('?employmentBasis=' + basis) : '');
+                        }
+                    }
+                });
+            }
+        })();
+    </script>
+}

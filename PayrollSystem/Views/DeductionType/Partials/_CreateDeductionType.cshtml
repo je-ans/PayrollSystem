@@ -1,0 +1,102 @@
+@model DeductionTypeViewModel
+
+<style>
+    .section-header-container {
+        position: relative;
+    }
+
+    .section-header {
+        color: #2c3e50;
+        font-weight: 600;
+        position: relative;
+        display: inline-block;
+        padding-right: 1rem;
+        background: white;
+        z-index: 1;
+    }
+
+    .section-divider {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        height: 1px;
+        background-color: #e0e0e0;
+        z-index: 0;
+    }
+
+    .section-divider-wide {
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <span asp-validation-summary="All" class="text-danger"></span>
+            <form asp-action="Create" method="post" asp-antiforgery="true" id="deductionTypeForm">
+
+                <!-- Basic Information Section -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Basic Information</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="Code" type="text" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="Code" class="floating-label">Code <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="Code" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <input asp-for="Name" type="text" class="form-control floating-input" required placeholder=" ">
+                        <label asp-for="Name" class="floating-label">Name <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="Name" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="form-group mt-3">
+                    <div class="input-container">
+                        <textarea asp-for="Description" class="form-control floating-input" rows="3" placeholder=" "></textarea>
+                        <label asp-for="Description" class="floating-label">Description</label>
+                    </div>
+                    <span asp-validation-for="Description" class="text-danger small validation-message"></span>
+                </div>
+
+                <div class="section-divider-wide my-4"></div>
+
+                <!-- Settings Section -->
+                <div class="section-header-container mb-4">
+                    <h6 class="section-header">Settings</h6>
+                    <div class="section-divider"></div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mt-3">
+                            <div class="custom-control custom-switch">
+                                <input asp-for="IsSystem" type="checkbox" class="custom-control-input" id="isSystemType">
+                                <label class="custom-control-label" for="isSystemType">System Type</label>
+                            </div>
+                            <small class="text-muted d-block mt-1">System types are used by core payroll logic (e.g. Income Tax, Absence, Loan).</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mt-3">
+                            <div class="input-container">
+                                <input asp-for="DisplayOrder" type="number" class="form-control floating-input" placeholder=" ">
+                                <label asp-for="DisplayOrder" class="floating-label">Display Order</label>
+                            </div>
+                            <span asp-validation-for="DisplayOrder" class="text-danger small validation-message"></span>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+</div>
+

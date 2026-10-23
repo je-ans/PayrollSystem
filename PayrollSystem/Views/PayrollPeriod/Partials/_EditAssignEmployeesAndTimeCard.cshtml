@@ -1,0 +1,298 @@
+@model PayrollPeriodTimeCardViewModel
+
+<form id="assignAndTimeCardForm" asp-action="SaveAssignEmployeesAndTimeCard" asp-controller="PayrollPeriod" method="post" data-locked="@(Model.IsLocked ? "true" : "false")">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="PayrollPeriodId" value="@Model.PayrollPeriodId" />
+
+    <div class="mb-2">
+        <small class="text-muted">@Model.PayrollPeriodName - @Model.PeriodRange</small>
+        @if (Model.IsLocked)
+        {
+            <span class="badge badge-warning ml-2">Payroll period is locked; changes cannot be saved.</span>
+        }
+    </div>
+
+    @if (Model.DayTypes.Any())
+    {
+        <div class="alert alert-secondary py-1 mb-2 small">
+            <i class="fas fa-info-circle mr-1"></i>
+            Click <i class="fas fa-clock"></i> to expand per-day-type hours for each employee.
+        </div>
+    }
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <label>Organization Unit</label>
+            <select id="organizationStructureFilter" class="form-control form-control-sm">
+                <option value="">All Organization Units</option>
+                @foreach (var d in Model.OrganizationUnits)
+                {
+                    <option value="@d.Value">@d.Text</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-8 d-flex align-items-end">
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="selectAllEmployees">
+                <label class="form-check-label" for="selectAllEmployees">
+                    Select All Employees
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive" style="max-height: 440px; overflow-y: auto;">
+        <table class="table table-sm table-bordered table-striped" id="legacyTimeCardTable">
+            <thead>
+                <tr>
+                    <th width="50px">
+                        <input type="checkbox" id="selectAllHeader" />
+                    </th>
+                    <th>Employee</th>
+                    <th>Department</th>
+                    <th class="text-right" style="min-width:90px;">Late (min)</th>
+                    <th class="text-right" style="min-width:110px;">Undertime (min)</th>
+                    <th class="text-right" style="min-width:100px;">Absent (hrs)</th>
+                    <th style="min-width:140px;">Notes</th>
+                    <th width="60" class="text-center">Hours</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (int i = 0; i < Model.Rows.Count; i++)
+                {
+                    var row      = Model.Rows[i];
+                    var detailId = $"legacy-detail-{i}";
+
+                    <tr class="legacy-emp-row" data-org-unit-id="@row.OrganizationStructureId">
+                        <td>
+                            <input type="checkbox" name="Rows[@i].IsAssigned" value="true"
+                                   @(row.IsAssigned ? "checked" : "")
+                                   @(Model.IsLocked ? "disabled" : "")
+                                   class="employee-checkbox" />
+                            <input type="hidden" name="Rows[@i].EmployeeId" value="@row.EmployeeId" />
+                        </td>
+                        <td>@row.EmployeeName</td>
+                        <td>@row.OrganizationUnitName</td>
+                        <td>
+                            <input name="Rows[@i].LateMinutes" value="@row.LateMinutes"
+                                   class="form-control form-control-sm text-right time-card-input"
+                                   type="number" step="1" min="0"
+                                   @(!row.IsAssigned || Model.IsLocked ? "disabled" : "") />
+                        </td>
+                        <td>
+                            <input name="Rows[@i].UndertimeMinutes" value="@row.UndertimeMinutes"
+                                   class="form-control form-control-sm text-right time-card-input"
+                                   type="number" step="1" min="0"
+                                   @(!row.IsAssigned || Model.IsLocked ? "disabled" : "") />
+                        </td>
+                        <td>
+                            <input name="Rows[@i].AbsentHours" value="@row.AbsentHours"
+                                   class="form-control form-control-sm text-right time-card-input"
+                                   type="number" step="0.0001" min="0"
+                                   @(!row.IsAssigned || Model.IsLocked ? "disabled" : "") />
+                        </td>
+                        <td>
+                            <input name="Rows[@i].Notes" value="@row.Notes"
+                                   class="form-control form-control-sm time-card-input"
+                                   maxlength="1000"
+                                   @(!row.IsAssigned || Model.IsLocked ? "disabled" : "") />
+                        </td>
+                        <td class="text-center align-middle">
+                            @if (Model.DayTypes.Any())
+                            {
+                                <button type="button"
+                                        class="btn btn-outline-info btn-xs btn-toggle-legacy-detail"
+                                        data-target="@detailId"
+                                        title="Expand / collapse per-day-type hours">
+                                    <i class="fas fa-clock"></i>
+                                </button>
+                            }
+                        </td>
+                    </tr>
+
+                    @if (Model.DayTypes.Any())
+                    {
+                        <tr class="legacy-detail-subrow" id="@detailId" style="display:none;">
+                            <td colspan="8" class="p-0 border-top-0">
+                                <div class="bg-light border-top p-2">
+                                    <strong class="small text-secondary">
+                                        <i class="fas fa-layer-group mr-1"></i>Hours by Day Type — @row.EmployeeName
+                                    </strong>
+                                    <div class="table-responsive mt-1">
+                                        <table class="table table-xs table-bordered table-sm mb-0 bg-white">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th style="min-width:130px">Day Type</th>
+                                                    <th class="text-right" style="min-width:95px">Basic Hrs</th>
+                                                    <th class="text-right" style="min-width:80px">OT Hrs</th>
+                                                    <th class="text-right" style="min-width:100px">Night Diff Hrs</th>
+                                                    <th class="text-right" style="min-width:110px">ND-OT Hrs</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @for (int j = 0; j < row.Details.Count; j++)
+                                                {
+                                                    var det = row.Details[j];
+                                                    <tr>
+                                                        <td class="align-middle">
+                                                            <span class="badge badge-secondary">@det.DayTypeName</span>
+                                                            <input type="hidden" name="Rows[@i].Details[@j].DayTypeId" value="@det.DayTypeId" />
+                                                            <input type="hidden" name="Rows[@i].Details[@j].DayTypeName" value="@det.DayTypeName" />
+                                                        </td>
+                                                        <td>
+                                                            <input name="Rows[@i].Details[@j].RegularHours"
+                                                                   value="@det.RegularHours"
+                                                                   class="form-control form-control-sm text-right time-card-input"
+                                                                   type="number" step="0.0001" min="0"
+                                                                   @(Model.IsLocked ? "disabled" : "") />
+                                                        </td>
+                                                        <td>
+                                                            <input name="Rows[@i].Details[@j].OvertimeHours"
+                                                                   value="@det.OvertimeHours"
+                                                                   class="form-control form-control-sm text-right time-card-input"
+                                                                   type="number" step="0.0001" min="0"
+                                                                   @(Model.IsLocked ? "disabled" : "") />
+                                                        </td>
+                                                        <td>
+                                                            <input name="Rows[@i].Details[@j].NightDifferentialHours"
+                                                                   value="@det.NightDifferentialHours"
+                                                                   class="form-control form-control-sm text-right time-card-input"
+                                                                   type="number" step="0.0001" min="0"
+                                                                   @(Model.IsLocked ? "disabled" : "") />
+                                                        </td>
+                                                        <td>
+                                                            <input name="Rows[@i].Details[@j].NightDifferentialOvertimeHours"
+                                                                   value="@det.NightDifferentialOvertimeHours"
+                                                                   class="form-control form-control-sm text-right time-card-input"
+                                                                   type="number" step="0.0001" min="0"
+                                                                   @(Model.IsLocked ? "disabled" : "") />
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</form>
+
+<script>
+(function () {
+    var form = document.getElementById('assignAndTimeCardForm');
+    if (form && form.getAttribute('data-locked') === 'true') {
+        var $modal = $('#assignAndTimeCardForm').closest('.modal');
+        if ($modal.length) $modal.find('[id^=editModalSave]').hide();
+        ['organizationStructureFilter','selectAllHeader','selectAllEmployees'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.disabled = true;
+        });
+    } else {
+        var $modal = $('#assignAndTimeCardForm').closest('.modal');
+        if ($modal.length) $modal.find('[id^=editModalSave]').show();
+    }
+
+    $(document).on('click', '.btn-toggle-legacy-detail', function () {
+        var targetId = $(this).data('target');
+        var $detail  = $('#' + targetId);
+        var $icon    = $(this).find('i');
+        $detail.toggle();
+        if ($detail.is(':visible')) {
+            $(this).removeClass('btn-outline-info').addClass('btn-info');
+            $icon.removeClass('fa-clock').addClass('fa-chevron-up');
+        } else {
+            $(this).removeClass('btn-info').addClass('btn-outline-info');
+            $icon.removeClass('fa-chevron-up').addClass('fa-clock');
+        }
+    });
+
+    function filterByOrgUnit() {
+        var orgUnitId = document.getElementById('organizationStructureFilter').value;
+        document.querySelectorAll('#legacyTimeCardTable tbody tr.legacy-emp-row').forEach(function (tr) {
+            var rowOrgUnit = (tr.getAttribute('data-org-unit-id') || '').toString();
+            var match = !orgUnitId || orgUnitId === '' || rowOrgUnit === orgUnitId;
+            tr.style.display = match ? '' : 'none';
+
+            var toggleBtn = tr.querySelector('.btn-toggle-legacy-detail');
+            if (toggleBtn) {
+                var subRow = document.getElementById(toggleBtn.dataset.target);
+                if (subRow && !match) subRow.style.display = 'none';
+            }
+        });
+    }
+
+    function toggleTimeCardInputs(checkbox) {
+        var row = checkbox.closest('tr.legacy-emp-row');
+        var inputs = row.querySelectorAll('.time-card-input');
+        inputs.forEach(function (input) {
+            input.disabled = !checkbox.checked;
+            if (!checkbox.checked) {
+                input.value = input.type === 'number' ? '0' : '';
+            }
+        });
+
+        var toggleBtn = row.querySelector('.btn-toggle-legacy-detail');
+        if (toggleBtn) {
+            var subRow = document.getElementById(toggleBtn.dataset.target);
+            if (subRow) {
+                subRow.querySelectorAll('.time-card-input').forEach(function (input) {
+                    input.disabled = !checkbox.checked;
+                    if (!checkbox.checked) input.value = '0';
+                });
+            }
+        }
+    }
+
+    function updateSelectAllState() {
+        var visibleRows = Array.from(document.querySelectorAll('#legacyTimeCardTable tbody tr.legacy-emp-row'))
+            .filter(tr => tr.style.display !== 'none');
+        var visibleCheckboxes = visibleRows.map(tr => tr.querySelector('.employee-checkbox'))
+            .filter(cb => cb !== null);
+        var checkedCount = visibleCheckboxes.filter(cb => cb.checked).length;
+
+        ['selectAllHeader','selectAllEmployees'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) {
+                el.checked       = visibleCheckboxes.length > 0 && checkedCount === visibleCheckboxes.length;
+                el.indeterminate = checkedCount > 0 && checkedCount < visibleCheckboxes.length;
+            }
+        });
+    }
+
+    document.getElementById('organizationStructureFilter').addEventListener('change', function () {
+        filterByOrgUnit();
+        updateSelectAllState();
+    });
+
+    ['selectAllHeader','selectAllEmployees'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', function () {
+                document.querySelectorAll('#legacyTimeCardTable tbody tr.legacy-emp-row')
+                    .forEach(function (tr) {
+                        var cb = tr.querySelector('.employee-checkbox');
+                        if (cb) {
+                            cb.checked = el.checked;
+                            toggleTimeCardInputs(cb);
+                        }
+                    });
+                updateSelectAllState();
+            });
+        }
+    });
+
+    document.querySelectorAll('#legacyTimeCardTable .employee-checkbox').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+            toggleTimeCardInputs(this);
+            updateSelectAllState();
+        });
+    });
+
+    updateSelectAllState();
+})();
+</script>

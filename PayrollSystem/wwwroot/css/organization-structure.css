@@ -1,0 +1,824 @@
+/* ── Organization Structure UI ─────────────────────────────────────── */
+
+.org-page .org-intro {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin-bottom: 0;
+}
+
+.org-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.org-search {
+    flex: 1;
+    min-width: 220px;
+    max-width: 360px;
+    position: relative;
+}
+
+.org-search i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+}
+
+.org-search input {
+    padding-left: 2.25rem;
+    border-radius: 8px;
+}
+
+.org-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.org-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #475569;
+}
+
+/* Tree */
+.org-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.org-tree-node.is-hidden {
+    display: none;
+}
+
+.org-tree-node.is-match > .org-tree-row {
+    background: #fffbeb;
+    border-color: #fcd34d;
+}
+
+.org-tree-children {
+    margin-left: 1.35rem;
+    padding-left: 0.85rem;
+    border-left: 2px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.org-tree-children.is-collapsed {
+    display: none;
+}
+
+.org-tree-row {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.65rem 0.85rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.org-tree-row:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.org-tree-toggle,
+.org-tree-spacer {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.org-tree-toggle {
+    border: none;
+    background: #f1f5f9;
+    border-radius: 6px;
+    color: #64748b;
+    cursor: pointer;
+    padding: 0;
+}
+
+.org-tree-toggle:hover {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.org-tree-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.org-accent-institution { background: #ede9fe; color: #6d28d9; }
+.org-accent-office      { background: #dbeafe; color: #1d4ed8; }
+.org-accent-division    { background: #e0e7ff; color: #4338ca; }
+.org-accent-department  { background: #ccfbf1; color: #0f766e; }
+.org-accent-section     { background: #dcfce7; color: #15803d; }
+.org-accent-unit        { background: #ffedd5; color: #c2410c; }
+.org-accent-team        { background: #fce7f3; color: #be185d; }
+.org-accent-default     { background: #f1f5f9; color: #475569; }
+
+.org-tree-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.org-tree-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #0f172a;
+    text-decoration: none;
+}
+
+.org-tree-title:hover {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.org-tree-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.15rem;
+}
+
+.org-tree-code {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 0.05rem 0.4rem;
+}
+
+.org-tree-level {
+    font-size: 0.72rem;
+    color: #94a3b8;
+}
+
+.org-tree-indicators {
+    display: inline-flex;
+    gap: 0.25rem;
+}
+
+.org-tree-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.org-tree-dot.staff { background: #2563eb; }
+.org-tree-dot.roles { background: #7c3aed; }
+
+.org-tree-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    flex-shrink: 0;
+}
+
+.org-empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #64748b;
+}
+
+.org-empty-state i {
+    font-size: 2.5rem;
+    color: #cbd5e1;
+    margin-bottom: 0.75rem;
+}
+
+/* Unit page */
+.org-unit-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.org-unit-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0 0 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+}
+
+.org-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    margin-bottom: 0.75rem;
+}
+
+.org-breadcrumb a {
+    color: #64748b;
+}
+
+.org-breadcrumb a:hover {
+    color: #2563eb;
+}
+
+.org-breadcrumb .separator {
+    color: #cbd5e1;
+}
+
+.org-unit-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.org-unit-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+}
+
+.org-info-banner {
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    font-size: 0.85rem;
+    color: #0c4a6e;
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+}
+
+.org-info-banner i {
+    margin-top: 0.1rem;
+    color: #0284c7;
+}
+
+.org-staff-tabs .nav-link {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: #64748b;
+    border-radius: 8px 8px 0 0;
+}
+
+.org-staff-tabs .nav-link.active {
+    color: #2563eb;
+    background: #fff;
+    border-bottom-color: #fff;
+}
+
+.org-staff-panel {
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    padding: 1rem;
+    background: #fff;
+}
+
+.org-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.org-person-card,
+.org-role-card {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+.org-person-card.is-inactive,
+.org-role-card.is-inactive {
+    opacity: 0.65;
+}
+
+.org-person-avatar,
+.org-role-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #dbeafe;
+    color: #1d4ed8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+}
+
+.org-role-icon {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.org-person-info,
+.org-role-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.org-person-name,
+.org-role-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #0f172a;
+    margin: 0 0 0.15rem;
+}
+
+.org-person-meta,
+.org-role-meta {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.org-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.org-section-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+}
+
+.org-section-header h6 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #334155;
+}
+
+@media (max-width: 768px) {
+    .org-tree-actions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 0.35rem;
+    }
+
+    .org-tree-row {
+        flex-wrap: wrap;
+    }
+
+    .org-person-card,
+    .org-role-card {
+        flex-direction: column;
+    }
+
+    .org-card-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+/* ── Organization Chart ────────────────────────────────────────────── */
+
+.org-chart-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.org-chart-zoom-controls {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.org-chart-zoom-label {
+    min-width: 3.2rem;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+.org-chart-viewport {
+    position: relative;
+    height: calc(100vh - 260px);
+    min-height: 420px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background:
+        linear-gradient(90deg, rgba(148, 163, 184, 0.12) 1px, transparent 1px),
+        linear-gradient(rgba(148, 163, 184, 0.12) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-color: #f8fafc;
+    overflow: hidden;
+    user-select: none;
+}
+
+.org-chart-drop-root {
+    position: absolute;
+    top: 0.65rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 5;
+    padding: 0.4rem 0.85rem;
+    border: 1px dashed #94a3b8;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.92);
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.org-chart-viewport.is-dragging-node .org-chart-drop-root {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.org-chart-drop-root.is-drop-target {
+    border-color: #2563eb;
+    color: #1d4ed8;
+    background: #eff6ff;
+}
+
+.org-chart-canvas {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    overflow: hidden;
+}
+
+.org-chart-canvas.is-panning {
+    cursor: grabbing;
+}
+
+.org-chart-export-root {
+    display: inline-block;
+    background: transparent;
+    padding: 2.5rem 2rem 2rem;
+    transform-origin: 0 0;
+    will-change: transform;
+}
+
+.org-chart-print-header {
+    display: none;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.org-chart-print-header h2 {
+    margin: 0 0 0.35rem;
+    font-size: 1.25rem;
+    color: #0f172a;
+}
+
+.org-chart-print-header p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.org-chart-print-only {
+    display: none;
+}
+
+.org-chart {
+    display: flex;
+    justify-content: center;
+    padding-top: 0.5rem;
+}
+
+/* Classic horizontal tree */
+.org-chart.layout-classic .org-chart-tree {
+    display: flex;
+    padding-top: 1.25rem;
+    position: relative;
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.org-chart.layout-classic .org-chart-tree .org-chart-tree::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    border-left: 2px solid #cbd5e1;
+    width: 0;
+    height: 1.25rem;
+}
+
+.org-chart.layout-classic .org-chart-item {
+    float: left;
+    text-align: center;
+    list-style-type: none;
+    position: relative;
+    padding: 1.25rem 0.65rem 0;
+}
+
+.org-chart.layout-classic .org-chart-item::before,
+.org-chart.layout-classic .org-chart-item::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 50%;
+    border-top: 2px solid #cbd5e1;
+    width: 50%;
+    height: 1.25rem;
+}
+
+.org-chart.layout-classic .org-chart-item::after {
+    right: auto;
+    left: 50%;
+    border-left: 2px solid #cbd5e1;
+}
+
+.org-chart.layout-classic .org-chart-item:only-child::before,
+.org-chart.layout-classic .org-chart-item:only-child::after {
+    display: none;
+}
+
+.org-chart.layout-classic .org-chart-item:only-child {
+    padding-top: 0;
+}
+
+.org-chart.layout-classic .org-chart-item:first-child::before,
+.org-chart.layout-classic .org-chart-item:last-child::after {
+    border: 0 none;
+}
+
+.org-chart.layout-classic .org-chart-item:last-child::before {
+    border-right: 2px solid #cbd5e1;
+    border-radius: 0 6px 0 0;
+}
+
+.org-chart.layout-classic .org-chart-item:first-child::after {
+    border-radius: 6px 0 0 0;
+}
+
+/* Compact vertical tree — avoids wide horizontal sprawl */
+.org-chart.layout-compact {
+    display: block;
+    justify-content: initial;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.org-chart.layout-compact .org-chart-tree {
+    display: block;
+    margin: 0;
+    padding: 0 0 0 1.25rem;
+    list-style: none;
+    position: relative;
+}
+
+.org-chart.layout-compact > .org-chart-tree {
+    padding-left: 0;
+}
+
+.org-chart.layout-compact .org-chart-tree::before {
+    content: none;
+}
+
+.org-chart.layout-compact .org-chart-item {
+    float: none;
+    text-align: left;
+    position: relative;
+    padding: 0.35rem 0 0.35rem 1rem;
+    list-style: none;
+}
+
+.org-chart.layout-compact .org-chart-item::before,
+.org-chart.layout-compact .org-chart-item::after {
+    content: "";
+    position: absolute;
+    left: 0;
+}
+
+.org-chart.layout-compact .org-chart-item::before {
+    top: 0;
+    bottom: 0;
+    border-left: 2px solid #cbd5e1;
+}
+
+.org-chart.layout-compact .org-chart-item::after {
+    top: 1.35rem;
+    width: 0.85rem;
+    border-top: 2px solid #cbd5e1;
+}
+
+.org-chart.layout-compact .org-chart-item:last-child::before {
+    bottom: auto;
+    height: 1.35rem;
+}
+
+.org-chart.layout-compact > .org-chart-tree > .org-chart-item {
+    padding-left: 0;
+}
+
+.org-chart.layout-compact > .org-chart-tree > .org-chart-item::before,
+.org-chart.layout-compact > .org-chart-tree > .org-chart-item::after {
+    display: none;
+}
+
+.org-chart.layout-compact .org-chart-card {
+    display: flex;
+    max-width: 100%;
+    min-width: 220px;
+    width: auto;
+}
+
+.org-chart-card {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    min-width: 148px;
+    max-width: 200px;
+    text-align: left;
+    padding: 0.7rem 0.85rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    border-top: 3px solid currentColor;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    position: relative;
+    z-index: 1;
+    cursor: grab;
+}
+
+.org-chart-card:active {
+    cursor: grabbing;
+}
+
+.org-chart-card.is-dragging {
+    opacity: 0.45;
+}
+
+.org-chart-card.is-drop-target {
+    outline: 2px solid #2563eb;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
+}
+
+.org-chart-drag-handle {
+    margin-left: auto;
+    color: #cbd5e1;
+    font-size: 0.75rem;
+    padding-top: 0.15rem;
+    flex-shrink: 0;
+}
+
+.org-chart-card.org-accent-institution { color: #6d28d9; }
+.org-chart-card.org-accent-office      { color: #1d4ed8; }
+.org-chart-card.org-accent-division    { color: #4338ca; }
+.org-chart-card.org-accent-department  { color: #0f766e; }
+.org-chart-card.org-accent-section     { color: #15803d; }
+.org-chart-card.org-accent-unit        { color: #c2410c; }
+.org-chart-card.org-accent-team        { color: #be185d; }
+.org-chart-card.org-accent-default     { color: #475569; }
+
+.org-chart-card-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: inherit;
+}
+
+.org-chart-card-body {
+    min-width: 0;
+}
+
+.org-chart-card-name {
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #0f172a;
+    line-height: 1.25;
+    word-break: break-word;
+}
+
+.org-chart-card-meta {
+    margin-top: 0.2rem;
+    font-size: 0.68rem;
+    color: #64748b;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+}
+
+.org-chart-inactive-badge {
+    display: inline-block;
+    margin-top: 0.25rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #64748b;
+    background: #f1f5f9;
+    border-radius: 4px;
+    padding: 0.05rem 0.35rem;
+}
+
+.org-chart-item.is-inactive > .org-chart-card {
+    opacity: 0.7;
+    border-style: dashed;
+}
+
+@media print {
+    .no-print,
+    .main-sidebar,
+    .main-header,
+    .main-footer,
+    .content-header,
+    .navbar,
+    .breadcrumb {
+        display: none !important;
+    }
+
+    .content-wrapper,
+    .org-page,
+    .card,
+    .card-body {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: #fff !important;
+    }
+
+    .org-chart-viewport {
+        display: none !important;
+    }
+
+    .org-chart-print-only {
+        display: block !important;
+    }
+
+    .org-chart-print-only .org-chart-print-header {
+        display: block !important;
+    }
+
+    .org-chart-card {
+        box-shadow: none;
+        cursor: default;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .org-chart-drag-handle {
+        display: none !important;
+    }
+}

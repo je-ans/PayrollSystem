@@ -1,0 +1,381 @@
+@model PayrollConfiguration
+
+@{
+    ViewData["Title"] = "Payroll Configuration";
+}
+
+<style>
+.config-page {
+    padding: 20px;
+    background: #f6f8fb;
+    font-family: "Segoe UI", sans-serif;
+}
+
+.config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.subtitle {
+    margin: 3px 0 0;
+    color: #6c757d;
+    font-size: 13px;
+}
+
+.actions .btn {
+    margin-left: 8px;
+    border-radius: 8px;
+}
+
+.status-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 15px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.status-banner.active i { color: #28a745; }
+.status-banner.inactive i { color: #dc3545; }
+
+.muted {
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.panel {
+    background: #fff;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+}
+
+.panel.wide {
+    grid-column: span 2;
+}
+
+.panel-title {
+    font-weight: 600;
+    margin-bottom: 12px;
+    font-size: 14px;
+    color: #333;
+}
+
+.company {
+    display: flex;
+    gap: 15px;
+}
+
+.logo {
+    width: 120px;
+    height: 120px;
+    border-radius: 10px;
+    background: #f1f3f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.details h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.meta div {
+    font-size: 13px;
+    margin-top: 6px;
+    color: #555;
+}
+
+.settings {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.settings.compact {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.tile {
+    padding: 10px;
+    border-radius: 10px;
+    background: #f9fafc;
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    transition: 0.2s;
+}
+
+.tile:hover {
+    transform: translateY(-2px);
+    background: #eef3ff;
+}
+
+.id-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.id-card {
+    background: #f9fafc;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.id-card span {
+    display: block;
+    font-size: 12px;
+    color: #777;
+}
+
+.id-card strong {
+    font-size: 13px;
+}
+
+@@media (max-width: 768px) {
+    .grid { grid-template-columns: 1fr; }
+    .panel.wide { grid-column: span 1; }
+    .settings { grid-template-columns: 1fr; }
+    .id-grid { grid-template-columns: 1fr 1fr; }
+    .company { flex-direction: column; }
+}
+</style>
+
+<div class="config-page">
+
+    <!-- HEADER -->
+    <div class="config-header">
+        <div>
+            <h2 class="title">
+                <i class="fas fa-sliders-h"></i>
+                Payroll Configuration
+            </h2>
+            <p class="subtitle">System-wide payroll rules and company settings</p>
+        </div>
+
+        <div class="actions">
+
+                <a href="javascript:void(0)" class="btn btn-warning ml-2 open-modal"
+                   data-title="Edit Payroll Configuration"
+                   data-url="/PayrollConfiguration/Edit/@Model.Id"
+                   data-modal-type="edit"
+                   title="Edit Configuration">
+                    <i class="fas fa-pen"></i>
+                    <span class="d-none d-lg-inline">Edit</span>
+                </a>
+
+        </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="grid">
+
+        <!-- COMPANY -->
+        <section class="panel wide">
+            <div class="panel-title">
+                <i class="fas fa-building"></i> Company Profile
+            </div>
+
+            <div class="company">
+                <div class="logo">
+                    @if (!string.IsNullOrWhiteSpace(Model.CompanyLogoPath))
+                    {
+                        <img src="@Model.CompanyLogoPath" />
+                    }
+                    else
+                    {
+                        <i class="fas fa-building"></i>
+                    }
+                </div>
+
+                <div class="details">
+                    <h3>
+                        @Model.CompanyName
+                        <span class="muted">@Model.CompanyShortName</span>
+                    </h3>
+
+                    <p class="muted">@Model.CompanyDescription</p>
+
+                    <div class="meta">
+                        <div>
+                            <i class="fas fa-map-marker-alt"></i>
+                            @string.Join(", ", new[] {
+                            Model.CompanyAddress1,
+                            Model.CompanyCity,
+                            Model.CompanyProvince
+                            }.Where(x => !string.IsNullOrWhiteSpace(x)))
+                        </div>
+
+                        <div>
+                            <i class="fas fa-phone"></i> @Model.CompanyContactNumber
+                        </div>
+
+                        <div>
+                            <i class="fas fa-envelope"></i> @Model.CompanyEmail
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- WORK SETTINGS -->
+        <section class="panel">
+            <div class="panel-title">
+                <i class="fas fa-clock"></i> Work Rules
+            </div>
+
+            <div class="settings">
+
+                <div class="tile">
+                    <span>Working Days</span>
+                    <strong>@Model.WorkingDaysPerMonth</strong>
+                </div>
+
+                <div class="tile">
+                    <span>Hours / Day</span>
+                    <strong>@Model.WorkingHoursPerDay</strong>
+                </div>
+
+                <div class="tile">
+                    <span>Break</span>
+                    <strong>@Model.DefaultBreakDurationMinutes mins</strong>
+                </div>
+
+                <div class="tile">
+                    <span>Grace Period</span>
+                    <strong>@Model.DefaultGracePeriodMinutes mins</strong>
+                </div>
+
+                <div class="tile">
+                    <span>Half Day</span>
+                    <strong>@Model.DefaultHalfDayHours hrs</strong>
+                </div>
+
+                <div class="tile">
+                    <span>Weekend Off</span>
+                    <strong>
+                        @(Model.UseWeekendAsDayOff ? "Yes" : "No")
+                    </strong>
+                </div>
+
+                <div class="tile">
+                    <span>ND Window</span>
+                    <strong>
+                        @Model.NightDifferentialStartTime.ToString(@"hh\:mm")–@Model.NightDifferentialEndTime.ToString(@"hh\:mm")
+                    </strong>
+                </div>
+
+                <div class="tile">
+                    <span>Min OT</span>
+                    <strong>@Model.MinimumOvertimeMinutes mins</strong>
+                </div>
+
+                <div class="tile">
+                    <span>OT Approval</span>
+                    <strong>@(Model.RequireOvertimeApproval ? "Required" : "Optional")</strong>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- CONTRIBUTIONS -->
+        <section class="panel">
+            <div class="panel-title">
+                <i class="fas fa-chart-bar"></i> Contribution Tables
+            </div>
+
+            <div class="settings compact">
+
+                <div class="tile soft">
+                    <span>Tax</span>
+                    <strong>@Model.TaxTableYear</strong>
+                </div>
+
+                <div class="tile soft">
+                    <span>SSS</span>
+                    <strong>@Model.SSSTableYear</strong>
+                </div>
+
+                <div class="tile soft">
+                    <span>PhilHealth</span>
+                    <strong>@Model.PhilHealthTableYear</strong>
+                </div>
+
+                <div class="tile soft">
+                    <span>Pag-IBIG</span>
+                    <strong>@Model.PagIbigTableYear</strong>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- GOVERNMENT IDS -->
+        <section class="panel wide">
+            <div class="panel-title">
+                <i class="fas fa-id-card"></i> Government Registrations
+            </div>
+
+            <div class="id-grid">
+
+                <div class="id-card">
+                    <span>TIN</span>
+                    <strong>@Model.CompanyTIN</strong>
+                </div>
+
+                <div class="id-card">
+                    <span>SSS</span>
+                    <strong>@Model.CompanySSSNumber</strong>
+                </div>
+
+                <div class="id-card">
+                    <span>PhilHealth</span>
+                    <strong>@Model.CompanyPhilHealthNumber</strong>
+                </div>
+
+                <div class="id-card">
+                    <span>Pag-IBIG</span>
+                    <strong>@Model.CompanyPagIbigNumber</strong>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <!-- STATUS -->
+    <div class="status-banner mt-3 @(Model.IsActive ? "active" : "inactive")">
+        <i class="fas @(Model.IsActive ? "fa-check-circle" : "fa-exclamation-circle")"></i>
+        <div>
+            <strong>Configuration is @(Model.IsActive ? "ACTIVE" : "INACTIVE")</strong>
+            <div class="muted">
+                Effective: @Model.EffectiveDate.ToString("MMMM dd, yyyy")
+            </div>
+        </div>
+    </div>
+</div>

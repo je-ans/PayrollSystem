@@ -1,0 +1,39 @@
+@model ProcessRequestSummaryViewModel
+
+<div class="dm-process-summary">
+    <div class="dm-process-summary-profile">
+        @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+        {
+            <img src="@Model.ProfilePictureUrl" alt="@Model.EmployeeName" class="dm-process-avatar" />
+        }
+        else
+        {
+            <div class="dm-process-avatar dm-process-avatar--initials" aria-hidden="true">@Model.Initials</div>
+        }
+        <div class="dm-process-summary-identity">
+            <h6 class="dm-process-summary-name">@Model.EmployeeName</h6>
+            @if (!string.IsNullOrWhiteSpace(Model.Designation))
+            {
+                <div class="dm-process-summary-designation">@Model.Designation</div>
+            }
+            <div class="dm-process-summary-meta">
+                @if (!string.IsNullOrWhiteSpace(Model.EmployeeIdNumber))
+                {
+                    <span><i class="fas fa-id-badge"></i> @Model.EmployeeIdNumber</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.OrganizationUnitDisplay))
+                {
+                    <span><i class="fas fa-sitemap"></i> @Model.OrganizationUnitDisplay</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(Model.ContextDateDisplay))
+                {
+                    <span><i class="fas fa-calendar-day"></i> @Model.ContextDateLabel: @Model.ContextDateDisplay</span>
+                }
+                else if (Model.SubmittedOn.HasValue)
+                {
+                    <span><i class="fas fa-paper-plane"></i> Submitted @Model.SubmittedOn.Value.ToString("MMM d, yyyy h:mm tt")</span>
+                }
+            </div>
+        </div>
+    </div>
+</div>

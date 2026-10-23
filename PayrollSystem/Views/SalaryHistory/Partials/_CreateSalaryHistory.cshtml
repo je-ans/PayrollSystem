@@ -1,0 +1,55 @@
+@using PayrollSystem.Utility
+@model SalaryHistory
+
+<div class="input-container mb-3">
+    <label asp-for="EmployeeId" class="form-label">Employee</label>
+    <select asp-for="EmployeeId" class="form-select floating-input" required>
+        <option value="">-- Select Employee --</option>
+        @* Employee options will be populated via AJAX or ViewBag *@
+    </select>
+    <span asp-validation-for="EmployeeId" class="text-danger"></span>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="input-container mb-3">
+            <label asp-for="PreviousBasicSalary" class="form-label">Previous Basic Salary</label>
+            <input asp-for="PreviousBasicSalary" class="form-control floating-input" type="number" step="0.01" min="0" required />
+            <span asp-validation-for="PreviousBasicSalary" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="input-container mb-3">
+            <label asp-for="NewBasicSalary" class="form-label">New Basic Salary</label>
+            <input asp-for="NewBasicSalary" class="form-control floating-input" type="number" step="0.01" min="0" required />
+            <span asp-validation-for="NewBasicSalary" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+
+<div class="input-container mb-3">
+    <label asp-for="ChangeType" class="form-label">Change Type</label>
+    <select asp-for="ChangeType" class="form-select floating-input" required>
+        @foreach (var value in Enum.GetValues(typeof(SalaryChangeType)))
+        {
+            <option value="@value">@PayrollSystem.Utility.EnumHelper.GetDisplayName((SalaryChangeType)value)</option>
+        }
+    </select>
+    <span asp-validation-for="ChangeType" class="text-danger"></span>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="input-container mb-3">
+            <label asp-for="EffectiveDate" class="form-label">Effective Date</label>
+            <input asp-for="EffectiveDate" class="form-control floating-input" type="date" required />
+            <span asp-validation-for="EffectiveDate" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+
+<div class="input-container mb-3">
+    <label asp-for="Reason" class="form-label">Reason</label>
+    <input asp-for="Reason" class="form-control floating-input" maxlength="500" required placeholder="Reason for salary change" />
+    <span asp-validation-for="Reason" class="text-danger"></span>
+</div>

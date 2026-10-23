@@ -1,0 +1,107 @@
+@model List<ScheduleChangeRequestListViewModel>
+@{
+    ViewData["Title"] = "My Schedule Change Requests";
+    var filterStatus = ViewBag.FilterStatus as JustificationStatus?;
+    var pendingCount = (int)(ViewBag.PendingCount ?? 0);
+}
+
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center flex-wrap">
+        <div class="flex-grow-1">
+            <h3 class="card-title m-0">My Schedule Change Requests</h3>
+            @if (pendingCount > 0)
+            {
+                <span class="badge badge-warning ml-2">@pendingCount pending</span>
+            }
+        </div>
+        <div class="card-tools d-flex gap-2">
+            <a asp-controller="MySchedule" asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-calendar-week"></i> Back to My Schedule
+            </a>
+            <div class="btn-group btn-group-sm">
+                <a asp-action="ChangeRequests" asp-route-status="@((int?)JustificationStatus.Pending)"
+                   class="btn @(filterStatus == JustificationStatus.Pending ? "btn-primary" : "btn-outline-primary")">Pending</a>
+                <a asp-action="ChangeRequests" asp-route-status="@((int?)JustificationStatus.Approved)"
+                   class="btn @(filterStatus == JustificationStatus.Approved ? "btn-primary" : "btn-outline-primary")">Approved</a>
+                <a asp-action="ChangeRequests" asp-route-status="@((int?)JustificationStatus.Rejected)"
+                   class="btn @(filterStatus == JustificationStatus.Rejected ? "btn-primary" : "btn-outline-primary")">Rejected</a>
+                <a asp-action="ChangeRequests" asp-route-status="" class="btn btn-outline-secondary">All</a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped table-bordered" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>Date</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Submitted</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            var date = new DateOnly(item.Year, item.Month, item.Day);
+                                var statusBadgeClass = item.Status switch
+                                {
+                                    JustificationStatus.Pending => "badge-warning",
+                                    JustificationStatus.Approved => "badge-success",
+                                    JustificationStatus.Rejected => "badge-danger",
+                                    _ => "badge-secondary"
+                                };
+
+                                var badgeText = item.Status switch
+                                {
+                                    JustificationStatus.Pending when item.CurrentStepOrder == 1 => "Pending (Step 1: Org Approver)",
+                                    JustificationStatus.Pending when item.CurrentStepOrder == 2 => "Pending (Step 2: HR Approver)",
+                                    _ => item.Status.ToString()
+                                };
+                            <tr>
+                                <td>@date.ToString("dddd, MMMM dd, yyyy")</td>
+                                <td class="text-center"><strong>@item.CurrentShiftCode</strong></td>
+                                <td class="text-center"><strong>@item.RequestedShiftCode</strong></td>
+                                <td>@item.Reason</td>
+                                <td class="text-center">
+                                        <span class="badge @statusBadgeClass">@badgeText</span>
+                                </td>
+                                <td class="text-center small">@item.SubmittedOn.ToString("yyyy-MM-dd HH:mm")</td>
+                                <td class="text-center">
+                                    @if (item.ApprovalRequestId.HasValue)
+                                    {
+                                        <a href="javascript:void(0)"
+                                           class="btn btn-sm btn-outline-secondary open-modal"
+                                           data-title="Schedule Change Logs"
+                                           data-url="@Url.Action("Review", "ScheduleChangeRequest", new { id = item.Id })"
+                                           data-modal-type="view"
+                                           data-size="modal-xl">
+                                            View Logs
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">No schedule change requests found.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,71 @@
+@model GovernmentContributionTableViewModel
+
+<div class="container-fluid">
+    <table class="table table-bordered table-hover">
+        <tr>
+            <th class="bg-light">Contribution Type</th>
+            <td>@Model.GovernmentContributionType.Name</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Effective Start Date</th>
+            <td>@Model.EffectiveStartDate.ToString("MMMM dd, yyyy")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Effective End Date</th>
+            <td>@(Model.EffectiveEndDate?.ToString("MMMM dd, yyyy") ?? "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Minimum Salary</th>
+            <td>@Model.MinSalary</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Maximum Salary</th>
+            <td>@Model.MaxSalary</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Employee Share (Fixed)</th>
+            <td>@Model.EmployeeShare</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Employer Share (Fixed)</th>
+            <td>@Model.EmployerShare</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Total Contribution (Fixed)</th>
+            <td>@Model.TotalContribution</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Employee Share (%)</th>
+            <td>@Model.EmployeeSharePercentage</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Employer Share (%)</th>
+            <td>@Model.EmployerSharePercentage</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Max Employee Contribution</th>
+            <td>@(Model.MaxEmployeeContribution?.ToString("N2") ?? "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Max Employer Contribution</th>
+            <td>@(Model.MaxEmployerContribution?.ToString("N2") ?? "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Status</th>
+            <td>
+                @if (Model.IsActive == true)
+                {
+                    <span class="badge bg-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Inactive</span>
+                }
+            </td>
+        </tr>
+        <tr>
+            <th class="bg-light">Notes</th>
+            <td>@Model.Notes</td>
+        </tr>
+    </table>
+</div>

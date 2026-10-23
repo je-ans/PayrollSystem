@@ -1,0 +1,81 @@
+@model ShiftTypeViewModel
+@{
+    var prefix = ViewData["FormPrefix"]?.ToString() ?? "shift";
+}
+
+<div class="dm-section shift-schedule-section">
+    <div class="dm-section-header">
+        <i class="fas fa-clock"></i>
+        Schedule Window
+    </div>
+    <div class="dm-section-body">
+        <div class="st-switch-row">
+            <div class="st-switch-chip">
+                <div class="custom-control custom-switch">
+                    <input class="custom-control-input shift-is-flexible" asp-for="IsFlexible" id="@(prefix)IsFlexible" />
+                    <label class="custom-control-label" for="@(prefix)IsFlexible">Flexible (credit hours only)</label>
+                </div>
+            </div>
+            <div class="st-switch-chip shift-spans-next-day-wrap">
+                <div class="custom-control custom-switch">
+                    <input class="custom-control-input shift-spans-next-day" asp-for="SpansNextDay" id="@(prefix)SpansNextDay" />
+                    <label class="custom-control-label" for="@(prefix)SpansNextDay">Spans next day</label>
+                </div>
+            </div>
+            <div class="st-switch-chip shift-has-lunch-wrap">
+                <div class="custom-control custom-switch">
+                    <input class="custom-control-input shift-has-lunch" asp-for="HasLunchBreak" id="@(prefix)HasLunchBreak" />
+                    <label class="custom-control-label" for="@(prefix)HasLunchBreak">Has lunch break</label>
+                </div>
+            </div>
+            <div class="st-switch-chip shift-lunch-fields">
+                <div class="custom-control custom-switch">
+                    <input class="custom-control-input" asp-for="IsBreakPaid" id="@(prefix)IsBreakPaid" />
+                    <label class="custom-control-label" for="@(prefix)IsBreakPaid">Break is paid</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="shift-time-fields">
+            <div class="st-field-grid st-field-grid--4">
+                <div class="st-field">
+                    <label asp-for="StartTime" class="dm-form-label">Start Time</label>
+                    <input asp-for="StartTime" type="time" class="form-control form-control-sm dm-form-control shift-start-time" />
+                    <span class="st-field-hint st-field-hint--spacer">&nbsp;</span>
+                    <span asp-validation-for="StartTime" class="text-danger validation-message"></span>
+                </div>
+                <div class="st-field">
+                    <label asp-for="EndTime" class="dm-form-label">End Time</label>
+                    <input asp-for="EndTime" type="time" class="form-control form-control-sm dm-form-control shift-end-time" />
+                    <span class="st-field-hint st-field-hint--spacer">&nbsp;</span>
+                    <span asp-validation-for="EndTime" class="text-danger validation-message"></span>
+                </div>
+                <div class="st-field">
+                    <label asp-for="GracePeriodMinutes" class="dm-form-label">Grace (minutes)</label>
+                    <input asp-for="GracePeriodMinutes" type="number" min="0" max="180" class="form-control form-control-sm dm-form-control" placeholder="Default" />
+                    <span class="st-field-hint">Blank = company default</span>
+                </div>
+                <div class="st-field">
+                    <label class="dm-form-label st-field-label--spacer">&nbsp;</label>
+                    <button type="button" class="btn btn-outline-primary btn-sm dm-form-control st-suggest-btn shift-suggest-hours w-100">
+                        <i class="fas fa-calculator mr-1"></i> Suggest Hours
+                    </button>
+                    <span class="st-field-hint st-field-hint--spacer">&nbsp;</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="shift-lunch-fields">
+            <div class="st-field-grid st-field-grid--2">
+                <div class="st-field">
+                    <label asp-for="LunchStart" class="dm-form-label">Lunch Start</label>
+                    <input asp-for="LunchStart" type="time" class="form-control form-control-sm dm-form-control shift-lunch-start" />
+                </div>
+                <div class="st-field">
+                    <label asp-for="LunchEnd" class="dm-form-label">Lunch End</label>
+                    <input asp-for="LunchEnd" type="time" class="form-control form-control-sm dm-form-control shift-lunch-end" />
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

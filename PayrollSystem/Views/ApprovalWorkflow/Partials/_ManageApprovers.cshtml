@@ -1,0 +1,49 @@
+@model List<PayrollSystem.Models.Workflow.ApprovalWorkflowStepApprover>
+
+<div class="container-fluid">
+    <p class="text-muted small mb-2">
+        <strong>@ViewBag.StepName</strong> — @ViewBag.WorkflowName
+    </p>
+    <p class="text-muted small">Fallback order: first available approver wins (Priority 1, then 2, …).</p>
+    <div class="d-flex justify-content-end mb-2" asp-permission="APPROVAL_WORKFLOW_VIEW">
+        <a href="javascript:void(0)" class="btn btn-sm btn-primary open-modal"
+           data-title="Add Approver Definition"
+           data-url="@Url.Action("CreateApprover", new { stepId = ViewBag.StepId })"
+           data-modal-type="create">
+            <i class="fas fa-plus"></i> Add Approver
+        </a>
+    </div>
+    @if (Model.Count == 0)
+    {
+        <p class="text-muted">No approver definitions yet.</p>
+    }
+    else
+    {
+        <table class="table table-sm table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th class="text-center" style="width:70px">Priority</th>
+                    <th>Definition</th>
+                    <th class="text-center" style="width:80px">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var approver in Model.OrderBy(a => a.Priority))
+                {
+                    <tr>
+                        <td class="text-center">@approver.Priority</td>
+                        <td>@WorkflowDisplayHelper.BuildApproverSummary(approver)</td>
+                        <td class="text-center">
+                            <a href="javascript:void(0)" class="btn btn-xs btn-default open-modal"
+                               data-title="Edit Approver"
+                               data-url="@Url.Action("EditApprover", new { id = approver.Id })"
+                               data-modal-type="edit">
+                                Edit
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

@@ -1,0 +1,106 @@
+@model OrganizationUnitPageViewModel
+
+@{
+    var unit = Model.Staff.Unit;
+    var accent = OrganizationStructureDisplayHelper.GetLevelAccentClass(unit.Level);
+    var icon = OrganizationStructureDisplayHelper.GetLevelIcon(unit.Level);
+    ViewData["Title"] = unit.Name;
+    ViewBag.ActiveMenu = "OrganizationStructure";
+    ViewBag.ActiveLink = "OrganizationStructure";
+    ViewBag.ActiveMainMenu = "BuildUp";
+}
+
+<link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
+
+<section class="content org-page">
+    <div class="container-fluid">
+        <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+            <div class="card-body">
+                <nav class="org-breadcrumb" aria-label="breadcrumb">
+                    <a asp-action="Index"><i class="fas fa-sitemap mr-1"></i> Organization</a>
+                    @foreach (var crumb in Model.Breadcrumb)
+                    {
+                        <span class="separator">/</span>
+                        @if (crumb.Id == unit.Id)
+                        {
+                            <span class="text-dark font-weight-bold">@crumb.Name</span>
+                        }
+                        else
+                        {
+                            <a asp-action="Unit" asp-route-id="@crumb.Id">@crumb.Name</a>
+                        }
+                    }
+                </nav>
+
+                <div class="org-unit-header">
+                    <div>
+                        <h1 class="org-unit-title">
+                            <span class="org-tree-icon @accent"><i class="fas @icon"></i></span>
+                            @unit.Name
+                        </h1>
+                        <div class="org-unit-badges">
+                            <span class="org-unit-badge"><i class="fas fa-barcode"></i> @unit.Code</span>
+                            <span class="org-unit-badge"><i class="fas fa-layer-group"></i> @unit.LevelDisplayName</span>
+                            @if (unit.IsActive)
+                            {
+                                <span class="org-unit-badge" style="background:#dcfce7;border-color:#86efac;color:#15803d;">
+                                    <i class="fas fa-check-circle"></i> Active
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="org-unit-badge"><i class="fas fa-pause-circle"></i> Inactive</span>
+                            }
+                            <span class="org-unit-badge"><i class="fas fa-users"></i> @Model.Staff.ActiveEmployeeCount staff</span>
+                            <span class="org-unit-badge"><i class="fas fa-user-tag"></i> @Model.Staff.ActiveRoleCount roles</span>
+                            @if (Model.HasChildren)
+                            {
+                                <span class="org-unit-badge"><i class="fas fa-code-branch"></i> @Model.ChildCount child unit@(Model.ChildCount == 1 ? "" : "s")</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-1">
+                        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-arrow-left mr-1"></i> All Units
+                        </a>
+                        <a href="javascript:void(0)" class="btn btn-sm btn-outline-success open-modal"
+                           data-title="Add Child Unit"
+                           data-url="@Url.Action("Create", new { parentId = unit.Id })"
+                           data-modal-type="create"
+                           asp-permission="ORGANIZATIONSTRUCTURE_VIEW">
+                            <i class="fas fa-plus mr-1"></i> Add Child
+                        </a>
+                        <a href="javascript:void(0)" class="btn btn-sm btn-outline-secondary open-modal"
+                           data-title="Edit Unit"
+                           data-url="@Url.Action("Edit", new { id = unit.Id })"
+                           data-modal-type="edit"
+                           asp-permission="ORGANIZATIONSTRUCTURE_VIEW">
+                            <i class="fas fa-cog mr-1"></i> Settings
+                        </a>
+                        <a href="javascript:void(0)" class="btn btn-sm btn-outline-danger open-modal"
+                           data-title="Delete Unit"
+                           data-url="@Url.Action("Delete", new { id = unit.Id })"
+                           data-modal-type="@(Model.CanDelete ? "delete_data" : "view")"
+                           data-size="@(Model.CanDelete ? "" : "modal-lg")"
+                           asp-permission="ORGANIZATIONSTRUCTURE_VIEW"
+                           title="@(Model.CanDelete ? "Delete unit" : "Cannot delete — has dependencies")">
+                            <i class="fas fa-trash mr-1"></i> Delete
+                        </a>
+                    </div>
+                </div>
+
+                @await Html.PartialAsync("Partials/_StaffStructure", Model.Staff)
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script>
+        window.ORG_UNIT_ID = @unit.Id;
+        window.ORG_STAFF_URL = '@Url.Action("Staff", new { id = unit.Id })';
+        window.ORG_IS_FULL_PAGE = true;
+    </script>
+    <script src="~/js/organization-structure.js" asp-append-version="true"></script>
+}

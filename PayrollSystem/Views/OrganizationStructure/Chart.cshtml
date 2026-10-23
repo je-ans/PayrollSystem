@@ -1,0 +1,124 @@
+@model OrganizationStructureIndexViewModel
+
+@{
+    ViewData["Title"] = "Organization Chart";
+    ViewBag.ActiveMenu = "OrganizationStructure";
+    ViewBag.ActiveLink = "OrganizationStructure";
+    ViewBag.ActiveMainMenu = "BuildUp";
+}
+
+<link rel="stylesheet" href="~/css/organization-structure.css" asp-append-version="true" />
+
+<section class="content org-page">
+    <div class="container-fluid">
+        <div class="card card-outline rounded-0 card-primary mx-2 px-2">
+            <div class="card-header d-flex align-items-center flex-wrap gap-2 no-print">
+                <div class="flex-grow-1">
+                    <h3 class="card-title m-0">Organization Chart</h3>
+                    <p class="org-intro mt-1">Auto-fits to your screen. Drag the canvas to pan, or drag a unit onto another to correct its parent.</p>
+                </div>
+                <div class="card-tools d-flex flex-wrap gap-1">
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="fas fa-list mr-1"></i>
+                        <span class="d-none d-md-inline">List View</span>
+                    </a>
+                    <button type="button" class="btn btn-outline-primary" id="orgChartPrintBtn">
+                        <i class="fas fa-print mr-1"></i>
+                        <span class="d-none d-md-inline">Print / PDF</span>
+                    </button>
+                    <button type="button" class="btn btn-primary" id="orgChartExportBtn">
+                        <i class="fas fa-download mr-1"></i>
+                        <span class="d-none d-md-inline">Export PNG</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body">
+                @if (Model.Roots != null && Model.Roots.Any())
+                {
+                    <div class="org-chart-meta no-print">
+                        <span class="org-stat-pill"><i class="fas fa-sitemap"></i> @Model.TotalCount unit@(Model.TotalCount == 1 ? "" : "s")</span>
+
+                        <div class="org-chart-layout-toggle btn-group btn-group-sm" role="group" aria-label="Layout">
+                            <button type="button" class="btn btn-outline-secondary active" data-layout="classic" title="Classic top-down chart">
+                                <i class="fas fa-project-diagram"></i> Classic
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" data-layout="compact" title="Compact vertical tree — better for wide orgs">
+                                <i class="fas fa-stream"></i> Compact
+                            </button>
+                        </div>
+
+                        <div class="org-chart-zoom-controls">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="orgChartZoomOut" title="Zoom out"><i class="fas fa-search-minus"></i></button>
+                            <span class="org-chart-zoom-label" id="orgChartZoomLabel">100%</span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="orgChartZoomIn" title="Zoom in"><i class="fas fa-search-plus"></i></button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="orgChartFitBtn" title="Fit to screen"><i class="fas fa-expand"></i> Fit</button>
+                        </div>
+
+                        <span class="text-muted small d-none d-lg-inline">
+                            <i class="fas fa-hand-rock mr-1"></i>Drag canvas to pan · drag unit onto another to move
+                        </span>
+                    </div>
+
+                    <div class="org-chart-viewport no-print" id="orgChartViewport">
+                        <div class="org-chart-drop-root" id="orgChartDropRoot" title="Drop here to make a root unit">
+                            <i class="fas fa-home mr-1"></i> Drop here to make root
+                        </div>
+                        <div class="org-chart-canvas" id="orgChartCanvas">
+                            <div class="org-chart-export-root" id="orgChartExportRoot">
+                                <div class="org-chart-print-header">
+                                    <h2>Organization Structure Chart</h2>
+                                    <p>Generated @DateTime.Now.ToString("MMMM d, yyyy h:mm tt") · @Model.TotalCount units</p>
+                                </div>
+                                <div class="org-chart layout-classic" id="orgChart">
+                                    <ul class="org-chart-tree">
+                                        @foreach (var root in Model.Roots)
+                                        {
+                                            @await Html.PartialAsync("_OrgChart", root)
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Print-only duplicate without transform *@
+                    <div class="org-chart-print-only" aria-hidden="true">
+                        <div class="org-chart-print-header" style="display:block">
+                            <h2>Organization Structure Chart</h2>
+                            <p>Generated @DateTime.Now.ToString("MMMM d, yyyy h:mm tt") · @Model.TotalCount units</p>
+                        </div>
+                        <div class="org-chart layout-classic" id="orgChartPrintClone">
+                            <ul class="org-chart-tree">
+                                @foreach (var root in Model.Roots)
+                                {
+                                    @await Html.PartialAsync("_OrgChart", root)
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="org-empty-state">
+                        <div><i class="fas fa-project-diagram d-block"></i></div>
+                        <h5>No organization units yet</h5>
+                        <p class="mb-3">Add units first, then return here to view the chart.</p>
+                        <a asp-action="Index" class="btn btn-primary">
+                            <i class="fas fa-arrow-left mr-1"></i> Back to List
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @Html.AntiForgeryToken()
+    <script>
+        window.ORG_CHART_REPARENT_URL = '@Url.Action("Reparent")';
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="~/js/organization-structure.js" asp-append-version="true"></script>
+}

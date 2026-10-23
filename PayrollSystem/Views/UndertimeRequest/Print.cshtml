@@ -1,0 +1,249 @@
+@using PayrollSystem.Utility
+@model UndertimeRequestPrintViewModel
+@{
+    ViewData["Title"] = $"Undertime Request – {Model.EmployeeName}";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewData["Title"]</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10.5pt; color: #111; background: #fff; }
+        .no-print { margin: 12px 16px; }
+        .no-print button {
+            padding: 7px 16px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px;
+            background: #f8f9fa; font-size: 13px;
+        }
+        .no-print button.primary { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
+        @@media print { .no-print { display: none !important; } }
+
+        .sheet {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px 28px 32px;
+        }
+
+        .company {
+            text-align: center;
+            margin-bottom: 18px;
+            border-bottom: 2px solid #1e3a5f;
+            padding-bottom: 12px;
+        }
+        .company img { max-height: 56px; margin-bottom: 6px; }
+        .company h1 { font-size: 15pt; letter-spacing: 0.02em; margin-bottom: 2px; }
+        .company .addr { font-size: 9pt; color: #444; }
+        .doc-title {
+            text-align: center;
+            font-size: 13pt;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 16px 0 4px;
+            letter-spacing: 0.04em;
+        }
+        .doc-sub {
+            text-align: center;
+            font-size: 9pt;
+            color: #555;
+            margin-bottom: 18px;
+        }
+
+        .meta {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 14px;
+        }
+        .meta th, .meta td {
+            border: 1px solid #999;
+            padding: 6px 8px;
+            vertical-align: top;
+            text-align: left;
+        }
+        .meta th {
+            width: 28%;
+            background: #f3f6f9;
+            font-weight: 600;
+            font-size: 9.5pt;
+        }
+
+        .section-title {
+            font-size: 10.5pt;
+            font-weight: 700;
+            margin: 16px 0 6px;
+            color: #1e3a5f;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .reason-box {
+            border: 1px solid #999;
+            padding: 10px 12px;
+            min-height: 48px;
+            white-space: pre-wrap;
+            margin-bottom: 8px;
+        }
+
+        .sig-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 24px;
+            margin-top: 40px;
+        }
+        .sig {
+            flex: 1;
+            text-align: center;
+        }
+        .sig .line {
+            border-top: 1px solid #000;
+            margin: 48px 12px 6px;
+        }
+        .sig .role { font-size: 9pt; color: #333; }
+        .sig .name { font-size: 9.5pt; font-weight: 600; min-height: 1.2em; }
+
+        .status-banner {
+            text-align: center;
+            font-size: 10pt;
+            font-weight: 600;
+            padding: 8px 12px;
+            margin-bottom: 14px;
+            border: 1px solid #999;
+        }
+        .status-banner--pending { background: #fff8e6; color: #856404; }
+        .status-banner--approved { background: #e8f5e9; color: #1b5e20; }
+        .status-banner--rejected { background: #fdecea; color: #b71c1c; }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button type="button" class="primary" onclick="window.print()">Print / Save as PDF</button>
+        <button type="button" onclick="window.close()" style="margin-left:8px">Close</button>
+    </div>
+
+    <div class="sheet">
+        <div class="company">
+            @if (!string.IsNullOrWhiteSpace(Model.CompanyLogoUrl))
+            {
+                <img src="@Model.CompanyLogoUrl" alt="" />
+            }
+            <h1>@Model.CompanyName</h1>
+            @if (!string.IsNullOrWhiteSpace(Model.CompanyAddress))
+            {
+                <div class="addr">@Model.CompanyAddress</div>
+            }
+        </div>
+
+        <div class="doc-title">Undertime Request Form</div>
+        <div class="doc-sub">Printed @Model.PrintedOn.ToString("MMM dd, yyyy h:mm tt")</div>
+
+        @{
+            var statusClass = Model.Status switch
+            {
+                JustificationStatus.Pending => "status-banner--pending",
+                JustificationStatus.Approved => "status-banner--approved",
+                JustificationStatus.Rejected => "status-banner--rejected",
+                _ => ""
+            };
+        }
+        <div class="status-banner @statusClass">
+            Status: @EnumHelper.GetDisplayName(Model.Status)
+            @if (Model.IsHistoricalDate)
+            {
+                <span> · Historical undertime date</span>
+            }
+        </div>
+
+        <table class="meta">
+            <tr>
+                <th>Name</th>
+                <td>@Model.EmployeeName</td>
+            </tr>
+            <tr>
+                <th>Employee ID</th>
+                <td>@(string.IsNullOrWhiteSpace(Model.EmployeeIdNumber) ? "—" : Model.EmployeeIdNumber)</td>
+            </tr>
+            <tr>
+                <th>Date Filed</th>
+                <td>@Model.DateFiled.ToString("MMMM dd, yyyy")</td>
+            </tr>
+            @if (!string.IsNullOrWhiteSpace(Model.PositionName))
+            {
+                <tr>
+                    <th>Position</th>
+                    <td>@Model.PositionName</td>
+                </tr>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.DepartmentName))
+            {
+                <tr>
+                    <th>Department</th>
+                    <td>@Model.DepartmentName</td>
+                </tr>
+            }
+            <tr>
+                <th>Date of Undertime</th>
+                <td>@Model.DateOfUndertime.ToString("MMMM dd, yyyy")</td>
+            </tr>
+            <tr>
+                <th>Duration</th>
+                <td>@Model.DurationHours.ToString("0.##") hour(s)</td>
+            </tr>
+            <tr>
+                <th>Total No. of Hours</th>
+                <td>@Model.TotalHours.ToString("0.##") hour(s)</td>
+            </tr>
+            <tr>
+                <th>Submitted</th>
+                <td>@Model.SubmittedBy · @Model.SubmittedOn.ToString("MMM dd, yyyy h:mm tt")</td>
+            </tr>
+            @if (Model.ComputedUndertimeMinutesAtSubmit.HasValue && Model.ComputedUndertimeMinutesAtSubmit.Value > 0)
+            {
+                <tr>
+                    <th>DTR Undertime at Submit</th>
+                    <td>@(Model.ComputedUndertimeMinutesAtSubmit.Value / 60)h @(Model.ComputedUndertimeMinutesAtSubmit.Value % 60)m (informational)</td>
+                </tr>
+            }
+            @if (Model.ReviewedOn.HasValue)
+            {
+                <tr>
+                    <th>Approved / Reviewed</th>
+                    <td>@(Model.ReviewedByName ?? "—") · @Model.ReviewedOn.Value.ToString("MMM dd, yyyy h:mm tt")</td>
+                </tr>
+            }
+            @if (!string.IsNullOrWhiteSpace(Model.ReviewNotes))
+            {
+                <tr>
+                    <th>Review Notes</th>
+                    <td>@Model.ReviewNotes</td>
+                </tr>
+            }
+        </table>
+
+        <div class="section-title">Purpose</div>
+        <div class="reason-box">@Model.Purpose</div>
+
+        <div class="sig-row">
+            <div class="sig">
+                <div class="name">@Model.EmployeeName</div>
+                <div class="line"></div>
+                <div class="role">Requested By</div>
+            </div>
+            <div class="sig">
+                <div class="name">&nbsp;</div>
+                <div class="line"></div>
+                <div class="role">Noted By</div>
+            </div>
+            <div class="sig">
+                <div class="name">&nbsp;</div>
+                <div class="line"></div>
+                <div class="role">Approved By</div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            This form documents authorized undertime for the date above. Approval does not modify DTR computed undertime or payroll.
+        </div>
+    </div>
+</body>
+</html>

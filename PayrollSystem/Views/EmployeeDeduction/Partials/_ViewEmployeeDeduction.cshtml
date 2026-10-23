@@ -1,0 +1,91 @@
+@model DeductionDetailsViewModel
+
+<div class="container">
+    <table class="table table-bordered table-hover mb-4">
+        <tr>
+            <th class="bg-light">Deduction Name</th>
+            <td>@Model.Deduction.DeductionName</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Deduction Type</th>
+            <td>@Model.Deduction.DeductionTypeName</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Code</th>
+            <td>@(string.IsNullOrEmpty(Model.Deduction.Code) ? "—" : Model.Deduction.Code)</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Amount</th>
+            <td>₱@Model.Deduction.Amount.ToString("N2")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Effective Start Date</th>
+            <td>@Model.Deduction.EffectiveStartDate.ToString("MMMM dd, yyyy")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Effective End Date</th>
+            <td>@(Model.Deduction.EffectiveEndDate.HasValue ? Model.Deduction.EffectiveEndDate.Value.ToString("MMMM dd, yyyy") : "—")</td>
+        </tr>
+        <tr>
+            <th class="bg-light">Status</th>
+            <td>
+                @if (Model.Deduction.IsActive)
+                {
+                    <span class="badge bg-success">Active</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Inactive</span>
+                }
+            </td>
+        </tr>
+        @if (!string.IsNullOrWhiteSpace(Model.Deduction.Remarks))
+        {
+            <tr>
+                <th class="bg-light">Remarks</th>
+                <td>@Model.Deduction.Remarks</td>
+            </tr>
+        }
+    </table>
+
+    <h6 class="font-weight-bold mb-2">Assigned Employees (@Model.Employees.Count)</h6>
+    @if (Model.Employees.Any())
+    {
+        <table class="table table-sm table-bordered table-striped">
+            <thead class="bg-light">
+                <tr>
+                    <th>Employee ID</th>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th class="text-center">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var emp in Model.Employees)
+                {
+                    <tr>
+                        <td>@emp.EmployeeIdNumber</td>
+                        <td>@emp.EmployeeName</td>
+                        <td>@(emp.OrganizationUnitName ?? "—")</td>
+                        <td>@(emp.DesignationName ?? "—")</td>
+                        <td class="text-center">
+                            @if (emp.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Inactive</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    else
+    {
+        <p class="text-muted">No employees are assigned to this deduction.</p>
+    }
+</div>

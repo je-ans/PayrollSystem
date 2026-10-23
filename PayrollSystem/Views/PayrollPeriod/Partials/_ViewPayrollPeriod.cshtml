@@ -1,0 +1,56 @@
+@model PayrollPeriod
+
+<link rel="stylesheet" href="~/css/approval-workflow.css" asp-append-version="true" />
+
+<div class="container-fluid">
+    <div class="aw-detail-hero">
+        <div>
+            <h5 class="aw-detail-hero-title">@Model.Name</h5>
+            <p class="aw-detail-hero-subtitle">
+                @Model.PeriodStartDate.ToString("MMM dd, yyyy") – @Model.PeriodEndDate.ToString("MMM dd, yyyy")
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-1">
+            @if (Model.IsLocked)
+            {
+                <span class="badge badge-secondary"><i class="fas fa-lock mr-1"></i> Locked</span>
+            }
+            else if (Model.IsActive)
+            {
+                <span class="badge badge-success">Active</span>
+            }
+            else
+            {
+                <span class="badge badge-danger">Inactive</span>
+            }
+        </div>
+    </div>
+
+    <div class="aw-detail-grid">
+        <div class="aw-detail-item">
+            <span class="aw-detail-label">Period Start</span>
+            <span class="aw-detail-value">@Model.PeriodStartDate.ToString("yyyy-MM-dd")</span>
+        </div>
+        <div class="aw-detail-item">
+            <span class="aw-detail-label">Period End</span>
+            <span class="aw-detail-value">@Model.PeriodEndDate.ToString("yyyy-MM-dd")</span>
+        </div>
+        <div class="aw-detail-item">
+            <span class="aw-detail-label">Pay Date</span>
+            <span class="aw-detail-value">@Model.PayDate.ToString("yyyy-MM-dd")</span>
+        </div>
+        <div class="aw-detail-item">
+            <span class="aw-detail-label">Lock Status</span>
+            <span class="aw-detail-value">
+                @(Model.IsLocked ? "Locked" : "Unlocked")
+            </span>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <div class="aw-detail-item aw-detail-item--full">
+                <span class="aw-detail-label">Description</span>
+                <span class="aw-detail-value">@Model.Description</span>
+            </div>
+        }
+    </div>
+</div>

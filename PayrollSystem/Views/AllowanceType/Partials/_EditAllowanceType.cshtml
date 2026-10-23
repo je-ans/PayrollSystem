@@ -1,0 +1,40 @@
+@model AllowanceTypeViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <form asp-action="Edit" method="post" asp-antiforgery="true" id="allowanceTypeForm">
+        <input type="hidden" asp-for="Id" />
+
+        <div class="form-group mt-3">
+            <div class="input-container">
+                <input asp-for="Name" type="text" class="form-control floating-input" required placeholder=" ">
+                <label asp-for="Name" class="floating-label">Name <span class="text-danger">*</span></label>
+            </div>
+            <span asp-validation-for="Name" class="text-danger small validation-message"></span>
+        </div>
+
+        <div class="form-group mt-3">
+            <div class="input-container">
+                <input asp-for="Code" type="text" class="form-control floating-input" placeholder=" ">
+                <label asp-for="Code" class="floating-label">Code</label>
+            </div>
+            <span asp-validation-for="Code" class="text-danger small validation-message"></span>
+        </div>
+
+        <div class="form-group mt-3">
+            <div class="input-container">
+                <textarea asp-for="Description" class="form-control floating-input" rows="3" placeholder=" "></textarea>
+                <label asp-for="Description" class="floating-label">Description</label>
+            </div>
+            <span asp-validation-for="Description" class="text-danger small validation-message"></span>
+        </div>
+
+        <div class="form-group mt-3">
+            <div class="custom-control custom-switch">
+                <input asp-for="IsActive" type="checkbox" class="custom-control-input" id="isActiveSwitch">
+                <label class="custom-control-label" for="isActiveSwitch">Is Active</label>
+            </div>
+        </div>
+
+    </form>
+</div>

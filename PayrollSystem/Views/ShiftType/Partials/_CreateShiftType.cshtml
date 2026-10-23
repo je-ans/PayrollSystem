@@ -1,0 +1,12 @@
+@model ShiftTypeViewModel
+@{
+    ViewData["FormPrefix"] = "create";
+}
+
+<link rel="stylesheet" href="~/css/dtr-modals.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/shift-type.css" asp-append-version="true" />
+
+<form asp-action="CreateShiftType" method="post" asp-antiforgery="true" id="shiftTypeForm" class="dm-modal st-shift-form">
+    <span asp-validation-summary="All" class="text-danger validation-summary"></span>
+    <partial name="Partials/_ShiftTypeFormFields" model="Model" view-data="ViewData" />
+</form>

@@ -1,0 +1,167 @@
+@model EmployeeLoanViewModel
+
+<style>
+    .section-header-container {
+        position: relative;
+    }
+
+    .section-header {
+        color: #2c3e50;
+        font-weight: 600;
+        position: relative;
+        display: inline-block;
+        padding-right: 1rem;
+        background: white;
+        z-index: 1;
+    }
+
+    .section-divider {
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        height: 1px;
+        background-color: #e0e0e0;
+        z-index: 0;
+    }
+
+    .section-divider-wide {
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+    }
+</style>
+
+<form asp-action="Create" method="post" asp-antiforgery="true" id="employeeLoanForm">
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <span asp-validation-summary="All" class="text-danger"></span>
+
+            <!-- Basic Information -->
+            <div class="section-header-container mb-4">
+                <h6 class="section-header">Basic Information</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <select asp-for="EmployeeId" class="form-control floating-input select2 general-select">
+                        <option value="" selected disabled hidden>-- Select Employee --</option>
+                        @foreach (var e in ViewBag.Employees ?? new List<dynamic>())
+                        {
+                            <option value="@e.Id">@e.Name (@e.EmployeeIdNumber)</option>
+                        }
+                    </select>
+                    <label asp-for="EmployeeId" class="floating-label">Employee <span class="text-danger">*</span></label>
+                </div>
+                <span asp-validation-for="EmployeeId" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <input asp-for="LoanName" class="form-control floating-input" placeholder=" " />
+                    <label asp-for="LoanName" class="floating-label">Loan Name</label>
+                </div>
+                <span asp-validation-for="LoanName" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="section-divider-wide my-4"></div>
+
+            <!-- Loan Details -->
+            <div class="section-header-container mb-4">
+                <h6 class="section-header">Loan Details</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mt-3">
+                        <div class="input-container">
+                            <input asp-for="PrincipalAmount" class="form-control floating-input" placeholder=" " />
+                            <label asp-for="PrincipalAmount" class="floating-label">Principal Amount <span class="text-danger">*</span></label>
+                        </div>
+                        <span asp-validation-for="PrincipalAmount" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mt-3">
+                        <div class="input-container">
+                            <input asp-for="InterestRate" class="form-control floating-input" placeholder=" " />
+                            <label asp-for="InterestRate" class="floating-label">Interest Rate (%)</label>
+                        </div>
+                        <span asp-validation-for="InterestRate" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group mt-3">
+                        <div class="input-container">
+                            <input asp-for="TotalInstallments" class="form-control floating-input" placeholder=" " />
+                            <label asp-for="TotalInstallments" class="floating-label">Total Installments <span class="text-danger">*</span></label>
+                        </div>
+                        <span asp-validation-for="TotalInstallments" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mt-3">
+                        <div class="input-container">
+                            <input asp-for="InstallmentAmount" class="form-control floating-input" placeholder=" " />
+                            <label asp-for="InstallmentAmount" class="floating-label">Installment Amount</label>
+                        </div>
+                        <span class="text-muted small d-block mt-1">
+                            Leave blank to auto-calculate from principal, interest, and installments.
+                        </span>
+                        <span asp-validation-for="InstallmentAmount" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section-divider-wide my-4"></div>
+
+            <!-- Schedule & Notes -->
+            <div class="section-header-container mb-4">
+                <h6 class="section-header">Schedule & Notes</h6>
+                <div class="section-divider"></div>
+            </div>
+
+            <div class="row mt-3">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input asp-for="StartDate" class="form-control floating-input" type="date" placeholder=" " />
+                            <label asp-for="StartDate" class="floating-label">Start Date <span class="text-danger">*</span></label>
+                        </div>
+                        <span asp-validation-for="StartDate" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <div class="input-container">
+                            <input asp-for="EndDate" class="form-control floating-input" type="date" placeholder=" " />
+                            <label asp-for="EndDate" class="floating-label">End Date</label>
+                        </div>
+                        <span asp-validation-for="EndDate" class="text-danger small validation-message"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <input asp-for="ReferenceNumber" class="form-control floating-input" placeholder=" " />
+                    <label asp-for="ReferenceNumber" class="floating-label">Reference Number</label>
+                </div>
+                <span asp-validation-for="ReferenceNumber" class="text-danger small validation-message"></span>
+            </div>
+
+            <div class="form-group mt-3">
+                <div class="input-container">
+                    <textarea asp-for="Remarks" class="form-control floating-input" rows="2" placeholder=" "></textarea>
+                    <label asp-for="Remarks" class="floating-label">Remarks</label>
+                </div>
+                <span asp-validation-for="Remarks" class="text-danger small validation-message"></span>
+            </div>
+
+        </div>
+    </div>
+</form>
+

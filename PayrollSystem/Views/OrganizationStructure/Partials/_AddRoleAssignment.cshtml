@@ -1,0 +1,101 @@
+@model EmployeeRoleAssignmentFormViewModel
+
+<div class="container-fluid">
+    <span asp-validation-summary="All" class="text-danger"></span>
+    <p class="text-muted small">Role for <strong>@Model.OrganizationName</strong></p>
+
+    <form asp-controller="OrganizationStructure" asp-action="SaveRoleAssignment" method="post" asp-antiforgery="true" id="roleAssignmentForm">
+        <input type="hidden" asp-for="Id" />
+        <input type="hidden" asp-for="OrganizationStructureId" />
+
+        @if (Model.LockFunctionalRole && Model.FunctionalRole.HasValue)
+        {
+            <input type="hidden" asp-for="FunctionalRole" />
+            <div class="alert alert-info py-2 small mb-3">
+                <i class="fas fa-user-cog mr-1"></i>
+                Assigning <strong>@Model.FunctionalRole</strong> for this unit.
+            </div>
+        }
+        else
+        {
+            <div class="form-group">
+                <div class="input-container">
+                    <select asp-for="LeadershipRole" class="form-control floating-input general-select"
+                            asp-items="Html.GetEnumSelectList<PayrollSystem.Models.OrganizationLeadershipRole>()"
+                            data-placeholder="Select Leadership Role (optional)">
+                        <option value="">— None —</option>
+                    </select>
+                    <label asp-for="LeadershipRole" class="floating-label">Leadership Role</label>
+                </div>
+                <span asp-validation-for="LeadershipRole" class="text-danger validation-message"></span>
+            </div>
+
+            <div class="form-group">
+                <div class="input-container">
+                    <select asp-for="FunctionalRole" class="form-control floating-input general-select"
+                            asp-items="Html.GetEnumSelectList<PayrollSystem.Models.OrganizationFunctionalRole>()"
+                            data-placeholder="Select Functional Role (optional)">
+                        <option value="">— None —</option>
+                    </select>
+                    <label asp-for="FunctionalRole" class="floating-label">Functional Role</label>
+                </div>
+                <span asp-validation-for="FunctionalRole" class="text-danger validation-message"></span>
+            </div>
+            <p class="text-muted small">Assign at least one leadership or functional role.</p>
+        }
+
+        @{
+            var hasUnitEmployees = ViewBag.HasUnitEmployees as bool? ?? false;
+        }
+        @if (!hasUnitEmployees)
+        {
+            <div class="alert alert-warning py-2 small mb-3">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                No employees are assigned to this unit yet. Add staff on the <strong>Staff</strong> tab before assigning roles.
+            </div>
+        }
+        else
+        {
+            <p class="text-muted small mb-2">Only employees assigned to this unit are listed.</p>
+        }
+
+        <div class="form-group">
+            <div class="input-container">
+                <select asp-for="EmployeeId" class="form-control floating-input general-select" required
+                        data-placeholder="Select Employee" disabled="@(!hasUnitEmployees)">
+                    <option value="">Select Employee</option>
+                    @if (ViewBag.Employees != null)
+                    {
+                        @foreach (var employee in ViewBag.Employees)
+                        {
+                            <option value="@employee.Id" selected="@(Model.EmployeeId == employee.Id)">@employee.Name</option>
+                        }
+                    }
+                </select>
+                <label asp-for="EmployeeId" class="floating-label">Employee <span class="text-danger">*</span></label>
+            </div>
+            <span asp-validation-for="EmployeeId" class="text-danger validation-message"></span>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="EffectiveFrom" type="date" class="form-control floating-input" required placeholder=" " />
+                        <label asp-for="EffectiveFrom" class="floating-label">Effective From <span class="text-danger">*</span></label>
+                    </div>
+                    <span asp-validation-for="EffectiveFrom" class="text-danger validation-message"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <div class="input-container">
+                        <input asp-for="EffectiveTo" type="date" class="form-control floating-input" placeholder=" " />
+                        <label asp-for="EffectiveTo" class="floating-label">Effective To</label>
+                    </div>
+                    <span asp-validation-for="EffectiveTo" class="text-danger validation-message"></span>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

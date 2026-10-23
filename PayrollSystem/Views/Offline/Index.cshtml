@@ -1,0 +1,88 @@
+@model SystemInfo
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - @(string.IsNullOrEmpty(Model?.ShortName) ? "DRMC-BMS" : Model.ShortName)</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #e3e9f0 0%, #f8f9fa 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .offline-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 2.5rem 2rem 2rem 2rem;
+            max-width: 350px;
+            width: 100%;
+            text-align: center;
+        }
+        .offline-logo {
+            width: 72px;
+            height: 72px;
+            border-radius: 12px;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            background: #f8f9fa;
+            object-fit: contain;
+        }
+        h1 {
+            color: #007bff;
+            margin-bottom: 0.5rem;
+            font-size: 2rem;
+        }
+        .desc {
+            color: #333;
+            margin-bottom: 1.2rem;
+        }
+        .tips {
+            color: #666;
+            font-size: 0.98rem;
+            margin-bottom: 1.5rem;
+        }
+        .retry-btn {
+            background: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.7rem 1.5rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .retry-btn:hover {
+            background: #0056b3;
+        }
+        @@media (max-width: 500px) {
+            .offline-card { padding: 1.5rem 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-card">
+        <img src="@(string.IsNullOrEmpty(Model?.LogoUrl) ? "/image/drmc_logo.png" : Model.LogoUrl)" alt="System Logo" class="offline-logo" />
+        <h1>You're Offline</h1>
+        <div class="desc">It looks like you lost your internet connection.</div>
+        <div class="tips">
+            <ul style="text-align:left; margin:0 auto 1rem auto; padding-left:1.2em; max-width:270px;">
+                <li>Check your Wi-Fi or data connection.</li>
+                <li>Try reloading the page after reconnecting.</li>
+                <li>Any saved data will sync when you're back online.</li>
+            </ul>
+        </div>
+        <button class="retry-btn" onclick="window.location.reload()">Retry</button>
+        <div style="margin-top:1.5rem; color:#aaa; font-size:0.95rem;">
+            @(string.IsNullOrEmpty(Model?.SystemName) ? "DRMC Budget Management System" : Model.SystemName)
+            <br />
+            <span style="font-size:0.95em; color:#888;">@(string.IsNullOrEmpty(Model?.Description) ? "" : Model.Description)</span>
+        </div>
+    </div>
+</body>
+</html> 

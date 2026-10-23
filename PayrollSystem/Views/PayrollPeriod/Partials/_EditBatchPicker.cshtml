@@ -1,0 +1,363 @@
+@model AssignEmployeesAndTimeCardBatchEditViewModel
+
+<link rel="stylesheet" href="~/css/payroll-time-card.css" asp-append-version="true" />
+
+<div class="container-fluid ptc-page">
+    <form id="batchPickerForm" asp-action="CreateBatchQuick" asp-controller="PayrollPeriod" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="PayrollPeriodId" value="@Model.PayrollPeriodId" />
+        <input type="hidden" name="EmployeeIds" id="batchPickerSelectedIds" value="" />
+
+        <div class="ptc-period-banner">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div>
+                    <p class="ptc-period-title mb-0">
+                        <i class="fas fa-layer-group mr-1 text-primary"></i>
+                        Add Employee Group
+                    </p>
+                    <div class="ptc-period-range">@Model.PayrollPeriodName — @Model.PeriodRange</div>
+                </div>
+                <div class="ptc-period-badges">
+                    <span class="badge badge-primary px-2 py-1">
+                        <i class="fas fa-user-plus mr-1"></i> New Group
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="ptc-steps">
+            <div class="ptc-step active">
+                <span class="ptc-step-num">1</span>
+                <span class="ptc-step-label">Select employees</span>
+            </div>
+            <div class="ptc-step-divider"></div>
+            <div class="ptc-step">
+                <span class="ptc-step-num">2</span>
+                <span class="ptc-step-label">Create &amp; import DTR</span>
+            </div>
+        </div>
+
+        <div class="ptc-tip-strip">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                Filter the list, select employees, then click <strong>Create Group</strong>.
+                Each group must contain <strong>one employment type only</strong>.
+                Hours can be adjusted later via <strong>Edit Group</strong>.
+            </div>
+        </div>
+
+        <div class="ptc-panel">
+            <div class="ptc-panel-header">
+                <span><i class="fas fa-filter"></i>Filters</span>
+            </div>
+            <div class="ptc-panel-body ptc-filter-panel border-0 mb-0 p-3">
+                <div class="row align-items-end">
+                    <div class="col-md-5 mb-2 mb-md-0">
+                        <label for="pickerDepartmentFilter">
+                            Department(s)
+                            <small class="text-muted font-weight-normal">(optional)</small>
+                        </label>
+                        <select id="pickerDepartmentFilter" class="form-control form-control-sm" multiple="multiple">
+                            @foreach (var d in Model.OrganizationUnits)
+                            {
+                                var isDeptSelected = Model.SelectedOrganizationStructureIds.Contains(int.Parse(d.Value));
+                                if (isDeptSelected)
+                                {
+                                    <option value="@d.Value" selected="selected">@d.Text</option>
+                                }
+                                else
+                                {
+                                    <option value="@d.Value">@d.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-2 mb-md-0">
+                        <label for="pickerEmploymentFilter">Employment Type</label>
+                        <select id="pickerEmploymentFilter" class="form-control form-control-sm">
+                            <option value="">— All Types —</option>
+                            @foreach (var e in Model.EmploymentTypes)
+                            {
+                                var isEmpSelected = Model.SelectedEmploymentBasis.HasValue &&
+                                    Model.SelectedEmploymentBasis.Value.ToString() == e.Value;
+                                if (isEmpSelected)
+                                {
+                                    <option value="@e.Value" selected="selected">@e.Text</option>
+                                }
+                                else
+                                {
+                                    <option value="@e.Value">@e.Text</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" id="pickerApplyFilterBtn" class="btn btn-primary btn-sm btn-block">
+                            <i class="fas fa-search mr-1"></i> Apply Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.ExcludedCount > 0)
+        {
+            <div class="alert alert-warning py-2 mb-3 small border-0" style="border-radius:10px;">
+                <i class="fas fa-user-slash mr-1"></i>
+                <strong>@Model.ExcludedCount</strong> employee(s) already in another group are hidden from this list.
+            </div>
+        }
+
+        <div class="ptc-panel">
+            <div class="ptc-panel-header">
+                <span><i class="fas fa-users"></i>Employee List</span>
+                <div class="ptc-toolbar-stats">
+                    <span class="ptc-stat-chip ptc-stat-chip--selected" id="pickerSelectedBadge">0 selected</span>
+                    <span class="ptc-stat-chip ptc-stat-chip--available" id="pickerFilteredBadge">— available</span>
+                </div>
+            </div>
+            <div class="ptc-panel-body pt-2 pb-0 px-2">
+                <div class="ptc-toolbar border-0 bg-transparent px-0 pt-0">
+                    <span class="small text-muted font-weight-bold text-uppercase" style="letter-spacing:.03em;">Selection</span>
+                    <div class="ptc-toolbar-actions">
+                        <div class="ptc-toolbar-group">
+                            <button type="button" class="btn btn-outline-secondary btn-xs" id="pickerSelectPageBtn" title="Select all on this page">
+                                <i class="fas fa-check-square mr-1"></i> Page
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-xs" id="pickerDeselectPageBtn" title="Deselect all on this page">
+                                <i class="far fa-square mr-1"></i> Page
+                            </button>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-xs" id="pickerSelectAllBtn" title="Select all employees matching the current filter">
+                            <i class="fas fa-users mr-1"></i> All Matching
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-xs" id="pickerClearAllBtn">
+                            <i class="fas fa-times mr-1"></i> Clear
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-responsive ptc-employee-table-wrap ptc-employee-table-wrap--modal mb-2">
+                    <table class="table table-sm table-hover table-bordered mb-0" id="batchPickerTable" width="100%">
+                        <thead class="sticky-top">
+                            <tr>
+                                <th width="40" class="text-center">
+                                    <input type="checkbox" id="pickerSelectPageCheck" title="Toggle page" />
+                                </th>
+                                <th>Employee</th>
+                                <th>Department</th>
+                                <th>Type</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="ptc-dtr-option mt-2">
+            <div class="ptc-dtr-option-icon">
+                <i class="fas fa-file-import"></i>
+            </div>
+            <div class="custom-control custom-checkbox flex-grow-1">
+                <input type="checkbox" class="custom-control-input" id="importFromDtrCheck" name="ImportFromDtr" value="true" checked="checked" />
+                <label class="custom-control-label" for="importFromDtrCheck">
+                    <strong>Import time card data from DTR</strong>
+                    <span class="ptc-dtr-option-desc">
+                        Automatically fills regular hours, tardiness, and undertime from attendance records for this payroll period.
+                    </span>
+                </label>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+    (function () {
+        var periodId = @Model.PayrollPeriodId;
+        var selectedIds = new Set();
+
+        function getFilterParams() {
+            var deptIds = $('#pickerDepartmentFilter').val() || [];
+            var empBasis = $('#pickerEmploymentFilter').val() || '';
+            return {
+                payrollPeriodId: periodId,
+                organizationStructureIds: deptIds.join(','),
+                employmentBasis: empBasis
+            };
+        }
+
+        function updateSelectedBadge() {
+            $('#pickerSelectedBadge').text(selectedIds.size + ' selected');
+            $('#batchPickerSelectedIds').val(Array.from(selectedIds).join(','));
+        }
+
+        function syncPageCheckboxes() {
+            var $rows = $('#batchPickerTable tbody .picker-row-check');
+            var checkedOnPage = 0;
+            $rows.each(function () {
+                var id = $(this).val();
+                var isSelected = selectedIds.has(id);
+                $(this).prop('checked', isSelected);
+                if (isSelected) checkedOnPage++;
+            });
+            var totalOnPage = $rows.length;
+            $('#pickerSelectPageCheck').prop({
+                checked: totalOnPage > 0 && checkedOnPage === totalOnPage,
+                indeterminate: checkedOnPage > 0 && checkedOnPage < totalOnPage
+            });
+        }
+
+        function initializePicker() {
+            var $modal = $('#batchPickerForm').closest('.modal');
+            var dropdownParent = $modal.find('.modal-content').length
+                ? $modal.find('.modal-content')
+                : $('body');
+
+            if ($.fn.select2) {
+                $('#pickerDepartmentFilter').select2({
+                    placeholder: 'All departments',
+                    allowClear: true,
+                    closeOnSelect: false,
+                    width: '100%',
+                    dropdownParent: dropdownParent
+                });
+                $('#pickerEmploymentFilter').select2({
+                    placeholder: '— All Types —',
+                    allowClear: true,
+                    width: '100%',
+                    dropdownParent: dropdownParent
+                });
+            }
+
+            var pickerTable = $('#batchPickerTable').DataTable({
+                processing: true,
+                serverSide: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                order: [[1, 'asc']],
+                dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>rt<"row"<"col-sm-5"i><"col-sm-7"p>>',
+                ajax: {
+                    url: '/PayrollPeriod/GetBatchEmployeePickerJson',
+                    type: 'POST',
+                    data: function (d) {
+                        var f = getFilterParams();
+                        d.payrollPeriodId = f.payrollPeriodId;
+                        d.organizationStructureIds = f.organizationStructureIds;
+                        d.employmentBasis = f.employmentBasis;
+                    }
+                },
+                columns: [
+                    {
+                        data: 'id',
+                        orderable: false,
+                        className: 'text-center align-middle',
+                        render: function (data) {
+                            return '<input type="checkbox" class="picker-row-check" value="' + data + '" />';
+                        }
+                    },
+                    { data: 'fullName', className: 'align-middle font-weight-bold text-dark' },
+                    { data: 'organizationUnitName', className: 'align-middle small text-muted', defaultContent: '—' },
+                    {
+                        data: 'employmentTypeName',
+                        className: 'align-middle',
+                        render: function (data) {
+                            return '<span class="badge badge-light border text-secondary">' + (data || '—') + '</span>';
+                        }
+                    }
+                ],
+                language: {
+                    emptyTable: '<div class="ptc-empty-state py-4"><i class="fas fa-user-slash"></i><p>No employees match this filter.</p></div>',
+                    processing: '<i class="fas fa-spinner fa-spin mr-1 text-primary"></i> Loading employees...',
+                    search: '_INPUT_',
+                    searchPlaceholder: 'Search name...'
+                },
+                drawCallback: function (settings) {
+                    var json = settings.json;
+                    if (json) {
+                        $('#pickerFilteredBadge').text(json.recordsFiltered + ' available');
+                    }
+                    syncPageCheckboxes();
+                }
+            });
+
+            $('#pickerApplyFilterBtn').on('click', function () {
+                pickerTable.ajax.reload();
+            });
+
+            $('#batchPickerTable').on('change', '.picker-row-check', function () {
+                var id = $(this).val();
+                if ($(this).is(':checked')) selectedIds.add(id);
+                else selectedIds.delete(id);
+                updateSelectedBadge();
+                syncPageCheckboxes();
+            });
+
+            $('#pickerSelectPageCheck').on('change', function () {
+                var checked = $(this).is(':checked');
+                $('#batchPickerTable tbody .picker-row-check').each(function () {
+                    var id = $(this).val();
+                    $(this).prop('checked', checked);
+                    if (checked) selectedIds.add(id);
+                    else selectedIds.delete(id);
+                });
+                updateSelectedBadge();
+                syncPageCheckboxes();
+            });
+
+            $('#pickerSelectPageBtn').on('click', function () {
+                $('#batchPickerTable tbody .picker-row-check').each(function () {
+                    selectedIds.add($(this).val());
+                    $(this).prop('checked', true);
+                });
+                updateSelectedBadge();
+                syncPageCheckboxes();
+            });
+
+            $('#pickerDeselectPageBtn').on('click', function () {
+                $('#batchPickerTable tbody .picker-row-check').each(function () {
+                    selectedIds.delete($(this).val());
+                    $(this).prop('checked', false);
+                });
+                updateSelectedBadge();
+                syncPageCheckboxes();
+            });
+
+            $('#pickerClearAllBtn').on('click', function () {
+                selectedIds.clear();
+                updateSelectedBadge();
+                syncPageCheckboxes();
+            });
+
+            $('#pickerSelectAllBtn').on('click', function () {
+                var f = getFilterParams();
+                var $btn = $(this);
+                $btn.prop('disabled', true);
+
+                $.post('/PayrollPeriod/GetBatchEmployeePickerAllIds', f)
+                    .done(function (res) {
+                        if (!res.success) {
+                            toastr.error(res.message || 'Failed to select employees.');
+                            return;
+                        }
+                        (res.employeeIds || []).forEach(function (id) {
+                            selectedIds.add(id);
+                        });
+                        updateSelectedBadge();
+                        syncPageCheckboxes();
+                        toastr.info('Selected ' + (res.count || selectedIds.size) + ' employee(s).');
+                    })
+                    .fail(function () {
+                        toastr.error('Failed to select all matching employees.');
+                    })
+                    .always(function () {
+                        $btn.prop('disabled', false);
+                    });
+            });
+
+            pickerTable.ajax.reload();
+        }
+
+        $(document).ready(initializePicker);
+    })();
+</script>

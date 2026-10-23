@@ -1,0 +1,105 @@
+@model IEnumerable<GovernmentContributionType>
+
+@{
+    ViewData["Title"] = "Government Contribution Types";
+    ViewBag.ActiveMenu = "GovernmentContributionType";
+    ViewBag.ActiveLink = "GovernmentContributionType";
+    ViewBag.ActiveMainMenu = "";
+}
+
+<div class="card card-outline rounded-0 card-primary mx-2 px-2">
+    <div class="card-header d-flex align-items-center">
+        <div class="flex-grow-1 d-flex justify-content-start">
+            <h3 class="card-title m-0">Government Contribution Types List</h3>
+        </div>
+        <div class="card-tools d-flex align-items-center">
+            <a href="javascript:void(0)" class="btn btn-primary open-modal"
+               data-title="Add Government Contribution Type"
+               data-url="@Url.Action("Create", "GovernmentContributionType")"
+               data-modal-type="create"
+               data-toogle="tooltip"
+               title="Add Government Contribution Type">
+                <i class="fas fa-plus"></i>
+                <span class="d-none d-lg-inline">Add New</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="card-body">
+        <div class="container-fluid">
+            <table class="table table-hover table-striped table-bordered" id="myTable" width="100%">
+                <thead>
+                    <tr class="text-center">
+                        <th>No.</th>
+                        <th>@Html.DisplayNameFor(model => model.Code)</th>
+                        <th>@Html.DisplayNameFor(model => model.Name)</th>
+                        <th>@Html.DisplayNameFor(model => model.CalculationMethod)</th>
+                        <th>@Html.DisplayNameFor(model => model.IsActive)</th>
+                        <th>Tables</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        var index = 1;
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="text-center">@index</td>
+                                <td>@Html.DisplayFor(modelItem => item.Code)</td>
+                                <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                                <td>@Html.DisplayFor(modelItem => item.CalculationMethod)</td>
+                                <td class="text-center">
+                                    <span class="badge @(item.IsActive ? "bg-success" : "bg-danger")">
+                                        <i class="@(item.IsActive ? "fa fa-check-circle text-white" : "fa fa-times-circle text-white")"></i>
+                                        @(item.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                                <td align="center">
+                                    <a asp-controller="GovernmentContributionTable" asp-action="Index" asp-route-contributionTypeId="@item.Id" class="btn btn-secondary btn-sm" title="View Contribution Tables">
+                                        <i class="fas fa-table"></i> View Tables
+                                    </a>
+                                </td>
+                                <td align="center">
+                                    <button type="button" class="btn btn-flat p-1 btn-default btn-sm dropdown-toggle dropdown-icon" data-toggle="dropdown">
+                                        Action
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu" role="menu">
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Government Contribution Type Details"
+                                           data-url="@Url.Action("Details", "GovernmentContributionType", new { id = item.Id })"
+                                           data-modal-type="view">
+                                            <i class="fa fa-eye mr-2 text-dark"></i>
+                                            <span>View Type</span>
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Edit Government Contribution Type"
+                                           data-url="@Url.Action("Edit", "GovernmentContributionType", new { id = item.Id })"
+                                           data-modal-type="edit">
+                                            <i class="fa fa-edit mr-2 text-primary"></i>
+                                            <span>Edit Type</span>
+                                        </a>
+
+                                        <div class="dropdown-divider"></div>
+                                        <a href="javascript:void(0)" class="dropdown-item open-modal"
+                                           data-title="Delete Government Contribution Type"
+                                           data-url="@Url.Action("Delete", "GovernmentContributionType", new { id = item.Id })"
+                                           data-modal-type="delete_data">
+                                            <i class="fa fa-trash mr-2 text-danger"></i>
+                                            <span>Delete Type</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    }
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
